@@ -72,9 +72,11 @@ World English Bible, Classic edition
              attached to it is that anyone who changes the actual text must not
              call the result the World English Bible. This project ships a
              faithful unmodified copy of the text, so the name is used
-             correctly. USFM formatting markers are stripped and footnotes and
-             cross-references are omitted when building the verse rows; the
-             words of the translation are not altered, added to, or removed.
+             correctly. Verse text is reproduced unmodified: the words and
+             punctuation of the translation are not altered, added to, or
+             removed. USFM formatting markers are stripped, and the
+             translators' footnotes and cross-references are omitted, both
+             being apparatus around the text rather than the text itself.
   Retrieved: 2026-08-26
   SHA-256:   2403c879aa6b0c9e5e43a4db6f604f7dd1a1f8f32b959c08c8a1fc32c4833e00
   Note:      Selected as the Classic edition with the full ecumenical book set:
