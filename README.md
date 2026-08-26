@@ -21,7 +21,7 @@ v1.0.0.
 
 When you install on Windows, expect this:
 
-> Because this is a free project made by volunteers, the installer is not yet signed with a paid certificate. When you run it, Windows will show a blue screen that says "Windows protected your PC." This is expected. Click "More info," then "Run anyway." (Screenshots follow.) We have applied for free open-source signing; when granted, the publisher shown will be "SignPath Foundation."
+> Because this is a free project made by volunteers, the installer is not yet signed with a paid certificate. When you run it, Windows will show a blue screen that says "Windows protected your PC." This is expected. Click "More info," then "Run anyway." (Screenshots follow.) We will apply for free open-source signing after the first release; when granted, the publisher shown will be "SignPath Foundation."
 
 Install steps, the Linux package, and upgrading: not yet available; filled in at P6.
 

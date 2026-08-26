@@ -51,3 +51,5 @@ session whether the ground has shifted.
 
 - 2026-08-26 — CODE_OF_CONDUCT.md contact method is "by opening an issue on the pastor-bible GitHub repository"; the preceding word "at" was dropped so the sentence is grammatical. Reason: the instructed replacement inserted verbatim produced "at by opening an issue"; the CoC is public-facing and must read correctly. Reverses the P0 entry that left the placeholder in place.
 - 2026-08-26 — NOTICE.md now records the CoC as modified, with both the new and the upstream checksum. Reason: CC BY 4.0 requires modifications to be indicated, so editing the file obliged the notice to change with it.
+- 2026-08-26 — 9.4 reworded to future tense until P8; revert at P8. Reason: plan text must be true at every commit.
+- 2026-08-26 — docs/PLAN.md is no longer byte-identical to the plan as approved; its sha256 is now c2431f31134cd192d254ec137801d3d5c650e52aacf059fadc375f75b22cde48, was f07a7354683ad38a4be0219651a5b3fca23ed6ad534dbc1fed60fcff7ad57239. Reason: the 9.4 rewording above was applied to the plan as well so plan and README cannot drift; the plan is now a living document and future sessions must not treat its hash as fixed.

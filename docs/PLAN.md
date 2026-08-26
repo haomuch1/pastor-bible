@@ -242,7 +242,7 @@ Every answered question is stored in user.db with its answer, canon mode, model 
 
 ### 9.4 Windows warning text (README, install section)
 
-> Because this is a free project made by volunteers, the installer is not yet signed with a paid certificate. When you run it, Windows will show a blue screen that says "Windows protected your PC." This is expected. Click "More info," then "Run anyway." (Screenshots follow.) We have applied for free open-source signing; when granted, the publisher shown will be "SignPath Foundation."
+> Because this is a free project made by volunteers, the installer is not yet signed with a paid certificate. When you run it, Windows will show a blue screen that says "Windows protected your PC." This is expected. Click "More info," then "Run anyway." (Screenshots follow.) We will apply for free open-source signing after the first release; when granted, the publisher shown will be "SignPath Foundation."
 
 ### 9.5 Stance statement (README section 4)
 
