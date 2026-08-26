@@ -45,3 +45,6 @@ __pycache__/
 # Build-time tools and model files: never committed, never shipped in this form.
 tools/
 models/
+
+# Evaluation scratch output; the kept copy lives in data/eval/
+/eval_results.json
