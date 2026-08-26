@@ -205,3 +205,31 @@ def test_gold_list_provenance_is_recorded(db, data):
                      ).fetchone()
     assert row is not None, 'index.db does not record gold_lists_index'
     assert data['generated_from_index'] == row[0]
+
+
+# ---------------------------------------------------- P3 split of the set
+
+def test_p3_graded_is_ten_known_ids(data):
+    assert len(data['p3_graded']) == 10
+    gids = {g['id'] for g in data['graded']}
+    assert set(data['p3_graded']) <= gids
+
+
+def test_smoke_pool_is_thirty_and_covers_the_rest(data):
+    pool = data['smoke_pool']
+    assert len(pool) == 30
+    assert len(set(pool)) == 30
+    smoke_ids = {s['id'] for s in data['smoke']}
+    gids = {g['id'] for g in data['graded']}
+    assert smoke_ids <= set(pool)
+    # Every graded question not graded in P3 is in the pool, and none of the
+    # ten P3 questions is, so nothing is both graded and smoked.
+    assert (gids - set(data['p3_graded'])) <= set(pool)
+    assert not (set(data['p3_graded']) & set(pool))
+
+
+def test_moving_questions_did_not_touch_their_gold_lists(data):
+    # The ten that moved keep full MUST and SHOULD lists.
+    for g in data['graded']:
+        assert len(g['must']) >= 5, g['id']
+        assert len(g['should']) > 0, g['id']

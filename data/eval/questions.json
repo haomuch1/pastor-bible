@@ -7218,5 +7218,50 @@
       "category": "study"
     }
   ],
-  "note": "These gold lists are index-derived: every passage was proposed by Nave's Topical Bible, the FTS5 keyword index, or a Treasury of Scripture Knowledge hop, and none has been reviewed by a pastor. Jared is not a pastor and declines to hand-judge them. They are approved as drafted so that P2 has a fixed target to measure against. A future contributor may revise them. Because the lists share their sources with the topic, cross-reference and keyword retrieval paths, recall measured against them for any configuration that uses those paths is near-circular and is reported but not treated as evidence; the vector-only ablations are the evidence."
+  "note": "These gold lists are index-derived: every passage was proposed by Nave's Topical Bible, the FTS5 keyword index, or a Treasury of Scripture Knowledge hop, and none has been reviewed by a pastor. Jared is not a pastor and declines to hand-judge them. They are approved as drafted so that P2 has a fixed target to measure against. A future contributor may revise them. Because the lists share their sources with the topic, cross-reference and keyword retrieval paths, recall measured against them for any configuration that uses those paths is near-circular and is reported but not treated as evidence; the vector-only ablations are the evidence.",
+  "p3_graded": [
+    "g01",
+    "g03",
+    "g04",
+    "g05",
+    "g08",
+    "g11",
+    "g12",
+    "g13",
+    "g14",
+    "g18"
+  ],
+  "smoke_pool": [
+    "s01",
+    "s02",
+    "s03",
+    "s04",
+    "s05",
+    "s06",
+    "s07",
+    "s08",
+    "s09",
+    "s10",
+    "s11",
+    "s12",
+    "s13",
+    "s14",
+    "s15",
+    "s16",
+    "s17",
+    "s18",
+    "s19",
+    "s20",
+    "g02",
+    "g06",
+    "g07",
+    "g09",
+    "g10",
+    "g15",
+    "g16",
+    "g17",
+    "g19",
+    "g20"
+  ],
+  "p3_note": "P3 grades 10 of the 20 questions. The other ten keep their gold lists and join the smoke pool; their lists are untouched and remain valid for post-v1 testing."
 }
