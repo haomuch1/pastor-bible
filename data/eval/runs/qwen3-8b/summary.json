@@ -1,0 +1,20 @@
+{
+ "model": "qwen3-8b",
+ "gguf": "Qwen3-8B-Q4_K_M.gguf",
+ "canon": "66",
+ "questions": 10,
+ "peak_ram_chat_mb": 15068.1,
+ "peak_ram_embed_mb": 252.4,
+ "free_ram_before_gb": 20.95,
+ "embed_phase_separate": true,
+ "prompt_versions": {
+  "rewrite": "1",
+  "synopsis": "1",
+  "retry": "1"
+ },
+ "first_pass_violation_rate": 0.0,
+ "fallback_rate": 0.0,
+ "structure_ok_rate": 1.0,
+ "median_end_to_end_s": 156.32,
+ "max_end_to_end_s": 234.14
+}
