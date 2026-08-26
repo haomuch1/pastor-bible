@@ -1,0 +1,12 @@
+# Normalize to LF in the repository and check out LF on every platform.
+# Keeps docs/PLAN.md byte-identical to the approved plan on any clone, and keeps
+# Windows and Linux checkouts identical for the cross-platform build.
+* text=auto eol=lf
+
+# Binary: never touched.
+*.png binary
+*.ico binary
+*.icns binary
+*.svg text eol=lf
+*.gguf binary
+*.db binary
