@@ -1,0 +1,20 @@
+# Crisis term list for The Pastor Bible.
+#
+# Purpose (PLAN.md 5.8): this list is matched against the user's question. On a
+# match, the static crisis note from PLAN.md 9.3 is shown above the answer. The
+# answer still runs; the note is shown in addition to it, never instead of it.
+#
+# Coverage must include harm to self and harm to others.
+#
+# Over-triggering is acceptable. Under-triggering is not. When in doubt, include
+# the term.
+#
+# Format, once populated: one term or phrase per line, lowercased. Lines starting
+# with # are comments. Blank lines are ignored.
+#
+# THIS FILE IS DELIBERATELY EMPTY OF TERMS. It is a visible placeholder, not a
+# working list. It matches nothing in its current state.
+#
+# Populated in P4, which owns the crisis matcher.
+#
+# P4 tests must fail if this file has no non-comment lines.
