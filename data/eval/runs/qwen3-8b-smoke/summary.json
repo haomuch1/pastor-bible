@@ -1,0 +1,20 @@
+{
+ "model": "qwen3-8b-smoke",
+ "gguf": "Qwen3-8B-Q4_K_M.gguf",
+ "canon": "66",
+ "questions": 10,
+ "peak_ram_chat_mb": 15734.1,
+ "peak_ram_embed_mb": 251.5,
+ "free_ram_before_gb": 20.92,
+ "embed_phase_separate": true,
+ "prompt_versions": {
+  "rewrite": "1",
+  "synopsis": "1",
+  "retry": "1"
+ },
+ "first_pass_violation_rate": 0.1,
+ "fallback_rate": 0.0,
+ "structure_ok_rate": 0.9,
+ "median_end_to_end_s": 166.6,
+ "max_end_to_end_s": 337.32
+}
