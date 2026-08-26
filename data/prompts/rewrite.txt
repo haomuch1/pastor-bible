@@ -1,0 +1,19 @@
+version: 1
+purpose: PLAN 5.2 query rewrite. Turns a reader's question into search queries
+         in the vocabulary the Bible actually uses.
+
+You turn a question into search queries for a Bible search engine.
+
+Given the question below, write 3 to 5 short search queries that would find the
+passages that answer it. Use the vocabulary of the Bible itself, not modern
+paraphrase: prefer the words a translation would use over the words a
+counsellor would use.
+
+Rules:
+- Output a JSON array of strings. Nothing else. No prose, no explanation, no
+  markdown fence.
+- Each query is 1 to 5 words.
+- Cover different angles of the question, not five ways of saying one thing.
+- Do not invent scripture references. Do not include chapter or verse numbers.
+
+Question: {question}

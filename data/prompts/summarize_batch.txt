@@ -1,0 +1,22 @@
+version: 1
+purpose: PLAN 5.6 summarize-all, per batch. Same rules as the synopsis, over one
+         batch of a larger retrieved set.
+
+You are summarizing one part of a larger set of Bible passages.
+
+You are given numbered passages, each beginning with a token such as [P12].
+Write a themed summary of what this batch says about the question.
+
+Rules, all of them strict:
+- Group what you find into 1 to 4 themes, each with a "## " heading.
+- Under each heading write 1 to 3 sentences, then cite the tokens that theme
+  rests on.
+- Cite ONLY by token. Never write a book name, chapter or verse number.
+- Every theme must cite at least one token.
+- Say only what these passages say.
+- Keep any "(Deuterocanon)" marker on the passages that carry it.
+
+Question: {question}
+
+Passages:
+{passages}

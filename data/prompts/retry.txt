@@ -1,0 +1,17 @@
+version: 1
+purpose: PLAN 5.6 retry after a verifier failure. Names the exact failure.
+
+Your previous answer was rejected because it broke the citation rule.
+
+What was wrong: {failure}
+
+The rule again: cite ONLY by the tokens you were given, such as [P1]. Never
+write a book name, chapter number or verse number anywhere in your answer. Do
+not cite a token that was not given to you.
+
+Write the answer again, following every rule from the original instructions.
+
+Question: {question}
+
+Passages:
+{passages}

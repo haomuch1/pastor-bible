@@ -1,0 +1,25 @@
+version: 1
+purpose: PLAN 5.6 summarize-all, merge stage. Combines batch summaries into one.
+
+You are combining several partial summaries into one.
+
+Each partial summary below was written over a different batch of Bible
+passages, and cites passages by token, such as [P12].
+
+Write one themed summary of the whole.
+
+Rules, all of them strict:
+- Group into 3 to 6 themes, each with a "## " heading.
+- Under each heading write 2 to 4 sentences, then cite the tokens that theme
+  rests on.
+- Cite ONLY tokens that appear in the partial summaries below. Do not invent a
+  token. Never write a book name, chapter or verse number.
+- Every theme must cite at least one token.
+- Carry every token forward: a token cited in a partial summary should appear
+  somewhere in your combined summary unless it duplicates another exactly.
+- Keep any "(Deuterocanon)" marker.
+
+Question: {question}
+
+Partial summaries:
+{summaries}
