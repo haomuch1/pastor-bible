@@ -1,155 +1,211 @@
 # HANDOFF
 
-Session: P2-prep, evaluation set and candidate gold lists
+Session: P2 Index and retrieval harness
 Date: 2026-08-26
-Status: COMPLETE. P2 itself is BLOCKED, awaiting Jared's approval.
+Status: P2 COMPLETE
 
 ## State
 
-The repository is at D:\Haomuch-Programs\The-Pastor-Bible, branch main, pushed
-to https://github.com/haomuch1/pastor-bible, still private.
+Repository at D:\Haomuch-Programs\The-Pastor-Bible, branch main, pushed to
+https://github.com/haomuch1/pastor-bible, still private.
 
-Nothing was built this session but documents and a draft. No embeddings, no
-vector store, no retrieval run, no model was loaded. index.db is untouched.
+The evaluation set is approved. data/eval/questions.json carries status
+"approved-as-drafted" and a note field saying in plain words that the lists are
+index-derived and were never reviewed by a pastor. g19 and g20 each gained six
+deuterocanonical MUST passages, taking those two lists to 14 entries;
+docs/EVAL-GOLD-REVIEW.md is now a readable record of what was approved rather
+than a form to mark up.
 
-New:
+index.db is version 0.2.0, schema 2, and holds embeddings from all three
+shortlisted models side by side. It is 1,001,975,808 bytes, which is a
+measurement rig and not a shippable artifact: only one model's vectors ship.
+It is gitignored, as are its journal and WAL sidecars, which P2 added to
+.gitignore after the journal briefly got staged.
 
-  data/eval/questions.json        the evaluation set, status "draft"
-  docs/EVAL-GOLD-REVIEW.md        the review file Jared marks up
-  pipeline/draft_gold.py          the script that drafted the candidates
-  tests/test_eval_set.py          18 tests over the evaluation set
+New in pipeline/: embed.py runs llama-server for embedding and reranking and
+owns the truncation and tokenizer helpers; build_embeddings.py writes the
+vectors; retrieve.py is the retrieval harness implementing PLAN 5.1 to 5.5 with
+every stage behind a flag; evaluate.py runs the configurations over the graded
+questions; report_eval.py turns that into the tables in docs/EVAL.md;
+check_determinism.py measures embedding variance. All three of build_index.py,
+build_embeddings.py and retrieve.py honour a TPB_INDEX_DB environment variable
+so a second database can be built without destroying the first.
 
-Changed: NOTICE.md now states outright that WEB verse text is reproduced
-unmodified and that translator footnotes and cross-references are omitted.
-docs/EVAL.md gained the file schema, the drafting procedure, the MUST and
-SHOULD rule and the graded/smoke split, and its recall@25 definition now says
-explicitly that recall is measured against MUST only. DECISIONS.md gained
-eleven entries.
+tools/ holds the llama.cpp binaries and models/ holds the four GGUF files. Both
+are gitignored. Nothing binary is committed.
 
-The three carryover fixes from P1 remain as they were. Nothing about the
-application changed.
+pipeline/requirements.txt now also pins numpy 2.5.2, used only by the harness.
 
 ## Verified
 
-index.db is the one P1 produced. Its sha256 is
-128c3446857fa98c1ffb24fd6c3f69496b2d6c678d94f7ab436abcb356dc24db, which matches
-the value recorded in the P1 handoff exactly. No rebuild was needed.
+Prerequisites and setup. llama.cpp release b10639, win-cpu-x64 prebuilt, which
+identifies itself as version 0.3.0-dev build 10639 commit 5e6a37cb1. The
+llama-cpp-python route was rejected because PyPI ships only an sdist for it and
+no CMake exists on this machine, so building it would have meant installing
+system software.
 
-The evaluation set holds 20 graded questions and 20 smoke questions. Question
-wording is exactly as the session brief specified; it was transcribed once and
-not edited afterwards.
+Licences were read from each model's own card through the Hugging Face API,
+not from memory: bge-small-en-v1.5 mit, nomic-embed-text-v1.5 apache-2.0,
+Qwen3-Embedding-0.6B apache-2.0, bge-reranker-v2-m3 apache-2.0, and the GGUF
+repository gpustack/bge-reranker-v2-m3-GGUF apache-2.0 as well. Parameter
+counts and context lengths came from the safetensors metadata and config.json
+of each model. Every GGUF was downloaded and its sha256 recorded in
+docs/EVAL.md and in the embedding_models table.
 
-Every one of the 400 proposed passages, 160 MUST and 240 SHOULD, resolves to
-real verse rows in index.db. This is asserted twice: once inside draft_gold.py,
-which raises rather than writing a passage it cannot resolve, and again in
-tests/test_eval_set.py, which re-checks every verse_id against the database
-after the file is written.
+Prefix conventions were verified from the model cards rather than assumed. They
+matter: nomic's search_document and search_query prefixes are mandatory, not
+advisory. The exact strings are stored in the index next to the vectors, and the
+harness reads them from there.
 
-Every passage lies inside a single chapter, none is a whole chapter, verse ids
-are contiguous and sorted, and each passage's canon label matches the canon of
-the book it sits in. The 18 questions marked canon "66" carry no
-deuterocanonical passage at all.
+Pericope sizes, measured before embedding, verses then tokens, as min, median,
+p90, max. OT protestant, 6209 pericopes: 1, 3, 7, 298 verses and 11, 98, 245,
+6074 tokens. NT protestant, 2466: 1, 3, 6, 16 verses and 10, 76, 185, 477
+tokens. Deuterocanon, 1377: 1, 4, 10, 38 verses and 11, 128, 309, 1068 tokens.
+Overall 10,052 pericopes: 1, 3, 8, 298 verses and 10, 96, 239, 6074 tokens.
+Pericopes are short because they are WEB paragraphs and no headings were added.
 
-Every MUST list has exactly 8 entries, within the 5 to 8 rule. Every MUST
-passage carries at least two of the three origins.
+Embedding coverage, queried from the finished database. Each of the three
+models has 38,029 verse vectors, 18,837 topic vectors, and complete pericope
+coverage: 10,189 parts for bge-small with 106 pericopes split to fit its
+512-token context, 10,056 parts and 3 splits for nomic, 10,055 parts and 2
+splits for qwen3. Wall time 478s, 1369s and 7825s respectively. Peak resident
+memory 74.9 MB, 251.4 MB and 945.9 MB; the reranker peaked at 2009.3 MB.
 
-Every graded question found at least one real Nave's topic. None rests on FTS
-and TSK alone. Where Nave's routes a heading to another topic the pointer was
-followed once and recorded, so ANXIETY shows as "ANXIETY -> CARE" and TRUST as
-"TRUST -> FAITH".
+Embedding determinism was measured, not assumed. The same fixed 200-verse
+sample embedded twice gives a maximum absolute difference of 9.6e-05 for
+bge-small, 6.1e-05 for nomic and 2.7e-03 for qwen3, with minimum cosine
+similarity between the two runs of 0.999999877, 0.999999898 and 0.999747860.
+197 of 200 vectors were bit-identical in each case. Byte-identical output was
+never expected from a threaded CPU matmul; the variance is orders of magnitude
+below anything that could reorder a result.
 
-Smoke entries carry id, question and category and nothing else, asserted.
+Reproducibility of the whole pipeline was verified against a second artifact,
+not asserted. P1's structural build is still byte-deterministic: rebuilt from
+scratch it produced the same pre-checksum digest, 6ed1005e. A fresh index was
+then built from scratch into a separate file, embedded with the recommended
+model, and evaluated. All six configurations reproduced their recall@25 to
+three decimals, and a per-question comparison across 120 question-configuration
+pairs and three cutoffs each found zero differences.
 
-The full test suite runs and passes: 46 tests, 46 passed. That is P1's 28 plus
-this session's 18.
+The headline numbers are in docs/EVAL.md and were read out of the built
+database by the harness. Vector-only recall@25 against MUST, which is the
+evidence: bge-small 0.346, nomic 0.428, qwen3 0.462 for verses and pericopes
+fused. Keyword-only scores 0.559 and the full pipeline 0.571 to 0.629, both
+near-circular against these lists and reported as such.
+
+Tests: 61 run, 61 passed. That is P1's 28, the eval set's 19 after the P2
+amendments, and 14 new ones over the embeddings and the harness. Two P1-era
+tests were deliberately inverted: one asserted the embedding tables did not
+exist, and one tied questions.json to the live build checksum, which no longer
+holds now that adding embeddings changes the file. Provenance is kept instead
+by a gold_lists_index row in meta, and the tests assert against that.
 
 ## Not verified
 
-Nothing in this session is approved, and nothing in it has been judged correct
-by anyone qualified to judge it. The gold lists are proposals. Plan 6.2 puts
-that judgment with Jared and this session does not touch it.
+The gold lists are still index-derived and unreviewed by a pastor. Everything
+measured this session is measured against them. Recall of 0.43 means 43 per
+cent of what those lists claim matters, not 43 per cent of what a pastor would
+say matters. That distinction is written into questions.json and EVAL.md
+because it is the largest single caveat on every number here.
 
-Whether the drafting method finds the passages a pastor would name is unproven.
-Two rounds of tuning were done and their effect was inspected by eye: weighting
-Nave's topics down as they grow, ranking by score density, requiring two
-origins for a MUST entry, and sharpening the keyword lists. The lists improved
-markedly under that, but "improved by eye" is not a measurement, and no
-measurement of the drafting method is possible before there are approved lists
-to measure it against.
+No generation happened. No chat model ran, no answer was produced, no citation
+was verified. Whether these passages support a good answer is P3's question and
+is untouched.
 
-The keyword lists are Claude's choice. They are recorded in the JSON precisely
-so that P2 can compare them against the query rewrites the chat model produces
-and see whether the two agree; that comparison has not happened.
+The reranker was tested in one configuration only, at the top 60 candidates
+with documents truncated to 2000 characters, using the query text without its
+keywords. A different cut might behave differently. Given it cost 10 seconds
+and 2 GB while lowering recall@25, that was not worth chasing further in P2.
+
+Query rewriting is absent. The stored keyword lists stand in for PLAN 5.2, so
+every number here reflects hand-written keywords rather than what the chat model
+will actually produce. P3 can compare the two; the keyword lists are stored in
+questions.json for exactly that.
+
+The full three-model rebuild was not repeated end to end. Rebuilding all three
+takes about 2.7 hours, dominated by qwen3. The reproducibility check was run
+with the recommended model instead, which exercises the same code path from an
+empty database, and P1's structural build was confirmed byte-identical
+separately. The bge-small and qwen3 figures therefore come from the single
+build that produced the current index.db, not from a repeated one.
+
+Nothing was measured on any machine but this one. Latency and memory figures
+are from this CPU.
 
 ## Flags for Jared
 
-Two lists need your attention more than the rest: g04 on grief, and g08 on
-fear. Both are dominated by narrative examples rather than by passages that
-speak to the person asking. g04 offers David mourning Absalom, Jacob mourning
-Joseph and Joab rebuking David; g08 offers Gideon, Ezekiel and Joshua being
-told not to be afraid. These are not errors: they are what the sources contain.
-Nave's indexes grief and fear largely by instance, and the WEB's vocabulary of
-fear is mostly narrative speech. The passages a grieving or frightened person
-is usually given, and I am naming these as the kind of thing that is absent
-rather than proposing them, live in places the keyword and topic path does not
-reach well. Expect to do more striking and adding on these two than on any
-others.
+The reranker is out, and that is a finding rather than a preference. It was the
+only reranker that met every condition, and it made retrieval worse: recall@25
+fell from 0.629 to 0.529 with the recommended embedding model, while adding
+about 10 seconds per query and 2 GB of resident memory. Retrieval without it
+takes 3 to 24 milliseconds. If reranking is wanted later it needs a different
+model, not a different setting.
 
-This is also a finding rather than only a problem. It predicts that keyword and
-topic retrieval alone will do worst on exactly the emotional-support questions
-the app most needs to handle well, which is the case embeddings exist to fix.
-P2 will be able to measure that instead of assuming it.
+The three embedding models cannot be told apart on 20 questions. A paired
+bootstrap puts every pairwise gap's confidence interval across zero. The
+recommendation of nomic-embed-text-v1.5 rests on it leading every configuration
+on the point estimates, on its 2048-token context leaving 3 pericopes needing a
+split where bge-small needs 106, and on it costing 251 MB where qwen3 costs 946
+MB. If the P3 hardware floor turns out tight, bge-small is the fallback and the
+recall cost is not one this eval set can prove is real.
 
-The deuterocanon result is worth reading before you approve g19 and g20. The
-candidates are there: 40 deuterocanonical ranges surfaced for g19 and 27 for
-g20, and the obvious ones are among them. Tobit 12:8-9, "Good is prayer with
-fasting, alms, and righteousness", ranks 37th of 540. Tobit 4:7-11, "Give alms
-from your possessions", ranks 60th. Sirach 19:20, "All wisdom is the fear of
-the Lord", ranks 24th of 462. Not one reached MUST or SHOULD. The reason is
-structural and was predicted: neither Nave's nor TSK indexes those books, so a
-deuterocanonical passage can only ever carry one origin and can never clear the
-two-origin bar, nor outrank protestant passages carrying three. If you want the
-canon toggle to mean anything on these two questions you will need to add those
-lines by hand, and that is a deliberate decision for you rather than something
-the draft should have done quietly.
+Embeddings are what reach the Deuterocanon. In P2-prep no deuterocanonical
+passage could get into a gold list, because neither study corpus indexes those
+books. With vectors, bge-small returns Tobit 12:8-9 at rank 1 for g19, and 2 to
+5 of the 6 deuterocanonical MUST passages per question land in the top 25. This
+is the clearest demonstration in the session of what the embeddings buy.
 
-One methodological point that will matter in P2. Turning the deuterocanon on
-changes the protestant results too, not only adds to them. Deuterocanonical
-verses occupy slots in each keyword's results, which displaces protestant
-verses from the window and shifts their ranks. For g20 the MUST list is not the
-same under the two canon modes even though no deuterocanonical passage is in
-it. P2 must not assume the 66-book result is a subset of the both-canon result.
+The canon toggle changes what protestant readers see. Enabling the Deuterocanon
+displaces between 5 and 15 of the 25 protestant passages, every model, both
+configurations. It is not a filter over a fixed list. A reader who turns the
+setting on loses passages they would otherwise have been shown. Whether to say
+so in the interface is a P5 product decision and it is yours.
 
-Every MUST list currently holds 8 entries, the top of the 5 to 8 range. That is
-the draft being generous so you have material to cut from. Cutting to five is
-expected and is not a loss.
+Six questions retrieve badly for every model: g04 on grief worst at 0.125
+throughout, then g08, g11, g12, g14 and g16. P2-prep predicted g04 and g08 for
+a reason that still stands, that Nave's indexes grief and fear by narrative
+instance, so their gold lists are full of narrative that no abstract question
+retrieves. On those questions the gold lists are as much on trial as the
+retrieval.
 
-The review file gives no deuterocanonical candidates to choose from, because
-none ranked. The six best for each of g19 and g20 are listed above in this file
-so you have them in front of you if you want to add any.
+Index size is now a real constraint on the installer. The base index is 76 MB;
+the recommended model adds 206 MB of vectors, bge-small would add 102 MB, qwen3
+275 MB. That is before the chat model, which the user downloads separately.
+
+Some Nave's subtopic headings are long prose rather than headings, the longest
+1,243 tokens. They are embedded truncated. This comes from P1 deriving subtopic
+labels from entry text; it affects a handful of rows and was not worth
+reopening P1 for.
 
 ## Next session
 
-P2 is BLOCKED until Jared writes APPROVED under every MUST list in
-docs/EVAL-GOLD-REVIEW.md.
+P3 Model evaluation, per plan section 13.
 
-P2's first step copies the approved lists into questions.json and sets status
-approved.
+Scope: run 2B, 4B and 8B-class chat candidates under llama.cpp, all Apache-2.0
+or MIT; run the full pipeline including the citation verifier; record metrics in
+docs/EVAL.md; select per PLAN 6.4; measure the hardware numbers per 6.5.
 
-Only then does P2's own work begin: shortlist two or three embedding models
-under permissive licences, build verse, pericope and topic embeddings, settle
-the vector store, wire hybrid fusion over FTS5 and vectors with reciprocal rank
-fusion, add TSK expansion, add a reranker, and report recall@25 by
-configuration against the approved MUST lists.
+P3 also owes three things this session created:
 
-P2 owns one VERIFY item from plan section 16: whether sqlite-vec is mature
-enough and builds on Windows, with a flat binary vector file read from Rust as
-the fallback. The embedding and reranker candidates and their licences are
-shared with P3.
+The summarize-all measurement that PLAN 5.6 now requires. Configuration F
+returns 241 to 547 passages per question, median 368, covering 636 to 974
+verses, 16,722 to 27,873 tokens of verse text, median 23,003. P3 must measure
+latency and quality of batching that and merging it, on the largest eval sets,
+before P4 builds the button.
 
-P2 also owes two reports that this session's findings ask for: the paragraph
-length distribution across pericopes, since pericopes are WEB paragraphs and no
-headings are being added, and the recall difference between the two canon modes
-on g19 and g20.
+A verdict on the weak questions. Either the gold lists for g04, g08, g11, g12,
+g14 and g16 are wrong, or retrieval genuinely fails on emotional-support
+questions. P3 can tell the two apart by reading what a chat model does with what
+was retrieved.
 
-Read PLAN.md, DECISIONS.md and this file before starting. Do not begin P3.
+Confirmation or reversal of P2's three recommendations, which are logged in
+DECISIONS.md as "recommended, confirmed in P3": nomic-embed-text-v1.5, no
+reranker, configuration F.
+
+VERIFY items from plan section 16 owned by P3: the chat model candidates and
+their licences, shared with P2 and now half-answered for the embedding side
+only. The llama-server binary name, flags and OpenAI-compatible endpoint are
+listed under P4 but are already exercised here: the embedding and rerank
+endpoints work as used, and pipeline/embed.py records the exact invocation.
+
+Read PLAN.md, DECISIONS.md and this file before starting. Do not begin P4.

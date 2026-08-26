@@ -86,7 +86,7 @@ def run_question(ret, q, cfg_name, qvec, reranker=None, top_n=25, pool=100):
         docs = []
         for r in head:
             texts = [t for _, t in ret.text_of(r['ids'])]
-            docs.append('%s %s' % (r['ref'], ' '.join(texts))[:4000])
+            docs.append(('%s %s' % (r['ref'], ' '.join(texts)))[:2000])
         scores = reranker.rank(q['question'], docs)
         for r, s in zip(head, scores):
             r['score'] = s
@@ -173,6 +173,20 @@ def main():
             if rr_ctx is not None:
                 peak_ram['rerank'] = peak_working_set_mb(rr_ctx.proc.pid)
                 rr_ctx.__exit__(None, None, None)
+
+    # Token count of the full retrieved set under F, using an embedding
+    # model's own tokenizer as a proxy. This sizes the "summarize all N
+    # passages" mode that PLAN 5.6 now describes, so P3 knows what it is
+    # asking a chat model to read.
+    if fullsets:
+        ret0 = Retriever(model_id=models[0])
+        gguf0, ctx0 = MODEL_GGUF[models[0]]
+        with Embedder(gguf0, n_ctx=ctx0) as emb:
+            for qid, fs in fullsets.items():
+                ids = [i for _, vids in fs['ranges'] for i in vids]
+                text = ' '.join(t for _, t in ret0.text_of(ids))
+                fs['tokens'] = emb.token_counts([text])[0] if text else 0
+                del fs['ranges']
 
     out = {'results': results, 'fullsets': fullsets, 'timings': timings,
            'peak_ram_mb': peak_ram, 'pool': args.pool}

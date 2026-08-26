@@ -212,8 +212,10 @@ def test_deuterocanon_present_and_flagged(db):
 
 def test_meta_matches_the_data(db):
     meta = dict(db.execute('SELECT key, value FROM meta').fetchall())
-    assert meta['schema_version'] == '1'
-    assert meta['index_version'] == '0.1.0'
+    # P1 built 0.1.0 with schema 1; P2 added embeddings, taking it to 0.2.0
+    # and schema 2. The content assertions above are unchanged by that.
+    assert meta['schema_version'] in ('1', '2')
+    assert meta['index_version'] in ('0.1.0', '0.2.0')
     assert int(meta['omitted_verse_markers']) == EXPECTED['omitted_verse_markers']
     assert len(meta['build_checksum']) == 64
     for k in ('source_sha256_web', 'source_sha256_tsk', 'source_sha256_nave'):

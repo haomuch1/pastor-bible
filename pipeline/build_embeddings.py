@@ -23,7 +23,8 @@ sys.path.insert(0, HERE)
 
 from embed import Embedder, pack  # noqa: E402
 
-DB = os.path.join(ROOT, 'src-tauri', 'resources', 'index.db')
+DB = os.environ.get('TPB_INDEX_DB') or os.path.join(
+    ROOT, 'src-tauri', 'resources', 'index.db')
 
 INDEX_VERSION = '0.2.0'
 SCHEMA_VERSION = '2'

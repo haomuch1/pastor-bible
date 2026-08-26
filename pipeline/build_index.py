@@ -354,8 +354,9 @@ def build(out_path, build_date):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--out', default=os.path.join(ROOT, 'src-tauri',
-                                                  'resources', 'index.db'))
+    ap.add_argument('--out', default=os.environ.get('TPB_INDEX_DB')
+                    or os.path.join(ROOT, 'src-tauri', 'resources',
+                                    'index.db'))
     ap.add_argument('--date', default='1970-01-01',
                     help='build date recorded in meta; fixed by default so '
                          'that repeated builds are byte-identical')

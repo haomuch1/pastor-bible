@@ -328,6 +328,256 @@ Keyword index: FTS5 over verse text, 38029 rows, equal to the verse count.
 Determinism: the pipeline was run twice into separate files and the outputs
 compared byte for byte. They were identical.
 
+## Retrieval results 0.2.0 (P2)
+
+Measured 2026-08-26 against index.db 0.2.0, on the 20 approved graded
+questions. Every figure was read back out of the built database by the harness;
+none is carried over from a build log.
+
+Read the A, B and C rows first. They are the only ones that answer an open
+question. Everything below them shares sources with the gold lists and is
+reported so the shape of the pipeline is visible, not as evidence.
+
+### Recall@25 against MUST, by configuration and embedding model
+
+    cfg    what it is                             bge-small-en-v1.5       nomic-embed-text-v1.5   qwen3-embedding-0.6b  
+    A      vector only, verses                    0.279                   0.331                   0.442                 
+    B      vector only, pericopes                 0.331                   0.387                   0.377                 
+    C      vector only, verses + pericopes        0.346                   0.428                   0.462                 
+  ~ D      FTS only                               0.559                   0.559                   0.559                 
+  ~ E      C + D fused (hybrid, no expansion)     0.548                   0.604                   0.566                 
+  ~ F      E + topic expansion + TSK expansion    0.588                   0.629                   0.571                 
+  ~ G      F + reranker                           0.531                   0.529                   0.534                 
+
+  Rows marked ~ use the topic, cross-reference or keyword paths that
+  the gold lists were themselves drawn from. They are reported for
+  completeness and are near-circular; A, B and C are the evidence.
+
+### Where the curve bends: recall@10, @25, @50
+
+    model                  cfg       @10      @25      @50
+    bge-small-en-v1.5      C       0.216    0.346    0.415
+    bge-small-en-v1.5      G       0.326    0.531    0.699
+    nomic-embed-text-v1.5  C       0.247    0.428    0.560
+    nomic-embed-text-v1.5  G       0.295    0.529    0.718
+    qwen3-embedding-0.6b   C       0.294    0.462    0.576
+    qwen3-embedding-0.6b   G       0.291    0.534    0.708
+
+### Per-question recall@25, configuration C and G
+
+    q     bge           nomic         qwen3           G
+    g01   0.500         0.500         0.750           0.750
+    g02   0.125         0.375         0.250           0.500
+    g03   0.250         0.500         0.625           0.500
+    g04   0.125         0.125         0.125           0.125
+    g05   0.500         0.375         0.625           1.000
+    g06   0.625         0.625         0.625           0.625
+    g07   0.500         0.250         0.625           0.625
+    g08   0.250         0.125         0.375           0.125
+    g09   0.250         1.000         0.875           1.000
+    g10   0.375         0.375         0.375           0.625
+    g11   0.125         0.125         0.250           0.250
+    g12   0.000         0.000         0.250           0.375
+    g13   0.875         1.000         1.000           0.750
+    g14   0.000         0.250         0.250           0.125
+    g15   0.625         0.500         0.500           0.625
+    g16   0.000         0.375         0.000           0.250
+    g17   0.375         0.500         0.500           0.625
+    g18   0.625         0.625         0.375           0.750
+    g19   0.214         0.286         0.286           0.357
+    g20   0.571         0.643         0.571           0.643
+
+### Full retrieved set under configuration F
+
+                      min   median      max
+    passages          241      368      547
+    verses            636      828      974
+    tokens          16722    23003    27873
+
+### Deuterocanon, g19 and g20 under both-canon mode
+
+    bge-small-en-v1.5      A g19  in top 25: 3 of 6   Tob 12:8-9@1, Tob 4:7-11@6, Bar 3:2@11
+    bge-small-en-v1.5      A g20  in top 25: 2 of 6   Sir 19:20-22@11, Wis 6:20@20
+    bge-small-en-v1.5      B g19  in top 25: 2 of 6   Tob 4:7-11@10, Tob 12:8-9@12
+    bge-small-en-v1.5      B g20  in top 25: 4 of 6   Wis 6:20@4, Bar 3:12@9, Sir 1:4@10, Sir 19:20-22@22
+    bge-small-en-v1.5      C g19  in top 25: 3 of 6   Tob 12:8-9@4, Tob 4:7-11@5, Bar 3:2@13
+    bge-small-en-v1.5      C g20  in top 25: 3 of 6   Wis 6:20@5, Sir 19:20-22@10, Bar 3:12@22
+    bge-small-en-v1.5      D g19  in top 25: 3 of 6   Sir 31:4@6, 2Es 2:20@14, Tob 12:8-9@25
+    bge-small-en-v1.5      D g20  in top 25: 2 of 6   Sir 1:4@4, Sir 19:20-22@16
+    bge-small-en-v1.5      E g19  in top 25: 5 of 6   Tob 12:8-9@3, Tob 4:7-11@5, Bar 3:2@10, Sir 31:4@17, 2Es 2:20@23
+    bge-small-en-v1.5      E g20  in top 25: 4 of 6   Wis 6:20@7, Sir 1:4@8, Sir 19:20-22@9, Bar 3:12@25
+    bge-small-en-v1.5      F g19  in top 25: 3 of 6   Tob 12:8-9@8, Tob 4:7-11@10, Bar 3:2@23
+    bge-small-en-v1.5      F g20  in top 25: 3 of 6   Wis 6:20@11, Sir 1:4@12, Sir 19:20-22@14
+    bge-small-en-v1.5      G g19  in top 25: 4 of 6   Tob 4:7-11@1, 2Es 2:20@4, Tob 12:8-9@7, Sir 31:4@24
+    bge-small-en-v1.5      G g20  in top 25: 3 of 6   Sir 1:4@1, Wis 6:20@3, Bar 3:12@6
+    nomic-embed-text-v1.5  A g19  in top 25: 3 of 6   Tob 4:7-11@1, Tob 12:8-9@11, Tob 14:10-11@23
+    nomic-embed-text-v1.5  A g20  in top 25: 2 of 6   Sir 19:20-22@16, Sir 1:4@17
+    nomic-embed-text-v1.5  B g19  in top 25: 2 of 6   Tob 4:7-11@2, Tob 12:8-9@4
+    nomic-embed-text-v1.5  B g20  in top 25: 4 of 6   Sir 1:4@3, Sir 19:20-22@6, Wis 6:20@12, Bar 3:12@15
+    nomic-embed-text-v1.5  C g19  in top 25: 3 of 6   Tob 4:7-11@2, Tob 12:8-9@4, Bar 3:2@25
+    nomic-embed-text-v1.5  C g20  in top 25: 3 of 6   Sir 1:4@4, Sir 19:20-22@5, Wis 6:20@22
+    nomic-embed-text-v1.5  D g19  in top 25: 3 of 6   Sir 31:4@6, 2Es 2:20@14, Tob 12:8-9@25
+    nomic-embed-text-v1.5  D g20  in top 25: 2 of 6   Sir 1:4@4, Sir 19:20-22@16
+    nomic-embed-text-v1.5  E g19  in top 25: 5 of 6   Tob 4:7-11@2, Tob 12:8-9@4, Bar 3:2@17, Tob 14:10-11@18, Sir 31:4@23
+    nomic-embed-text-v1.5  E g20  in top 25: 3 of 6   Sir 1:4@1, Sir 19:20-22@4, Wis 6:20@23
+    nomic-embed-text-v1.5  F g19  in top 25: 5 of 6   Tob 4:7-11@3, Tob 12:8-9@5, Bar 3:2@19, Tob 14:10-11@21, Sir 31:4@25
+    nomic-embed-text-v1.5  F g20  in top 25: 2 of 6   Sir 1:4@3, Sir 19:20-22@7
+    nomic-embed-text-v1.5  G g19  in top 25: 3 of 6   Tob 4:7-11@2, Tob 14:10-11@4, Tob 12:8-9@7
+    nomic-embed-text-v1.5  G g20  in top 25: 4 of 6   Sir 1:4@1, Wis 6:20@3, Bar 3:12@6, Sir 19:20-22@25
+    qwen3-embedding-0.6b   A g19  in top 25: 2 of 6   Tob 4:7-11@3, Bar 3:2@7
+    qwen3-embedding-0.6b   A g20  in top 25: 2 of 6   Sir 19:20-22@3, Sir 1:4@18
+    qwen3-embedding-0.6b   B g19  in top 25: 2 of 6   Tob 12:8-9@9, Tob 4:7-11@13
+    qwen3-embedding-0.6b   B g20  in top 25: 2 of 6   Sir 19:20-22@2, Sir 1:4@8
+    qwen3-embedding-0.6b   C g19  in top 25: 3 of 6   Tob 4:7-11@4, Tob 12:8-9@12, Bar 3:2@19
+    qwen3-embedding-0.6b   C g20  in top 25: 2 of 6   Sir 19:20-22@2, Sir 1:4@8
+    qwen3-embedding-0.6b   D g19  in top 25: 3 of 6   Sir 31:4@6, 2Es 2:20@14, Tob 12:8-9@25
+    qwen3-embedding-0.6b   D g20  in top 25: 2 of 6   Sir 1:4@4, Sir 19:20-22@16
+    qwen3-embedding-0.6b   E g19  in top 25: 4 of 6   Tob 4:7-11@10, Tob 12:8-9@16, Bar 3:2@21, 2Es 2:20@22
+    qwen3-embedding-0.6b   E g20  in top 25: 2 of 6   Sir 1:4@2, Sir 19:20-22@3
+    qwen3-embedding-0.6b   F g19  in top 25: 2 of 6   Tob 4:7-11@17, Tob 12:8-9@25
+    qwen3-embedding-0.6b   F g20  in top 25: 2 of 6   Sir 1:4@6, Sir 19:20-22@8
+    qwen3-embedding-0.6b   G g19  in top 25: 4 of 6   Tob 4:7-11@2, Tob 14:10-11@3, Tob 12:8-9@6, 2Es 2:20@24
+    qwen3-embedding-0.6b   G g20  in top 25: 3 of 6   Sir 1:4@2, Wis 6:20@3, Bar 3:12@6
+
+### Latency, mean seconds per query
+
+    bge-small-en-v1.5|A            0.012
+    bge-small-en-v1.5|B            0.008
+    bge-small-en-v1.5|C            0.006
+    bge-small-en-v1.5|D            0.003
+    bge-small-en-v1.5|E            0.010
+    bge-small-en-v1.5|F            0.017
+    bge-small-en-v1.5|G            11.200
+    nomic-embed-text-v1.5|A        0.015
+    nomic-embed-text-v1.5|B        0.009
+    nomic-embed-text-v1.5|C        0.008
+    nomic-embed-text-v1.5|D        0.003
+    nomic-embed-text-v1.5|E        0.011
+    nomic-embed-text-v1.5|F        0.022
+    nomic-embed-text-v1.5|G        10.283
+    qwen3-embedding-0.6b|A         0.018
+    qwen3-embedding-0.6b|B         0.012
+    qwen3-embedding-0.6b|C         0.010
+    qwen3-embedding-0.6b|D         0.003
+    qwen3-embedding-0.6b|E         0.013
+    qwen3-embedding-0.6b|F         0.024
+    qwen3-embedding-0.6b|G         11.095
+
+### Peak resident memory, MB
+
+    embed:bge-small-en-v1.5        74.9
+    embed:nomic-embed-text-v1.5    251.4
+    embed:qwen3-embedding-0.6b     945.9
+    rerank                         2009.3
+
+### What the numbers say
+
+Vector search is the weakest single path against these gold lists, and that is
+exactly what should have been expected: the lists were drafted from Nave's, the
+cross-references and the keyword index, so a keyword-only run scores 0.559
+without the embeddings contributing anything at all. The vector paths had no
+hand in the drafting. That they reach 0.35 to 0.46 unaided, against lists built
+by other means, is the real result.
+
+Pericope vectors beat verse vectors for the two smaller models and lose for the
+largest. Fusing both beats either alone in every case, which is the one clean,
+model-independent finding here.
+
+The differences between the three embedding models are not statistically
+separable on 20 questions. A paired bootstrap over questions, 20,000 resamples,
+puts qwen3 minus nomic on configuration C at +0.034 with a 95 per cent interval
+of [-0.045, +0.112], and nomic minus bge-small at +0.082 with [-0.005, +0.182].
+Both intervals include zero. The point estimates order the models consistently,
+and nomic leads bge-small on every configuration measured, but this eval set
+cannot prove a difference of that size.
+
+The reranker makes things worse where it matters. It lowers recall@25 for all
+three models, from 0.588 to 0.531 for bge-small and from 0.629 to 0.529 for
+nomic, while raising recall@50. It is reordering the head of the list badly,
+pushing relevant passages out of the top 25 and into the 25-to-50 band. It also
+costs about 10 seconds per query and 2 GB of resident memory, against 3 to 24
+milliseconds for retrieval itself.
+
+Retrieval latency confirms the vector-store decision. Brute-force cosine over
+38,029 verse vectors, about 10,000 pericope vectors and 18,837 topic vectors
+runs in 8 to 24 milliseconds per query in Python. sqlite-vec would have bought
+nothing and cost a bundled native extension.
+
+### The Deuterocanon, and what embeddings actually add
+
+This is the clearest result of the session, and it reverses what P2-prep found.
+
+In P2-prep, drafting candidates from Nave's, TSK and keyword search, not one
+deuterocanonical passage reached a gold list for g19 or g20. The best of them,
+Tobit 12:8-9, ranked 37th of 540. The reason was structural: neither study
+corpus indexes those books, so those passages could never gather the
+corroboration the drafting method required.
+
+With embeddings, vector search finds them. Under configuration A, verse vectors
+alone, bge-small returns Tobit 12:8-9 at rank 1 for g19. Across the models and
+configurations, 2 to 5 of the 6 deuterocanonical MUST passages for each of g19
+and g20 land in the top 25. The passages were always in the text. Nothing but a
+semantic index could reach them.
+
+### Canon mode is not a filter over a fixed ranking
+
+Confirmed, and larger than P2-prep suspected. Turning the Deuterocanon on does
+not add passages to a stable protestant list. It displaces them. Of the 25
+protestant passages in the top 25 under canon 66, between 5 and 15 are gone
+once the Deuterocanon is enabled, for every model and both configurations
+tested.
+
+    model                  cfg  q    protestant in top 25, 66 -> both   dropped
+    bge-small-en-v1.5      C    g19  25 -> 14                           12
+    bge-small-en-v1.5      F    g19  25 -> 19                           10
+    bge-small-en-v1.5      C    g20  25 -> 20                            5
+    bge-small-en-v1.5      F    g20  25 -> 22                            5
+    nomic-embed-text-v1.5  C    g19  25 -> 11                           15
+    nomic-embed-text-v1.5  F    g19  25 -> 15                           12
+    nomic-embed-text-v1.5  C    g20  25 -> 19                            7
+    nomic-embed-text-v1.5  F    g20  25 -> 21                            9
+    qwen3-embedding-0.6b   C    g19  25 -> 18                            7
+    qwen3-embedding-0.6b   F    g19  25 -> 21                            5
+    qwen3-embedding-0.6b   C    g20  25 -> 16                           11
+    qwen3-embedding-0.6b   F    g20  25 -> 20                            8
+
+No code may assume the 66-book result is a subset of the both-canon result. A
+reader who turns the setting on loses protestant passages they would otherwise
+have seen. Whether that is acceptable is a product question for P5, not a bug.
+
+### Weak questions
+
+Per-question recall shows the same questions failing for every model. g04 on
+grief sits at 0.125 throughout. g08 on fear, g11 on why bad things happen to
+good people, g12 on burnout, g14 on prayer and g16 on repentance are all at or
+below 0.375 for at least one model.
+
+P2-prep predicted this, for a reason that still holds: Nave's indexes grief and
+fear largely by narrative instance, so the gold lists for those questions are
+full of narrative passages, and no retrieval method finds narrative examples
+from an abstract emotional question. The gold lists are as much on trial here
+as the retrieval is. Both should be re-examined in P3.
+
+### Index size
+
+Carrying all three models, index.db is 1,001,975,808 bytes. That is a
+measurement rig, not a shippable artifact. Only one model's vectors ship, and
+the choice materially changes the installer:
+
+    base index, no vectors                        76 MB
+    + bge-small-en-v1.5, 384 dim                 +102 MB
+    + nomic-embed-text-v1.5, 768 dim             +206 MB
+    + qwen3-embedding-0.6b, 1024 dim             +275 MB
+
+### Full-set size, for the summarize-all mode
+
+Configuration F returns 241 to 547 passages per question, median 368, covering
+636 to 974 verses, median 828, which is 16,722 to 27,873 tokens of verse text,
+median 23,003. That is the size of the reading PLAN 5.6's "Summarize all N
+passages" button has to digest. It does not fit one context window on a small
+CPU model, which is why 5.6 specifies batching and a merge. P3 measures whether
+that is fast enough to offer.
+
 ## Results
 
 None yet. Populated in P2 (retrieval) and P3 (full pipeline).

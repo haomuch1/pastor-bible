@@ -21,7 +21,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
-DB = os.path.join(ROOT, 'src-tauri', 'resources', 'index.db')
+DB = os.environ.get('TPB_INDEX_DB') or os.path.join(
+    ROOT, 'src-tauri', 'resources', 'index.db')
 
 RRF_K = 60          # reciprocal rank fusion constant, the usual 60
 TOPIC_CAP = 60      # verses one matched topic may contribute
