@@ -8,5 +8,6 @@
 *.ico binary
 *.icns binary
 *.svg text eol=lf
+*.zip binary
 *.gguf binary
 *.db binary

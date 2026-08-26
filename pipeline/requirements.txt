@@ -1,0 +1,5 @@
+# Build-time only. Never shipped to a user; the app contains no Python.
+# Pinned so that an index rebuilt later is rebuilt with the same tools.
+pysword==0.2.8   # MIT. Used only for its KJV versification table, which the
+                 # Treasury of Scripture Knowledge module is indexed against.
+pytest==9.1.1    # MIT. Runs tests/ against the produced index.db.

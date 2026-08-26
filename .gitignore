@@ -31,3 +31,9 @@ dist-ssr
 .idea
 *.suo
 *.sw?
+
+# Python pipeline (build-time only, never shipped)
+pipeline/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

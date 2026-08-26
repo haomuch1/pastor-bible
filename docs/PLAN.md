@@ -83,6 +83,15 @@ Nothing else listens or connects. The frontend talks only to the Rust backend; t
     topic_embeddings  vectors over Nave's headings
     meta              index_version, schema_version, build_checksum
 
+*P1 note (2026-08-26): index.db as built deviates from the listing above in
+three ways, each recorded in DECISIONS.md. `verses` carries an extra
+`verse_end` column so that verse bridges are stored faithfully. Two quarantine
+tables, `tsk_unresolved` and `nave_unresolved`, hold references that could not
+be resolved to a verse row, so that the loss is inspectable rather than silent.
+`books` carries `usfm_code` and renames `order` to `book_order`, `order` being
+a reserved word in SQL. `embeddings` and `topic_embeddings` are not created
+until P2.*
+
 **user.db** (app data directory, survives upgrades and reinstalls)
 
     history           id, asked_at, question, canon_mode, answer_md,

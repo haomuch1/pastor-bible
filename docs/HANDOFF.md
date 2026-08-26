@@ -1,218 +1,229 @@
 # HANDOFF
 
-Session: P0 Scaffold
+Session: P1 Ingestion
 Date: 2026-08-26
-Status: P0 COMPLETE
+Status: P1 COMPLETE
 
 ## State
 
-The repository exists at D:\Haomuch-Programs\The-Pastor-Bible, git initialized on
-branch main, pushed to https://github.com/haomuch1/pastor-bible, private.
+The repository is at D:\Haomuch-Programs\The-Pastor-Bible, branch main, pushed
+to https://github.com/haomuch1/pastor-bible, still private.
 
-51 files are tracked. The count is from git ls-files, not from a script's own
-report. Untracked build output (node_modules, src-tauri/target, dist,
-src-tauri/gen/schemas) is present on disk and correctly ignored.
+Carried over from P0 and now closed:
 
-At the root: README.md, LICENSE, NOTICE.md, CODE_OF_CONDUCT.md, .gitignore,
-.gitattributes, and the Tauri project files (index.html, package.json,
-package-lock.json, tsconfig.json, tsconfig.node.json, vite.config.ts).
+  The Code of Conduct's "[INSERT CONTACT METHOD]" placeholder is filled in.
+  README 9.4 and PLAN 9.4 both now say the signing application is still to
+  come, so no committed text claims something untrue.
+  data/crisis_terms.txt exists, holding comments only and saying so in its own
+  text.
 
-docs/ holds PLAN.md, DECISIONS.md, EVAL.md, and this file.
+Sources vendored, unmodified, as the archives exactly as downloaded:
 
-PLAN.md is the approved plan, moved from TPB-Plan.md, unmodified. TPB-Plan.md no
-longer exists at the root; it was moved, not copied.
+  data/sources/web/eng-web_usfm.zip     3,244,005 bytes
+  data/sources/tsk/TSK.zip              2,643,739 bytes
+  data/sources/naves/Nave.zip           1,300,879 bytes
 
-src/ holds the frontend: main.tsx and App.tsx. App.tsx renders one h1 reading
-"The Pastor Bible" and nothing else. vite-env.d.ts is the template's type
-reference.
+That is 7.2 MB in total. No single file is anywhere near the 50 MB threshold,
+so no decision about Git LFS is needed.
 
-src-tauri/ holds the Rust backend: Cargo.toml, Cargo.lock, build.rs,
-src/main.rs, src/lib.rs, tauri.conf.json, capabilities/default.json, and the
-stock icon set. lib.rs builds the Tauri app and runs it. There is no command
-handler and no plugin.
+The pipeline is in pipeline/: books.py holds the canon tables and the reference
+abbreviation maps; usfm.py parses the WEB; sword.py decodes the two CrossWire
+binary formats; refs.py resolves references onto real verse rows;
+schema.sql defines the database; build_index.py orchestrates; report_index.py
+reads a finished database back and prints what is in it.
 
-Empty directories carrying .gitkeep, to be populated in later phases:
-data/sources, data/eval, pipeline, src-tauri/binaries, src-tauri/resources,
-tests, .github/workflows.
+pipeline/requirements.txt pins pysword 0.2.8 and pytest 9.1.1. The virtual
+environment is at pipeline/.venv and is gitignored.
 
-data/crisis_terms.txt was deliberately not created; see Flags.
+tests/test_index.py holds 28 tests that open index.db and assert the P1
+invariants.
 
-DECISIONS.md holds the 22 entries from plan section 1, seeded verbatim, followed
-by the decisions made in this session.
+index.db is written to src-tauri/resources/index.db. It is 76,197,888 bytes and
+is gitignored, as planned: it is a build product, published later as a release
+asset, never committed.
 
 ## Verified
 
-Prerequisites, all present on this machine:
+Prerequisites: Python 3.13.14, pip 26.1.2, SQLite 3.50.4 through Python's
+sqlite3 module. FTS5 was confirmed twice: it appears in PRAGMA compile_options
+as ENABLE_FTS5, and a scratch FTS5 table was created, populated and matched
+against successfully. There is no sqlite3 command line binary on this machine
+and none is needed.
 
-    rustc 1.98.0, cargo 1.98.0, rustup 1.29.0
-    active toolchain stable-x86_64-pc-windows-msvc, host x86_64-pc-windows-msvc
-    cargo resolves on PATH natively, not only via a prepended path
-    node v24.18.0, npm 11.16.0, git 2.55.0.windows.2
-    gh 2.96.0, authenticated as haomuch1
-    Visual Studio Build Tools 2022 17.14.35 with VC.Tools.x86.x64
-    WebView2 runtime 151.0.4129.107, machine-wide
+The World English Bible Classic was verified to be the edition the plan names,
+by reading the downloaded text rather than trusting the catalogue. It contains
+"Yahweh" 6,902 times, twelve of them in Genesis 2. US spellings dominate
+decisively: savior 52 against saviour 0, labor 200 against labour 0, neighbor
+207 against neighbour 0, color 17 against colour 0, favor 163 against favour 0,
+honor 342 against honour 1. The archive's own copyright file describes it as
+"the Classic World English Bible with the full ecumenical book set" and states
+that the text is in the public domain.
 
-The Rust toolchain links, not merely resolves. A hello-world crate was created in
-a temp directory, compiled, linked and run, printing "Hello, world!", then the
-directory was deleted and its deletion confirmed. This is the check that could
-not be run in the previous session, when Rust was absent.
+The deuterocanonical set found in the files is exactly the set plan 4.2
+expects, with no additions and nothing missing. Fifteen books: Tobit, Judith,
+Greek Esther, Wisdom, Sirach, Baruch, 1 and 2 Maccabees, 1 and 2 Esdras, the
+Prayer of Manasseh, Psalm 151, 3 and 4 Maccabees, and Greek Daniel. Plan 4.2
+expects the Letter of Jeremiah to appear as Baruch chapter 6; Baruch was
+checked and has six chapters, the sixth headed "The Letter of Jeremy
+(Jeremiah)". Greek Daniel carries the Song of the Three, Susanna, and Bel and
+the Dragon, as 4.2 expects.
 
-PLAN.md is byte-identical to the approved plan, verified three times by SHA-256:
-before the move, after the move, and by downloading the file back from GitHub
-after the push and hashing what came down. All three read
-f07a7354683ad38a4be0219651a5b3fca23ed6ad534dbc1fed60fcff7ad57239, 24924 bytes.
+Both study corpora declare their own licence inside the files themselves:
+mods.d/tsk.conf and mods.d/nave.conf each say DistributionLicense=Public
+Domain. That is recorded in NOTICE.md with the URL, retrieval date and
+checksum of each archive.
 
-LICENSE is the canonical Apache-2.0 text fetched from apache.org. It was diffed
-against the upstream file with the copyright substitution reversed; the diff was
-empty, proving the only change is
-"Copyright [yyyy] [name of copyright owner]" to "Copyright 2026 Jared".
+Every count below was read back out of the finished index.db by query, in a
+process separate from the one that built it. These are the reported numbers;
+figures the build itself printed are not.
 
-CODE_OF_CONDUCT.md is byte-identical to the upstream Contributor Covenant 2.1
-markdown, sha256 977d781349351fd7c1f076e4c7dc7de2a05b40e12c773542c3815dd4ce7f37ba.
+  books                    81     66 protestant, 15 deuterocanonical
+  chapters               1402     1189 protestant, 213 deuterocanonical
+  verses                38029     31098 protestant, 6931 deuterocanonical
+    protestant OT       23145
+    protestant NT        7953
+  verse bridges             1     4 Maccabees 8:28-29
+  pericopes             10052     10 from headings, 10042 from paragraphs
+  verses with no pericope   0
+  TSK edges            593670     from 26202 verses, onto 31045 verses
+  TSK unresolved         1380     quarantined, not dropped
+  Nave topics           18837     5322 top level, 13515 subtopics
+  Nave topic-verse rows 399374     over 30982 distinct verses
+  Nave unresolved          31     quarantined, not dropped
+  FTS5 rows             38029     equal to the verse count
 
-README.md carries the plan's fourteen sections in the order given by plan 9.1.
-The four verbatim blocks, 9.2 disclaimer, 9.3 crisis note, 9.4 Windows warning
-and 9.5 stance, were extracted programmatically from PLAN.md rather than retyped,
-and each was then confirmed present in README.md by exact whole-line match.
+The 31,102 check resolves cleanly and nothing was adjusted to make it do so.
+31,102 is the King James verse total. The WEB's own verse markers number
+31,103, matching eBible's published figure. Of those markers, five carry no
+text at all: Luke 17:36, Acts 8:37, Acts 15:34, Acts 24:7 and Romans 16:25,
+each one a verse the WEB omits, each with a footnote in the source explaining
+the omission. That leaves 31,098 verses that actually have text, which is what
+the database holds. Against the King James figure the difference is four, not
+five, because Romans is a special case: the WEB places the doxology at Romans
+14:24-26, three verses the King James numbers 16:25-27, so Romans' own total is
+unchanged. Twenty-nine such empty markers exist across the whole corpus, 24 of
+them in Sirach; the count and the full list are stored in meta.
 
-DECISIONS.md section 1 entries were extracted from PLAN.md by the same method and
-diffed against the plan; the diff was empty across all 22.
+Spot checks were read out of the database and compared against the raw USFM.
+Genesis 1:1, Psalm 23:1, John 3:16, Revelation 22:21 and Tobit 1:1 all match,
+and Tobit 1:1 is correctly flagged canon=deutero.
 
-NOTICE.md records only what exists in the repo now. Versions were read from
-package-lock.json and Cargo.lock, not assumed: tauri 2.11.5, tauri-build 2.6.3,
-@tauri-apps/api 2.11.1, @tauri-apps/cli 2.11.4, React 19.2.8, Vite 7.3.6,
-TypeScript 5.8.3, @vitejs/plugin-react 4.7.0. Checksums for the two vendored
-files were computed from the files as committed.
+Structural integrity, all checked by query against the file: PRAGMA
+integrity_check returns ok; PRAGMA foreign_key_check returns no rows; every
+verse resolves to a book; every verse has a pericope; every verse has
+non-empty text; no verse text contains a leftover backslash or a Strong's
+number; every verse_id equals book_id*1000000 + chapter*1000 + verse; every one
+of the 593,670 TSK edges resolves to real verses at both ends; every Nave
+topic-verse row resolves to a real verse.
 
-tauri.conf.json was verified by parsing the written file, not by trusting the
-write: productName "The Pastor Bible", version 0.0.1, identifier
-io.github.haomuch1.pastorbible, window title "The Pastor Bible", NSIS installMode
-currentUser, bundle targets left at the template default of "all".
+Determinism was verified against the artifact, not asserted. The pipeline was
+run twice into two separate files and the two files compared byte for byte with
+cmp. They are identical, 76,197,888 bytes each, sha256
+128c3446857fa98c1ffb24fd6c3f69496b2d6c678d94f7ab436abcb356dc24db.
 
-Builds:
-
-    npm install    exit 0
-    npm run build  exit 0, tsc clean, vite produced dist/
-    cargo build    exit 0, zero errors and zero warnings, 1m15s
-
-The built artifact was confirmed on disk: src-tauri/target/debug/pastor-bible.exe,
-12,485,632 bytes. Tauri's generated capability schemas were produced in
-src-tauri/gen/schemas.
-
-npm run tauri dev was launched, and after 20 seconds the npm process was still
-alive and the application process was running. Windows reported that process's
-MainWindowTitle as "The Pastor Bible", which proves a real window exists and
-carries the configured title. The dev log contained no line matching error, panic
-or failed. The processes were then terminated and absence of orphans confirmed by
-name for the app, by command line for node running tauri or vite, and by name for
-cargo. All three were gone.
-
-The push was confirmed against the remote rather than the local ref: local HEAD
-and the commit returned by the GitHub API for branch main are both
-df467d76cd244b09f3612ebc6cf246e4ea87d154. The API also confirms private true,
-default branch main, and the intended description.
+The test suite runs and passes: 28 tests, 28 passed.
 
 ## Not verified
 
-The window's appearance. I can read its title from the process table; I cannot
-see it. Confirming that the window opens, is legible, and shows "The Pastor
-Bible" is Jared's step. Run npm run tauri dev and look at it.
+The two SWORD binary formats have no specification this project can cite. The
+layouts in pipeline/sword.py were derived by inspecting the files. They are
+supported by strong evidence rather than by a document: the slot arithmetic for
+the Treasury of Scripture Knowledge predicts its index size exactly, 1 + 1 + 39
+books + 929 chapters + 23,145 verses giving the 24,115 slots the file actually
+contains, and the same arithmetic holds for the New Testament; every block
+decompresses to precisely the length its own header declares; and for Nave's,
+all 5,322 keys land on an entry whose embedded name matches the key, with five
+exceptions noted below. The readers assert these properties and raise rather
+than return doubtful data. Even so, this is inference from the files, not
+conformance to a published spec.
 
-No installer was built. NSIS installMode currentUser is configured but has never
-been executed. Whether it truly installs per-user with no UAC prompt is a P6
-question, as is the choice between NSIS and MSI, WebView2 bootstrapping on a
-clean machine, and in-place upgrade behaviour. The config value is a stated
-intention, not a tested fact.
+Five of Nave's 5,322 keys point at an entry whose internal name differs from
+the key. They were not investigated individually. They are a rounding error in
+a corpus of 18,837 topics, but they are unexplained.
 
-The release profile was never built. Only cargo's dev profile ran. Release builds
-can surface problems debug builds do not.
+The quality of the cross-references themselves is unassessed. This session
+verified that every edge resolves to a real verse; it did not judge whether the
+Treasury of Scripture Knowledge's connections are apt, and that is not a P1
+question. Nineteen reference strings in TSK are malformed enough that no
+reading of them was attempted; they sit in tsk_unresolved with the reason
+"unparseable reference".
 
-Linux was not built or tested. There is no Linux machine in this session.
+Nave's chapter-level references are expanded to every verse in the chapter,
+which is what such a reference means but does inflate the topic-verse row
+count. Whether that expansion helps or hurts retrieval is a P2 question,
+answerable against the gold lists and not before.
 
-bundle targets is "all", inherited from the template and left alone as
-instructed. It has not been exercised and may need narrowing in P6.
-
-The transitive dependency licence position is not audited. 429 Rust crates and
-132 npm packages are locked. None is vendored, and the lockfiles are committed,
-but the full audit and the bundling of third-party licence texts into the
-installer belong to P6.
-
-npm reported that some install lifecycle scripts were not run, esbuild's among
-them, under its newer allow-scripts gating. The frontend nonetheless builds and
-runs, so nothing was approved and no project or machine configuration was
-changed. If a future session sees esbuild misbehave, this is the first thing to
-look at.
+No retrieval has been attempted. There are no embeddings, no vector store, and
+no evidence yet about whether this index answers questions well. P1 built the
+index; P2 measures it.
 
 ## Flags for Jared
 
-Appearance is entirely placeholder. The page is a bare h1 in the browser's
-default type, in an 800 by 600 window. There is no stylesheet at all; App.css was
-deleted along with the template's demo content. Nothing here is a design
-proposal, and no aesthetic choice was made on your behalf. It waits on you.
+The Code of Conduct sentence. The replacement text you gave, dropped in
+verbatim, produced "reported to the community leaders responsible for
+enforcement at by opening an issue on the pastor-bible GitHub repository". The
+stray "at" belonged to the template's own sentence. I removed that one word so
+the sentence reads correctly, changed nothing else, and logged it. Say the word
+if you want the literal version back.
 
-The application icon is still the stock Tauri logo, in every size, including the
-Windows .ico that an installer would use. That is an appearance decision and
-therefore yours. It should be replaced before anything is packaged in P6.
+The plan is no longer byte-identical to the document you approved. Rewording
+9.4 in both README and PLAN was your instruction and it was the right call, but
+it means docs/PLAN.md now hashes to
+c2431f31134cd192d254ec137801d3d5c650e52aacf059fadc375f75b22cde48 rather than
+the f07a7354 that P0 verified three times over. The plan is a living document
+from here. That is worth knowing before some later session treats its old hash
+as a fixed point.
 
-Per-user install. The NSIS installMode is currentUser, so installing needs no
-administrator and writes under the user's AppData. The trade-off, recorded in
-DECISIONS.md, is that installing once does not serve every account on a shared
-machine. Confirmed or reversed in P6.
+Editing the Code of Conduct obliged NOTICE.md to change too. CC BY 4.0 requires
+that modifications be indicated, so the entry now records the file as modified,
+states exactly what changed, and carries both the new checksum and the
+upstream one.
 
-The Code of Conduct still contains the literal text "[INSERT CONTACT METHOD]" on
-line 40. It was shipped unmodified, as instructed, but the document is not usable
-for reporting until a real address is there. This must be filled before the repo
-is made public at v1.0.0.
+The World English Bible trademark condition and what we do to the text. The
+licence says that anyone who changes the actual text must not call the result
+the World English Bible. We do not change the words. We do strip USFM
+formatting markers, and we drop footnotes and cross-references, which are the
+translators' apparatus rather than the text. That is what every Bible
+application does and I am confident it is within the condition, but the
+condition is the one legal obligation attached to our main source, so you
+should know precisely what we do rather than hear that it is fine.
 
-README section 9.4, which the plan requires verbatim, says "We have applied for
-free open-source signing." That is not true yet. The SignPath application is P8.
-The wording is harmless while the repo is private, but it must be either true or
-reworded before the repo goes public. Flagging rather than editing, because the
-text is a locked verbatim block and changing it is your call.
+Cross-references reach into the deuterocanon. TSK and Nave's were compiled
+against a protestant canon, so their references land on protestant verses; but
+the canon filter in plan 5.1 still has to gate them at query time. Nothing to
+decide now. It is a P2 correctness point and it is written here so it is not
+discovered late.
 
-Your commit email. The first push was rejected by GitHub with GH007, because the
-commit carried your private address and your account blocks pushes that would
-publish it. Rather than turning that protection off, the commit was amended to
-use your GitHub noreply address, 293447797+haomuch1@users.noreply.github.com. The
-protection stays on and your real address stays out of a repository that becomes
-public at v1.0.0. This was set locally for this repo only; no global git config
-and no GitHub account setting was changed.
+Sirach is missing 24 verses relative to its own numbering, more than the rest
+of the corpus put together. Every one is a verse the WEB omits deliberately,
+with a footnote. This is normal for Sirach, whose textual tradition is
+genuinely uncertain, and nothing is wrong. Flagged because a reader who queries
+Sirach and finds gaps deserves to know they are the translation's, not ours.
 
-Contributor Covenant version. Your instruction said "current version" and also
-said its licence is CC BY 4.0. Those no longer describe the same document: 3.0 is
-current and is CC BY-SA 4.0, while CC BY 4.0 belongs to 2.1. You chose 2.1 when
-asked. NOTICE.md records CC BY 4.0 accordingly.
-
-data/crisis_terms.txt was not created, though plan section 12 lists it. An empty
-crisis-term file matches nothing, and plan 5.8 states that under-triggering is
-unacceptable while over-triggering is fine. A file that silently matches nothing
-is worse than a file that is visibly absent. It is created with real content in
-P4, where the matcher is built. Recorded in DECISIONS.md.
-
-The repository is private. Making it public is a deliberate act at v1.0.0, per
-the decision logged this session.
+Nothing about appearance changed this session, so the P0 flags on the
+placeholder interface and the stock Tauri icon all still stand.
 
 ## Next session
 
-P1 Ingestion, per plan section 13.
+P2 Index and retrieval harness, per plan section 13.
 
-Scope: acquire the sources and verify their licences, parse USFM into the verses,
-books and pericopes tables, check the counts, and load TSK and Nave's.
-Deliverable: index.db without embeddings, with counts reported and re-derived
-from the parsed rows.
+P2 IS BLOCKED until you approve the evaluation gold lists. Plan 6.2 is explicit
+that gold lists are judgment, are not auto-generated and are not delegated, and
+plan section 13 says P2 does not start until they are approved. The eval set at
+data/eval/questions.json does not exist yet: roughly 40 questions, each with the
+passages a correct answer should surface. Claude drafts the candidate lists from
+the index now that there is an index to draft them from; you review and approve
+every one. That drafting can happen at the start of the P2 session, but the
+approval has to be yours before any retrieval number means anything.
 
-Its VERIFY items, from plan section 16, all owned by P1:
+P2's own scope, once unblocked: choose an embedding model and a reranker from
+permissively licensed candidates, build verse, pericope and topic embeddings,
+settle the vector store, wire hybrid fusion over FTS5 and vectors, add TSK
+expansion, and report recall@25 by configuration.
 
-  - The WEB Classic USA source URL, its format, and the exact Deuterocanon file
-    set. Plan 4.2 lists the expected books including the Orthodox set, and marks
-    the exact file set as unconfirmed.
-  - The TSK and Nave's dataset sources and their public-domain statements.
-  - Verse totals for the parsed WEB. Plan 4.2 names 31,102 for the 66 books as
-    the figure to check against, and explicitly warns it may differ by
-    versification. Re-derive from the parsed rows. Do not carry the figure over.
+P2 owns one VERIFY item from plan section 16: sqlite-vec's maturity and whether
+it builds on Windows, with a flat binary vector file read from Rust as the
+fallback. Two more, the embedding and reranker model candidates and their
+licences, are shared with P3.
 
-Each source acquired gets a NOTICE.md entry at the time it is vendored: name,
-URL, licence, retrieval date, and checksum. Sources are structured text only.
-No PDFs, per the locked decision.
-
-Read PLAN.md, DECISIONS.md and this file before starting. Do not begin P2.
+Read PLAN.md, DECISIONS.md and this file before starting. Do not begin P3.

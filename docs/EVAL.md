@@ -72,6 +72,54 @@ picks between them from detected RAM, and the user can override in settings.
 If no size passes, nothing is selected and the gates are not relaxed to
 manufacture a pass. That outcome is reported to Jared as a finding.
 
+## Index build 0.1.0
+
+Built 2026-08-26 in P1. Every number below was read back out of the finished
+index.db by query, in a process separate from the build.
+
+Source text: World English Bible Classic, eBible.org eng-web, USFM.
+
+    books                       81      66 protestant, 15 deuterocanonical
+    chapters                  1402      1189 protestant, 213 deuterocanonical
+    verses                   38029      31098 protestant, 6931 deuterocanonical
+      protestant OT          23145
+      protestant NT           7953
+    verse bridges                1      4 Maccabees 8:28-29
+    omitted verse markers       29      verses the WEB omits, listed in meta
+    pericopes                10052      10 from headings, 10042 from paragraphs
+    verses with no pericope      0
+
+The protestant total is 4 fewer than the King James count of 31,102. The
+difference is entirely accounted for and no data was adjusted to close it:
+Luke 17:36 and Acts 8:37, 15:34 and 24:7 are omitted by the WEB, each with a
+footnote saying so. A fifth omission, Romans 16:25, does not change the total
+because the WEB places the doxology at Romans 14:24-26, which the King James
+numbers 16:25-27.
+
+Cross-references, Treasury of Scripture Knowledge:
+
+    edges                   593670
+    distinct source verses   26202
+    distinct target verses   31045
+    unresolved                1380      quarantined in tsk_unresolved
+      marginal note markers   1175      TSK's own "*marg:" notes, not references
+      no matching verse        179      references to verses absent from the WEB
+      unparseable               19      malformed reference strings
+      source verse absent        7
+
+Topics, Nave's Topical Bible:
+
+    topics                   18837      5322 top level, 13515 subtopics
+    topic-verse rows        399374
+    distinct verses          30982
+    topics carrying verses   18188
+    unresolved                  31      quarantined in nave_unresolved
+
+Keyword index: FTS5 over verse text, 38029 rows, equal to the verse count.
+
+Determinism: the pipeline was run twice into separate files and the outputs
+compared byte for byte. They were identical.
+
 ## Results
 
 None yet. Populated in P2 (retrieval) and P3 (full pipeline).

@@ -19,10 +19,9 @@ are met by this repository.
 This file lists only what is actually present in the repository today. It grows
 as each phase adds material. Nothing is listed before it exists.
 
-Not yet present, and therefore deliberately absent from this file: the World
-English Bible text, the Treasury of Scripture Knowledge, Nave's Topical Bible,
-llama.cpp, and the chat, embedding and reranker models. Each is added in the
-phase that vendors or ships it.
+Not yet present, and therefore deliberately absent from this file: llama.cpp,
+and the chat, embedding and reranker models. Each is added in the phase that
+vendors or ships it.
 
 ## Vendored files
 
@@ -56,6 +55,65 @@ Apache License, Version 2.0
   Note:      Canonical text, with the appendix placeholder
              "Copyright [yyyy] [name of copyright owner]" replaced by
              "Copyright 2026 Jared". No other change.
+
+## Text and study corpora
+
+Vendored unmodified in data/sources/ as the archives exactly as downloaded.
+Nothing in these archives is edited. The pipeline reads them in place and
+derives index.db from them; the derived database is not committed.
+
+World English Bible, Classic edition
+  File:      data/sources/web/eng-web_usfm.zip
+  URL:       https://ebible.org/Scriptures/eng-web_usfm.zip
+  Details:   https://ebible.org/find/details.php?id=eng-web
+  License:   Public domain. The archive's own copr.htm states:
+             "The World English Bible is in the Public Domain."
+  Trademark: "World English Bible" is a trademark of eBible.org. The condition
+             attached to it is that anyone who changes the actual text must not
+             call the result the World English Bible. This project ships a
+             faithful unmodified copy of the text, so the name is used
+             correctly. USFM formatting markers are stripped and footnotes and
+             cross-references are omitted when building the verse rows; the
+             words of the translation are not altered, added to, or removed.
+  Retrieved: 2026-08-26
+  SHA-256:   2403c879aa6b0c9e5e43a4db6f604f7dd1a1f8f32b959c08c8a1fc32c4833e00
+  Note:      Selected as the Classic edition with the full ecumenical book set:
+             eBible records its dialect as American and it uses "Yahweh", both
+             of which this project verified in the downloaded text rather than
+             taking on trust.
+
+Treasury of Scripture Knowledge
+  File:      data/sources/tsk/TSK.zip
+  URL:       https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/TSK.zip
+  License:   Public domain. The module's own mods.d/tsk.conf declares
+             "DistributionLicense=Public Domain".
+  Retrieved: 2026-08-26
+  SHA-256:   6784c7099465995a8e66f02ead82b0bca66603c1bdeaf8332949774b7bfd4293
+  Note:      The CrossWire SWORD edition, version 1.4, of the cross-reference
+             work compiled by Canne, Browne, Blayney, Scott and others. Not a
+             curated or re-edited derivative: the references are the work's own.
+
+Nave's Topical Bible
+  File:      data/sources/naves/Nave.zip
+  URL:       https://crosswire.org/ftpmirror/pub/sword/packages/rawzip/Nave.zip
+  License:   Public domain. The module's own mods.d/nave.conf declares
+             "DistributionLicense=Public Domain".
+  Retrieved: 2026-08-26
+  SHA-256:   52d9b7cde04c2abb5187ae804bcb97d93c7344a1358539f50ebc178ac0c945f0
+  Note:      The CrossWire SWORD edition, version 3.0, of the topical index
+             compiled by Orville J. Nave and published in the early 1900s.
+
+## Build-time tools
+
+Used only to build index.db on our machines. None of these reaches a user; the
+shipped application contains no Python.
+
+pysword                0.2.8    MIT    https://gitlab.com/mothsART/pysword
+                       Used solely for its KJV versification table, which the
+                       Treasury of Scripture Knowledge module is indexed
+                       against and which is needed to address its entries.
+pytest                 9.1.1    MIT    https://pytest.org
+                       Runs the tests in tests/ against the built index.db.
 
 ## Application framework
 
