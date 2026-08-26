@@ -1,0 +1,7094 @@
+{
+  "schema": 1,
+  "status": "draft",
+  "generated_from_index": "d8eae746b6bc6ce285b3300e9693fc3c8a41fe88ad2e8b35cef07cda1c5b0e6d",
+  "index_version": "0.1.0",
+  "graded": [
+    {
+      "id": "g01",
+      "question": "What does the Bible say about anxiety and worry?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "anxious",
+        "careful",
+        "worry",
+        "troubled",
+        "cast thy care"
+      ],
+      "nave_topics": [
+        "ANXIETY -> CARE (53)",
+        "CARE (53)"
+      ],
+      "must": [
+        {
+          "ref": "Mat 6:24-34",
+          "verse_ids": [
+            55006024,
+            55006025,
+            55006026,
+            55006027,
+            55006028,
+            55006029,
+            55006030,
+            55006031,
+            55006032,
+            55006033,
+            55006034
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 12:27-32",
+          "verse_ids": [
+            57012027,
+            57012028,
+            57012029,
+            57012030,
+            57012031,
+            57012032
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Pe 5:6-7",
+          "verse_ids": [
+            75005006,
+            75005007
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 12:15-26",
+          "verse_ids": [
+            57012015,
+            57012016,
+            57012017,
+            57012018,
+            57012019,
+            57012020,
+            57012021,
+            57012022,
+            57012023,
+            57012024,
+            57012025,
+            57012026
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 21:34",
+          "verse_ids": [
+            57021034
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 10:40-42",
+          "verse_ids": [
+            57010040,
+            57010041,
+            57010042
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Php 4:6-7",
+          "verse_ids": [
+            65004006,
+            65004007
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 13:22",
+          "verse_ids": [
+            55013022
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Luk 9:57-62",
+          "verse_ids": [
+            57009057,
+            57009058,
+            57009059,
+            57009060,
+            57009061,
+            57009062
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 55:22",
+          "verse_ids": [
+            19055022
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 8:14",
+          "verse_ids": [
+            57008014
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 7:31-35",
+          "verse_ids": [
+            61007031,
+            61007032,
+            61007033,
+            61007034,
+            61007035
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jer 17:7-8",
+          "verse_ids": [
+            24017007,
+            24017008
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 14:16-27",
+          "verse_ids": [
+            57014016,
+            57014017,
+            57014018,
+            57014019,
+            57014020,
+            57014021,
+            57014022,
+            57014023,
+            57014024,
+            57014025,
+            57014026,
+            57014027
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Heb 13:5-6",
+          "verse_ids": [
+            73013005,
+            73013006
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 39:6",
+          "verse_ids": [
+            19039006
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mrk 4:18-19",
+          "verse_ids": [
+            56004018,
+            56004019
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 16:3",
+          "verse_ids": [
+            20016003
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Ti 2:4",
+          "verse_ids": [
+            70002004
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Ecc 4:7-8",
+          "verse_ids": [
+            21004007,
+            21004008
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g02",
+      "question": "How should I deal with anger?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "anger",
+        "wrath",
+        "angry",
+        "slow to anger",
+        "strife"
+      ],
+      "nave_topics": [
+        "ANGER (230)",
+        "HATRED (40)"
+      ],
+      "must": [
+        {
+          "ref": "Pro 10:12",
+          "verse_ids": [
+            20010012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 15:17-18",
+          "verse_ids": [
+            20015017,
+            20015018
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 29:22",
+          "verse_ids": [
+            20029022
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jon 4:1-4",
+          "verse_ids": [
+            32004001,
+            32004002,
+            32004003,
+            32004004
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 145:8",
+          "verse_ids": [
+            19145008
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 1:19-21",
+          "verse_ids": [
+            74001019,
+            74001020,
+            74001021
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 103:8-9",
+          "verse_ids": [
+            19103008,
+            19103009
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gal 5:13-21",
+          "verse_ids": [
+            63005013,
+            63005014,
+            63005015,
+            63005016,
+            63005017,
+            63005018,
+            63005019,
+            63005020,
+            63005021
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Num 12:9",
+          "verse_ids": [
+            4012009
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 76:10",
+          "verse_ids": [
+            19076010
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Nah 1:2-3",
+          "verse_ids": [
+            34001002,
+            34001003
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 14:29",
+          "verse_ids": [
+            20014029
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Col 3:5-9",
+          "verse_ids": [
+            66003005,
+            66003006,
+            66003007,
+            66003008,
+            66003009
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 16:32",
+          "verse_ids": [
+            20016032
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Ki 16:2-13",
+          "verse_ids": [
+            11016002,
+            11016003,
+            11016004,
+            11016005,
+            11016006,
+            11016007,
+            11016008,
+            11016009,
+            11016010,
+            11016011,
+            11016012,
+            11016013
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 26:20-26",
+          "verse_ids": [
+            20026020,
+            20026021,
+            20026022,
+            20026023,
+            20026024,
+            20026025,
+            20026026
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Jn 3:10-15",
+          "verse_ids": [
+            77003010,
+            77003011,
+            77003012,
+            77003013,
+            77003014,
+            77003015
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 15:23-25",
+          "verse_ids": [
+            58015023,
+            58015024,
+            58015025
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 15:1",
+          "verse_ids": [
+            20015001
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 57:16-17",
+          "verse_ids": [
+            23057016,
+            23057017
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g03",
+      "question": "What does the Bible say about forgiving someone who hurt me?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "forgive",
+        "forgiveness",
+        "trespasses",
+        "reconcile",
+        "mercy"
+      ],
+      "nave_topics": [
+        "FORGIVENESS (115)",
+        "RECONCILIATION (25)"
+      ],
+      "must": [
+        {
+          "ref": "Mat 6:12-15",
+          "verse_ids": [
+            55006012,
+            55006013,
+            55006014,
+            55006015
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 18:21-32",
+          "verse_ids": [
+            55018021,
+            55018022,
+            55018023,
+            55018024,
+            55018025,
+            55018026,
+            55018027,
+            55018028,
+            55018029,
+            55018030,
+            55018031,
+            55018032
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 5:18-21",
+          "verse_ids": [
+            62005018,
+            62005019,
+            62005020,
+            62005021
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mrk 11:25-26",
+          "verse_ids": [
+            56011025,
+            56011026
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Col 1:20-22",
+          "verse_ids": [
+            66001020,
+            66001021,
+            66001022
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 6:27-37",
+          "verse_ids": [
+            57006027,
+            57006028,
+            57006029,
+            57006030,
+            57006031,
+            57006032,
+            57006033,
+            57006034,
+            57006035,
+            57006036,
+            57006037
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 18:33-35",
+          "verse_ids": [
+            55018033,
+            55018034,
+            55018035
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eph 2:13-18",
+          "verse_ids": [
+            64002013,
+            64002014,
+            64002015,
+            64002016,
+            64002017,
+            64002018
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Luk 11:4",
+          "verse_ids": [
+            57011004
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 45:5-15",
+          "verse_ids": [
+            1045005,
+            1045006,
+            1045007,
+            1045008,
+            1045009,
+            1045010,
+            1045011,
+            1045012,
+            1045013,
+            1045014,
+            1045015
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Num 12:1-12",
+          "verse_ids": [
+            4012001,
+            4012002,
+            4012003,
+            4012004,
+            4012005,
+            4012006,
+            4012007,
+            4012008,
+            4012009,
+            4012010,
+            4012011,
+            4012012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 5:10-11",
+          "verse_ids": [
+            60005010,
+            60005011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 5:23-26",
+          "verse_ids": [
+            55005023,
+            55005024,
+            55005025,
+            55005026
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 11:15",
+          "verse_ids": [
+            60011015
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 5:39-48",
+          "verse_ids": [
+            55005039,
+            55005040,
+            55005041,
+            55005042,
+            55005043,
+            55005044,
+            55005045,
+            55005046,
+            55005047,
+            55005048
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 5:7",
+          "verse_ids": [
+            55005007
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 2:13",
+          "verse_ids": [
+            74002013
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 17:3-5",
+          "verse_ids": [
+            57017003,
+            57017004,
+            57017005
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 2:10",
+          "verse_ids": [
+            62002010
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 33:4",
+          "verse_ids": [
+            1033004
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g04",
+      "question": "What does the Bible say about grief and losing someone I love?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "mourn",
+        "comfort",
+        "sorrow",
+        "weep",
+        "tears"
+      ],
+      "nave_topics": [
+        "GRIEF (3)",
+        "MOURNING (106)",
+        "SORROW (77)",
+        "DEATH (695)"
+      ],
+      "must": [
+        {
+          "ref": "Jhn 11:31-40",
+          "verse_ids": [
+            58011031,
+            58011032,
+            58011033,
+            58011034,
+            58011035,
+            58011036,
+            58011037,
+            58011038,
+            58011039,
+            58011040
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Sa 19:1-8",
+          "verse_ids": [
+            10019001,
+            10019002,
+            10019003,
+            10019004,
+            10019005,
+            10019006,
+            10019007,
+            10019008
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 11:19-30",
+          "verse_ids": [
+            58011019,
+            58011020,
+            58011021,
+            58011022,
+            58011023,
+            58011024,
+            58011025,
+            58011026,
+            58011027,
+            58011028,
+            58011029,
+            58011030
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mrk 14:33-42",
+          "verse_ids": [
+            56014033,
+            56014034,
+            56014035,
+            56014036,
+            56014037,
+            56014038,
+            56014039,
+            56014040,
+            56014041,
+            56014042
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Sa 1:17-27",
+          "verse_ids": [
+            10001017,
+            10001018,
+            10001019,
+            10001020,
+            10001021,
+            10001022,
+            10001023,
+            10001024,
+            10001025,
+            10001026,
+            10001027
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 26:37-44",
+          "verse_ids": [
+            55026037,
+            55026038,
+            55026039,
+            55026040,
+            55026041,
+            55026042,
+            55026043,
+            55026044
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Sa 18:33",
+          "verse_ids": [
+            10018033
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 37:33-35",
+          "verse_ids": [
+            1037033,
+            1037034,
+            1037035
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Lev 21:1-11",
+          "verse_ids": [
+            3021001,
+            3021002,
+            3021003,
+            3021004,
+            3021005,
+            3021006,
+            3021007,
+            3021008,
+            3021009,
+            3021010,
+            3021011
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 5:4",
+          "verse_ids": [
+            55005004
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 7:4-13",
+          "verse_ids": [
+            62007004,
+            62007005,
+            62007006,
+            62007007,
+            62007008,
+            62007009,
+            62007010,
+            62007011,
+            62007012,
+            62007013
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Num 19:11-16",
+          "verse_ids": [
+            4019011,
+            4019012,
+            4019013,
+            4019014,
+            4019015,
+            4019016
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 4:9",
+          "verse_ids": [
+            74004009
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Zec 12:10-14",
+          "verse_ids": [
+            38012010,
+            38012011,
+            38012012,
+            38012013,
+            38012014
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Exo 3:7-10",
+          "verse_ids": [
+            2003007,
+            2003008,
+            2003009,
+            2003010
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 12:15",
+          "verse_ids": [
+            60012015
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 21:17-20",
+          "verse_ids": [
+            1021017,
+            1021018,
+            1021019,
+            1021020
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 2:17-18",
+          "verse_ids": [
+            55002017,
+            55002018
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 126:5-6",
+          "verse_ids": [
+            19126005,
+            19126006
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 66:10-14",
+          "verse_ids": [
+            23066010,
+            23066011,
+            23066012,
+            23066013,
+            23066014
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g05",
+      "question": "What does the Bible say about money and debt?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "love of money",
+        "debt",
+        "usury",
+        "lend",
+        "riches",
+        "borrow"
+      ],
+      "nave_topics": [
+        "MONEY (164)",
+        "DEBT (16)",
+        "RICHES (115)",
+        "DEBTOR (76)"
+      ],
+      "must": [
+        {
+          "ref": "Neh 5:1-12",
+          "verse_ids": [
+            16005001,
+            16005002,
+            16005003,
+            16005004,
+            16005005,
+            16005006,
+            16005007,
+            16005008,
+            16005009,
+            16005010,
+            16005011,
+            16005012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 18:21-32",
+          "verse_ids": [
+            55018021,
+            55018022,
+            55018023,
+            55018024,
+            55018025,
+            55018026,
+            55018027,
+            55018028,
+            55018029,
+            55018030,
+            55018031,
+            55018032
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Ti 6:4-11",
+          "verse_ids": [
+            69006004,
+            69006005,
+            69006006,
+            69006007,
+            69006008,
+            69006009,
+            69006010,
+            69006011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Ki 4:1-7",
+          "verse_ids": [
+            12004001,
+            12004002,
+            12004003,
+            12004004,
+            12004005,
+            12004006,
+            12004007
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 15:5",
+          "verse_ids": [
+            19015005
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Lev 25:25-36",
+          "verse_ids": [
+            3025025,
+            3025026,
+            3025027,
+            3025028,
+            3025029,
+            3025030,
+            3025031,
+            3025032,
+            3025033,
+            3025034,
+            3025035,
+            3025036
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Exo 22:25-27",
+          "verse_ids": [
+            2022025,
+            2022026,
+            2022027
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Lev 25:37-41",
+          "verse_ids": [
+            3025037,
+            3025038,
+            3025039,
+            3025040,
+            3025041
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Deu 24:10-13",
+          "verse_ids": [
+            5024010,
+            5024011,
+            5024012,
+            5024013
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Lev 25:47-55",
+          "verse_ids": [
+            3025047,
+            3025048,
+            3025049,
+            3025050,
+            3025051,
+            3025052,
+            3025053,
+            3025054,
+            3025055
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 19:16-27",
+          "verse_ids": [
+            55019016,
+            55019017,
+            55019018,
+            55019019,
+            55019020,
+            55019021,
+            55019022,
+            55019023,
+            55019024,
+            55019025,
+            55019026,
+            55019027
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Ecc 5:9-20",
+          "verse_ids": [
+            21005009,
+            21005010,
+            21005011,
+            21005012,
+            21005013,
+            21005014,
+            21005015,
+            21005016,
+            21005017,
+            21005018,
+            21005019,
+            21005020
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 20:9-16",
+          "verse_ids": [
+            57020009,
+            57020010,
+            57020011,
+            57020012,
+            57020013,
+            57020014,
+            57020015,
+            57020016
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Exo 22:10-17",
+          "verse_ids": [
+            2022010,
+            2022011,
+            2022012,
+            2022013,
+            2022014,
+            2022015,
+            2022016,
+            2022017
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Deu 8:10-18",
+          "verse_ids": [
+            5008010,
+            5008011,
+            5008012,
+            5008013,
+            5008014,
+            5008015,
+            5008016,
+            5008017,
+            5008018
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mrk 10:17-25",
+          "verse_ids": [
+            56010017,
+            56010018,
+            56010019,
+            56010020,
+            56010021,
+            56010022,
+            56010023,
+            56010024,
+            56010025
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 43:12-23",
+          "verse_ids": [
+            1043012,
+            1043013,
+            1043014,
+            1043015,
+            1043016,
+            1043017,
+            1043018,
+            1043019,
+            1043020,
+            1043021,
+            1043022,
+            1043023
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 5:1-5",
+          "verse_ids": [
+            74005001,
+            74005002,
+            74005003,
+            74005004,
+            74005005
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 18:18-25",
+          "verse_ids": [
+            57018018,
+            57018019,
+            57018020,
+            57018021,
+            57018022,
+            57018023,
+            57018024,
+            57018025
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 42:25-35",
+          "verse_ids": [
+            1042025,
+            1042026,
+            1042027,
+            1042028,
+            1042029,
+            1042030,
+            1042031,
+            1042032,
+            1042033,
+            1042034,
+            1042035
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g06",
+      "question": "What does the Bible say about marriage?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "one flesh",
+        "husband",
+        "wife",
+        "marriage",
+        "joined to his wife"
+      ],
+      "nave_topics": [
+        "MARRIAGE (359)",
+        "HUSBAND (87)",
+        "WIFE (362)"
+      ],
+      "must": [
+        {
+          "ref": "Eph 5:22-33",
+          "verse_ids": [
+            64005022,
+            64005023,
+            64005024,
+            64005025,
+            64005026,
+            64005027,
+            64005028,
+            64005029,
+            64005030,
+            64005031,
+            64005032,
+            64005033
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 7:1-12",
+          "verse_ids": [
+            61007001,
+            61007002,
+            61007003,
+            61007004,
+            61007005,
+            61007006,
+            61007007,
+            61007008,
+            61007009,
+            61007010,
+            61007011,
+            61007012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Est 1:10-21",
+          "verse_ids": [
+            17001010,
+            17001011,
+            17001012,
+            17001013,
+            17001014,
+            17001015,
+            17001016,
+            17001017,
+            17001018,
+            17001019,
+            17001020,
+            17001021
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Num 5:11-22",
+          "verse_ids": [
+            4005011,
+            4005012,
+            4005013,
+            4005014,
+            4005015,
+            4005016,
+            4005017,
+            4005018,
+            4005019,
+            4005020,
+            4005021,
+            4005022
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Num 5:23-31",
+          "verse_ids": [
+            4005023,
+            4005024,
+            4005025,
+            4005026,
+            4005027,
+            4005028,
+            4005029,
+            4005030,
+            4005031
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mrk 10:2-12",
+          "verse_ids": [
+            56010002,
+            56010003,
+            56010004,
+            56010005,
+            56010006,
+            56010007,
+            56010008,
+            56010009,
+            56010010,
+            56010011,
+            56010012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Pe 3:1-7",
+          "verse_ids": [
+            75003001,
+            75003002,
+            75003003,
+            75003004,
+            75003005,
+            75003006,
+            75003007
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 7:13-24",
+          "verse_ids": [
+            61007013,
+            61007014,
+            61007015,
+            61007016,
+            61007017,
+            61007018,
+            61007019,
+            61007020,
+            61007021,
+            61007022,
+            61007023,
+            61007024
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "1Co 7:25-36",
+          "verse_ids": [
+            61007025,
+            61007026,
+            61007027,
+            61007028,
+            61007029,
+            61007030,
+            61007031,
+            61007032,
+            61007033,
+            61007034,
+            61007035,
+            61007036
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 24:49-60",
+          "verse_ids": [
+            1024049,
+            1024050,
+            1024051,
+            1024052,
+            1024053,
+            1024054,
+            1024055,
+            1024056,
+            1024057,
+            1024058,
+            1024059,
+            1024060
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 29:13-24",
+          "verse_ids": [
+            1029013,
+            1029014,
+            1029015,
+            1029016,
+            1029017,
+            1029018,
+            1029019,
+            1029020,
+            1029021,
+            1029022,
+            1029023,
+            1029024
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 24:1-12",
+          "verse_ids": [
+            1024001,
+            1024002,
+            1024003,
+            1024004,
+            1024005,
+            1024006,
+            1024007,
+            1024008,
+            1024009,
+            1024010,
+            1024011,
+            1024012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 24:13-24",
+          "verse_ids": [
+            1024013,
+            1024014,
+            1024015,
+            1024016,
+            1024017,
+            1024018,
+            1024019,
+            1024020,
+            1024021,
+            1024022,
+            1024023,
+            1024024
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 24:25-36",
+          "verse_ids": [
+            1024025,
+            1024026,
+            1024027,
+            1024028,
+            1024029,
+            1024030,
+            1024031,
+            1024032,
+            1024033,
+            1024034,
+            1024035,
+            1024036
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 24:37-48",
+          "verse_ids": [
+            1024037,
+            1024038,
+            1024039,
+            1024040,
+            1024041,
+            1024042,
+            1024043,
+            1024044,
+            1024045,
+            1024046,
+            1024047,
+            1024048
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 29:1-12",
+          "verse_ids": [
+            1029001,
+            1029002,
+            1029003,
+            1029004,
+            1029005,
+            1029006,
+            1029007,
+            1029008,
+            1029009,
+            1029010,
+            1029011,
+            1029012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 29:25-35",
+          "verse_ids": [
+            1029025,
+            1029026,
+            1029027,
+            1029028,
+            1029029,
+            1029030,
+            1029031,
+            1029032,
+            1029033,
+            1029034,
+            1029035
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 2:18-25",
+          "verse_ids": [
+            1002018,
+            1002019,
+            1002020,
+            1002021,
+            1002022,
+            1002023,
+            1002024,
+            1002025
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 19:2-11",
+          "verse_ids": [
+            55019002,
+            55019003,
+            55019004,
+            55019005,
+            55019006,
+            55019007,
+            55019008,
+            55019009,
+            55019010,
+            55019011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mal 2:11-16",
+          "verse_ids": [
+            39002011,
+            39002012,
+            39002013,
+            39002014,
+            39002015,
+            39002016
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g07",
+      "question": "What does the Bible say about pride and humility?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "pride",
+        "proud",
+        "humble",
+        "humility",
+        "lowly"
+      ],
+      "nave_topics": [
+        "PRIDE (300)",
+        "HUMILITY (252)"
+      ],
+      "must": [
+        {
+          "ref": "Pro 11:2",
+          "verse_ids": [
+            20011002
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 29:23",
+          "verse_ids": [
+            20029023
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 16:18-19",
+          "verse_ids": [
+            20016018,
+            20016019
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eph 4:2",
+          "verse_ids": [
+            64004002
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 138:6",
+          "verse_ids": [
+            19138006
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 1:51-53",
+          "verse_ids": [
+            57001051,
+            57001052,
+            57001053
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 18:11-12",
+          "verse_ids": [
+            20018011,
+            20018012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 2:9-17",
+          "verse_ids": [
+            23002009,
+            23002010,
+            23002011,
+            23002012,
+            23002013,
+            23002014,
+            23002015,
+            23002016,
+            23002017
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Php 2:1-11",
+          "verse_ids": [
+            65002001,
+            65002002,
+            65002003,
+            65002004,
+            65002005,
+            65002006,
+            65002007,
+            65002008,
+            65002009,
+            65002010,
+            65002011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eze 28:2-10",
+          "verse_ids": [
+            26028002,
+            26028003,
+            26028004,
+            26028005,
+            26028006,
+            26028007,
+            26028008,
+            26028009,
+            26028010
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 10:5-16",
+          "verse_ids": [
+            23010005,
+            23010006,
+            23010007,
+            23010008,
+            23010009,
+            23010010,
+            23010011,
+            23010012,
+            23010013,
+            23010014,
+            23010015,
+            23010016
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 15:32-33",
+          "verse_ids": [
+            20015032,
+            20015033
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 14:7-11",
+          "verse_ids": [
+            57014007,
+            57014008,
+            57014009,
+            57014010,
+            57014011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 18:13-14",
+          "verse_ids": [
+            57018013,
+            57018014
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 16:6-7",
+          "verse_ids": [
+            23016006,
+            23016007
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 23:6-12",
+          "verse_ids": [
+            55023006,
+            55023007,
+            55023008,
+            55023009,
+            55023010,
+            55023011,
+            55023012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Pe 5:1-6",
+          "verse_ids": [
+            75005001,
+            75005002,
+            75005003,
+            75005004,
+            75005005,
+            75005006
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jer 13:9",
+          "verse_ids": [
+            24013009
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Dan 4:30-37",
+          "verse_ids": [
+            27004030,
+            27004031,
+            27004032,
+            27004033,
+            27004034,
+            27004035,
+            27004036,
+            27004037
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 4:5-10",
+          "verse_ids": [
+            74004005,
+            74004006,
+            74004007,
+            74004008,
+            74004009,
+            74004010
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g08",
+      "question": "What does the Bible say about fear?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "fear not",
+        "don't be afraid",
+        "fear of Yahweh",
+        "afraid",
+        "dismayed"
+      ],
+      "nave_topics": [
+        "COURAGE (271)",
+        "CONFIDENCE (206)"
+      ],
+      "must": [
+        {
+          "ref": "Jos 1:1-9",
+          "verse_ids": [
+            6001001,
+            6001002,
+            6001003,
+            6001004,
+            6001005,
+            6001006,
+            6001007,
+            6001008,
+            6001009
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eze 2:6-7",
+          "verse_ids": [
+            26002006,
+            26002007
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Sa 23:1-12",
+          "verse_ids": [
+            10023001,
+            10023002,
+            10023003,
+            10023004,
+            10023005,
+            10023006,
+            10023007,
+            10023008,
+            10023009,
+            10023010,
+            10023011,
+            10023012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jdg 7:7-18",
+          "verse_ids": [
+            7007007,
+            7007008,
+            7007009,
+            7007010,
+            7007011,
+            7007012,
+            7007013,
+            7007014,
+            7007015,
+            7007016,
+            7007017,
+            7007018
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jdg 6:23-31",
+          "verse_ids": [
+            7006023,
+            7006024,
+            7006025,
+            7006026,
+            7006027,
+            7006028,
+            7006029,
+            7006030,
+            7006031
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jer 1:7-8",
+          "verse_ids": [
+            24001007,
+            24001008
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 20:5",
+          "verse_ids": [
+            23020005
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 30:1-12",
+          "verse_ids": [
+            23030001,
+            23030002,
+            23030003,
+            23030004,
+            23030005,
+            23030006,
+            23030007,
+            23030008,
+            23030009,
+            23030010,
+            23030011,
+            23030012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Jer 42:11",
+          "verse_ids": [
+            24042011
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 6:20",
+          "verse_ids": [
+            58006020
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jos 9:3-14",
+          "verse_ids": [
+            6009003,
+            6009004,
+            6009005,
+            6009006,
+            6009007,
+            6009008,
+            6009009,
+            6009010,
+            6009011,
+            6009012,
+            6009013,
+            6009014
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Sa 28:13",
+          "verse_ids": [
+            9028013
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Ki 10:18-28",
+          "verse_ids": [
+            12010018,
+            12010019,
+            12010020,
+            12010021,
+            12010022,
+            12010023,
+            12010024,
+            12010025,
+            12010026,
+            12010027,
+            12010028
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jdg 3:15-23",
+          "verse_ids": [
+            7003015,
+            7003016,
+            7003017,
+            7003018,
+            7003019,
+            7003020,
+            7003021,
+            7003022,
+            7003023
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Sa 21:1-9",
+          "verse_ids": [
+            9021001,
+            9021002,
+            9021003,
+            9021004,
+            9021005,
+            9021006,
+            9021007,
+            9021008,
+            9021009
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 22:1-12",
+          "verse_ids": [
+            1022001,
+            1022002,
+            1022003,
+            1022004,
+            1022005,
+            1022006,
+            1022007,
+            1022008,
+            1022009,
+            1022010,
+            1022011,
+            1022012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jdg 4:1-12",
+          "verse_ids": [
+            7004001,
+            7004002,
+            7004003,
+            7004004,
+            7004005,
+            7004006,
+            7004007,
+            7004008,
+            7004009,
+            7004010,
+            7004011,
+            7004012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jdg 4:13-24",
+          "verse_ids": [
+            7004013,
+            7004014,
+            7004015,
+            7004016,
+            7004017,
+            7004018,
+            7004019,
+            7004020,
+            7004021,
+            7004022,
+            7004023,
+            7004024
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Sa 17:32-43",
+          "verse_ids": [
+            9017032,
+            9017033,
+            9017034,
+            9017035,
+            9017036,
+            9017037,
+            9017038,
+            9017039,
+            9017040,
+            9017041,
+            9017042,
+            9017043
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Sa 23:13-24",
+          "verse_ids": [
+            10023013,
+            10023014,
+            10023015,
+            10023016,
+            10023017,
+            10023018,
+            10023019,
+            10023020,
+            10023021,
+            10023022,
+            10023023,
+            10023024
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g09",
+      "question": "What does the Bible say about temptation?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "tempt",
+        "temptation",
+        "tempted",
+        "lust",
+        "snare"
+      ],
+      "nave_topics": [
+        "TEMPTATION (579)"
+      ],
+      "must": [
+        {
+          "ref": "Jas 1:12-16",
+          "verse_ids": [
+            74001012,
+            74001013,
+            74001014,
+            74001015,
+            74001016
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Deu 6:16",
+          "verse_ids": [
+            5006016
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Heb 2:18",
+          "verse_ids": [
+            73002018
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 4:1-12",
+          "verse_ids": [
+            57004001,
+            57004002,
+            57004003,
+            57004004,
+            57004005,
+            57004006,
+            57004007,
+            57004008,
+            57004009,
+            57004010,
+            57004011,
+            57004012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 4:1-11",
+          "verse_ids": [
+            55004001,
+            55004002,
+            55004003,
+            55004004,
+            55004005,
+            55004006,
+            55004007,
+            55004008,
+            55004009,
+            55004010,
+            55004011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 10:6",
+          "verse_ids": [
+            61010006
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 22:46",
+          "verse_ids": [
+            57022046
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 22:40",
+          "verse_ids": [
+            57022040
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Luk 4:13",
+          "verse_ids": [
+            57004013
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 95:8-9",
+          "verse_ids": [
+            19095008,
+            19095009
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 124:7",
+          "verse_ids": [
+            19124007
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 7:12",
+          "verse_ids": [
+            23007012
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 1:2-4",
+          "verse_ids": [
+            74001002,
+            74001003,
+            74001004
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Jn 2:15-17",
+          "verse_ids": [
+            77002015,
+            77002016,
+            77002017
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 11:4",
+          "verse_ids": [
+            57011004
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 12:7-10",
+          "verse_ids": [
+            62012007,
+            62012008,
+            62012009,
+            62012010
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Heb 4:15-16",
+          "verse_ids": [
+            73004015,
+            73004016
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 10:9-13",
+          "verse_ids": [
+            61010009,
+            61010010,
+            61010011,
+            61010012,
+            61010013
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Pe 5:1-12",
+          "verse_ids": [
+            75005001,
+            75005002,
+            75005003,
+            75005004,
+            75005005,
+            75005006,
+            75005007,
+            75005008,
+            75005009,
+            75005010,
+            75005011,
+            75005012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mal 3:15",
+          "verse_ids": [
+            39003015
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g10",
+      "question": "How should I treat my enemies?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "love your enemies",
+        "persecute",
+        "avenge",
+        "overcome evil",
+        "enemies"
+      ],
+      "nave_topics": [
+        "ENEMY (73)",
+        "LOVE (566)"
+      ],
+      "must": [
+        {
+          "ref": "Luk 6:27-36",
+          "verse_ids": [
+            57006027,
+            57006028,
+            57006029,
+            57006030,
+            57006031,
+            57006032,
+            57006033,
+            57006034,
+            57006035,
+            57006036
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 5:41-48",
+          "verse_ids": [
+            55005041,
+            55005042,
+            55005043,
+            55005044,
+            55005045,
+            55005046,
+            55005047,
+            55005048
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 12:14-21",
+          "verse_ids": [
+            60012014,
+            60012015,
+            60012016,
+            60012017,
+            60012018,
+            60012019,
+            60012020,
+            60012021
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 24:17-18",
+          "verse_ids": [
+            20024017,
+            20024018
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 25:21-22",
+          "verse_ids": [
+            20025021,
+            20025022
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 2:1-12",
+          "verse_ids": [
+            62002001,
+            62002002,
+            62002003,
+            62002004,
+            62002005,
+            62002006,
+            62002007,
+            62002008,
+            62002009,
+            62002010,
+            62002011,
+            62002012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Job 31:29-31",
+          "verse_ids": [
+            18031029,
+            18031030,
+            18031031
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 10:25-36",
+          "verse_ids": [
+            57010025,
+            57010026,
+            57010027,
+            57010028,
+            57010029,
+            57010030,
+            57010031,
+            57010032,
+            57010033,
+            57010034,
+            57010035,
+            57010036
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Psa 35:1-12",
+          "verse_ids": [
+            19035001,
+            19035002,
+            19035003,
+            19035004,
+            19035005,
+            19035006,
+            19035007,
+            19035008,
+            19035009,
+            19035010,
+            19035011,
+            19035012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 35:13-24",
+          "verse_ids": [
+            19035013,
+            19035014,
+            19035015,
+            19035016,
+            19035017,
+            19035018,
+            19035019,
+            19035020,
+            19035021,
+            19035022,
+            19035023,
+            19035024
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 35:25-28",
+          "verse_ids": [
+            19035025,
+            19035026,
+            19035027,
+            19035028
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 109:2-5",
+          "verse_ids": [
+            19109002,
+            19109003,
+            19109004,
+            19109005
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 92:9-11",
+          "verse_ids": [
+            19092009,
+            19092010,
+            19092011
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Ti 3:11-12",
+          "verse_ids": [
+            70003011,
+            70003012
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Nah 1:2",
+          "verse_ids": [
+            34001002
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 129:1-3",
+          "verse_ids": [
+            19129001,
+            19129002,
+            19129003
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 11:13",
+          "verse_ids": [
+            23011013
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Sa 19:12-13",
+          "verse_ids": [
+            10019012,
+            10019013
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 4:24",
+          "verse_ids": [
+            1004024
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 13:28",
+          "verse_ids": [
+            55013028
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g11",
+      "question": "Why do bad things happen to good people?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "affliction",
+        "chasten",
+        "tribulation",
+        "wicked prosper",
+        "suffer"
+      ],
+      "nave_topics": [
+        "AFFLICTIONS AND ADVERSITIES (1855)",
+        "SUFFERING (144)",
+        "CHASTISEMENT (70)"
+      ],
+      "must": [
+        {
+          "ref": "Heb 12:1-12",
+          "verse_ids": [
+            73012001,
+            73012002,
+            73012003,
+            73012004,
+            73012005,
+            73012006,
+            73012007,
+            73012008,
+            73012009,
+            73012010,
+            73012011,
+            73012012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rev 3:19",
+          "verse_ids": [
+            81003019
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 107:17-28",
+          "verse_ids": [
+            19107017,
+            19107018,
+            19107019,
+            19107020,
+            19107021,
+            19107022,
+            19107023,
+            19107024,
+            19107025,
+            19107026,
+            19107027,
+            19107028
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 3:11-12",
+          "verse_ids": [
+            20003011,
+            20003012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jer 31:18-20",
+          "verse_ids": [
+            24031018,
+            24031019,
+            24031020
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 4:7-18",
+          "verse_ids": [
+            62004007,
+            62004008,
+            62004009,
+            62004010,
+            62004011,
+            62004012,
+            62004013,
+            62004014,
+            62004015,
+            62004016,
+            62004017,
+            62004018
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 8:17-23",
+          "verse_ids": [
+            60008017,
+            60008018,
+            60008019,
+            60008020,
+            60008021,
+            60008022,
+            60008023
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 5:3-8",
+          "verse_ids": [
+            60005003,
+            60005004,
+            60005005,
+            60005006,
+            60005007,
+            60005008
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "2Ch 6:24-35",
+          "verse_ids": [
+            14006024,
+            14006025,
+            14006026,
+            14006027,
+            14006028,
+            14006029,
+            14006030,
+            14006031,
+            14006032,
+            14006033,
+            14006034,
+            14006035
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Sa 17:1-12",
+          "verse_ids": [
+            9017001,
+            9017002,
+            9017003,
+            9017004,
+            9017005,
+            9017006,
+            9017007,
+            9017008,
+            9017009,
+            9017010,
+            9017011,
+            9017012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Sa 17:13-24",
+          "verse_ids": [
+            9017013,
+            9017014,
+            9017015,
+            9017016,
+            9017017,
+            9017018,
+            9017019,
+            9017020,
+            9017021,
+            9017022,
+            9017023,
+            9017024
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Sa 17:25-36",
+          "verse_ids": [
+            9017025,
+            9017026,
+            9017027,
+            9017028,
+            9017029,
+            9017030,
+            9017031,
+            9017032,
+            9017033,
+            9017034,
+            9017035,
+            9017036
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Sa 17:37-48",
+          "verse_ids": [
+            9017037,
+            9017038,
+            9017039,
+            9017040,
+            9017041,
+            9017042,
+            9017043,
+            9017044,
+            9017045,
+            9017046,
+            9017047,
+            9017048
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Sa 17:49-58",
+          "verse_ids": [
+            9017049,
+            9017050,
+            9017051,
+            9017052,
+            9017053,
+            9017054,
+            9017055,
+            9017056,
+            9017057,
+            9017058
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 57:16-18",
+          "verse_ids": [
+            23057016,
+            23057017,
+            23057018
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Sa 7:14-15",
+          "verse_ids": [
+            10007014,
+            10007015
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 38:1-12",
+          "verse_ids": [
+            19038001,
+            19038002,
+            19038003,
+            19038004,
+            19038005,
+            19038006,
+            19038007,
+            19038008,
+            19038009,
+            19038010,
+            19038011,
+            19038012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jer 12:1",
+          "verse_ids": [
+            24012001
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 107:29-31",
+          "verse_ids": [
+            19107029,
+            19107030,
+            19107031
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Pe 4:1",
+          "verse_ids": [
+            75004001
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g12",
+      "question": "I feel burned out and hopeless. What does the Bible say?",
+      "category": "life",
+      "canon": "66",
+      "keywords": [
+        "weary",
+        "faint",
+        "hope",
+        "strength",
+        "rest"
+      ],
+      "nave_topics": [
+        "DESPONDENCY (115)",
+        "HOPE (83)",
+        "REST (35)"
+      ],
+      "must": [
+        {
+          "ref": "Heb 4:1-11",
+          "verse_ids": [
+            73004001,
+            73004002,
+            73004003,
+            73004004,
+            73004005,
+            73004006,
+            73004007,
+            73004008,
+            73004009,
+            73004010,
+            73004011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Job 3:13-24",
+          "verse_ids": [
+            18003013,
+            18003014,
+            18003015,
+            18003016,
+            18003017,
+            18003018,
+            18003019,
+            18003020,
+            18003021,
+            18003022,
+            18003023,
+            18003024
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Lam 3:13-21",
+          "verse_ids": [
+            25003013,
+            25003014,
+            25003015,
+            25003016,
+            25003017,
+            25003018,
+            25003019,
+            25003020,
+            25003021
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 8:24-25",
+          "verse_ids": [
+            60008024,
+            60008025
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 18:1-12",
+          "verse_ids": [
+            57018001,
+            57018002,
+            57018003,
+            57018004,
+            57018005,
+            57018006,
+            57018007,
+            57018008,
+            57018009,
+            57018010,
+            57018011,
+            57018012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Exo 34:21",
+          "verse_ids": [
+            2034021
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 5:2-10",
+          "verse_ids": [
+            60005002,
+            60005003,
+            60005004,
+            60005005,
+            60005006,
+            60005007,
+            60005008,
+            60005009,
+            60005010
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Job 17:13-16",
+          "verse_ids": [
+            18017013,
+            18017014,
+            18017015,
+            18017016
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Job 3:1-12",
+          "verse_ids": [
+            18003001,
+            18003002,
+            18003003,
+            18003004,
+            18003005,
+            18003006,
+            18003007,
+            18003008,
+            18003009,
+            18003010,
+            18003011,
+            18003012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Lam 3:1-12",
+          "verse_ids": [
+            25003001,
+            25003002,
+            25003003,
+            25003004,
+            25003005,
+            25003006,
+            25003007,
+            25003008,
+            25003009,
+            25003010,
+            25003011,
+            25003012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mic 7:1-7",
+          "verse_ids": [
+            33007001,
+            33007002,
+            33007003,
+            33007004,
+            33007005,
+            33007006,
+            33007007
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 23:18",
+          "verse_ids": [
+            20023018
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 119:81-83",
+          "verse_ids": [
+            19119081,
+            19119082,
+            19119083
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 13:12",
+          "verse_ids": [
+            20013012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 15:13",
+          "verse_ids": [
+            60015013
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 12:12",
+          "verse_ids": [
+            60012012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Lam 3:24-29",
+          "verse_ids": [
+            25003024,
+            25003025,
+            25003026,
+            25003027,
+            25003028,
+            25003029
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 107:5",
+          "verse_ids": [
+            19107005
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Heb 6:15-19",
+          "verse_ids": [
+            73006015,
+            73006016,
+            73006017,
+            73006018,
+            73006019
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 40:28-31",
+          "verse_ids": [
+            23040028,
+            23040029,
+            23040030,
+            23040031
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g13",
+      "question": "What is love, according to the Bible?",
+      "category": "study",
+      "canon": "66",
+      "keywords": [
+        "love one another",
+        "God is love",
+        "love your neighbor",
+        "charity",
+        "love"
+      ],
+      "nave_topics": [
+        "LOVE (566)"
+      ],
+      "must": [
+        {
+          "ref": "1Jn 4:6-17",
+          "verse_ids": [
+            77004006,
+            77004007,
+            77004008,
+            77004009,
+            77004010,
+            77004011,
+            77004012,
+            77004013,
+            77004014,
+            77004015,
+            77004016,
+            77004017
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 10:25-36",
+          "verse_ids": [
+            57010025,
+            57010026,
+            57010027,
+            57010028,
+            57010029,
+            57010030,
+            57010031,
+            57010032,
+            57010033,
+            57010034,
+            57010035,
+            57010036
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 15:9-17",
+          "verse_ids": [
+            58015009,
+            58015010,
+            58015011,
+            58015012,
+            58015013,
+            58015014,
+            58015015,
+            58015016,
+            58015017
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 13:7-10",
+          "verse_ids": [
+            60013007,
+            60013008,
+            60013009,
+            60013010
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Jn 3:10-21",
+          "verse_ids": [
+            77003010,
+            77003011,
+            77003012,
+            77003013,
+            77003014,
+            77003015,
+            77003016,
+            77003017,
+            77003018,
+            77003019,
+            77003020,
+            77003021
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Jn 4:18-21",
+          "verse_ids": [
+            77004018,
+            77004019,
+            77004020,
+            77004021
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 13:34-37",
+          "verse_ids": [
+            58013034,
+            58013035,
+            58013036,
+            58013037
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 19:18-19",
+          "verse_ids": [
+            55019018,
+            55019019
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Gal 5:13-14",
+          "verse_ids": [
+            63005013,
+            63005014
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mrk 12:29-34",
+          "verse_ids": [
+            56012029,
+            56012030,
+            56012031,
+            56012032,
+            56012033,
+            56012034
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 22:37-40",
+          "verse_ids": [
+            55022037,
+            55022038,
+            55022039,
+            55022040
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 13:1-12",
+          "verse_ids": [
+            61013001,
+            61013002,
+            61013003,
+            61013004,
+            61013005,
+            61013006,
+            61013007,
+            61013008,
+            61013009,
+            61013010,
+            61013011,
+            61013012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Lev 19:18",
+          "verse_ids": [
+            3019018
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 5:41-47",
+          "verse_ids": [
+            55005041,
+            55005042,
+            55005043,
+            55005044,
+            55005045,
+            55005046,
+            55005047
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 2:8-13",
+          "verse_ids": [
+            74002008,
+            74002009,
+            74002010,
+            74002011,
+            74002012,
+            74002013
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Pe 1:22",
+          "verse_ids": [
+            75001022
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Th 4:9-10",
+          "verse_ids": [
+            67004009,
+            67004010
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 6:31-36",
+          "verse_ids": [
+            57006031,
+            57006032,
+            57006033,
+            57006034,
+            57006035,
+            57006036
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Jn 2:4-11",
+          "verse_ids": [
+            77002004,
+            77002005,
+            77002006,
+            77002007,
+            77002008,
+            77002009,
+            77002010,
+            77002011
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Jn 3:22-24",
+          "verse_ids": [
+            77003022,
+            77003023,
+            77003024
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g14",
+      "question": "How does the Bible say we should pray?",
+      "category": "study",
+      "canon": "66",
+      "keywords": [
+        "pray",
+        "prayer",
+        "supplication",
+        "ask",
+        "intercession"
+      ],
+      "nave_topics": [
+        "PRAYER (1337)",
+        "PRAYERFULNESS (20)",
+        "INTERCESSION (705)"
+      ],
+      "must": [
+        {
+          "ref": "Eph 1:15-20",
+          "verse_ids": [
+            64001015,
+            64001016,
+            64001017,
+            64001018,
+            64001019,
+            64001020
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 5:1-3",
+          "verse_ids": [
+            19005001,
+            19005002,
+            19005003
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Th 5:16-18",
+          "verse_ids": [
+            67005016,
+            67005017,
+            67005018
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Dan 9:3-14",
+          "verse_ids": [
+            27009003,
+            27009004,
+            27009005,
+            27009006,
+            27009007,
+            27009008,
+            27009009,
+            27009010,
+            27009011,
+            27009012,
+            27009013,
+            27009014
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eph 3:11-21",
+          "verse_ids": [
+            64003011,
+            64003012,
+            64003013,
+            64003014,
+            64003015,
+            64003016,
+            64003017,
+            64003018,
+            64003019,
+            64003020,
+            64003021
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 18:23-33",
+          "verse_ids": [
+            1018023,
+            1018024,
+            1018025,
+            1018026,
+            1018027,
+            1018028,
+            1018029,
+            1018030,
+            1018031,
+            1018032,
+            1018033
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Ki 8:46-54",
+          "verse_ids": [
+            11008046,
+            11008047,
+            11008048,
+            11008049,
+            11008050,
+            11008051,
+            11008052,
+            11008053,
+            11008054
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 12:12",
+          "verse_ids": [
+            60012012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Psa 6:8-10",
+          "verse_ids": [
+            19006008,
+            19006009,
+            19006010
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 1:8-12",
+          "verse_ids": [
+            60001008,
+            60001009,
+            60001010,
+            60001011,
+            60001012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 2:37",
+          "verse_ids": [
+            57002037
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 55:1-2",
+          "verse_ids": [
+            19055001,
+            19055002
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Dan 9:15-23",
+          "verse_ids": [
+            27009015,
+            27009016,
+            27009017,
+            27009018,
+            27009019,
+            27009020,
+            27009021,
+            27009022,
+            27009023
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Ki 8:34-45",
+          "verse_ids": [
+            11008034,
+            11008035,
+            11008036,
+            11008037,
+            11008038,
+            11008039,
+            11008040,
+            11008041,
+            11008042,
+            11008043,
+            11008044,
+            11008045
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Col 1:9-13",
+          "verse_ids": [
+            66001009,
+            66001010,
+            66001011,
+            66001012,
+            66001013
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 109:4",
+          "verse_ids": [
+            19109004
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Col 4:2",
+          "verse_ids": [
+            66004002
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 8:25-27",
+          "verse_ids": [
+            60008025,
+            60008026,
+            60008027
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 14:13-16",
+          "verse_ids": [
+            61014013,
+            61014014,
+            61014015,
+            61014016
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Ti 1:3-5",
+          "verse_ids": [
+            70001003,
+            70001004,
+            70001005
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g15",
+      "question": "What does the Bible say about faith?",
+      "category": "study",
+      "canon": "66",
+      "keywords": [
+        "faith",
+        "believe",
+        "trust",
+        "faithful"
+      ],
+      "nave_topics": [
+        "FAITH (1484)",
+        "TRUST -> FAITH (1484)"
+      ],
+      "must": [
+        {
+          "ref": "Rom 3:3",
+          "verse_ids": [
+            60003003
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 2:13-24",
+          "verse_ids": [
+            74002013,
+            74002014,
+            74002015,
+            74002016,
+            74002017,
+            74002018,
+            74002019,
+            74002020,
+            74002021,
+            74002022,
+            74002023,
+            74002024
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 1:16-17",
+          "verse_ids": [
+            60001016,
+            60001017
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gal 3:1-12",
+          "verse_ids": [
+            63003001,
+            63003002,
+            63003003,
+            63003004,
+            63003005,
+            63003006,
+            63003007,
+            63003008,
+            63003009,
+            63003010,
+            63003011,
+            63003012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Ti 1:19",
+          "verse_ids": [
+            69001019
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 22:4-5",
+          "verse_ids": [
+            19022004,
+            19022005
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Heb 11:1-12",
+          "verse_ids": [
+            73011001,
+            73011002,
+            73011003,
+            73011004,
+            73011005,
+            73011006,
+            73011007,
+            73011008,
+            73011009,
+            73011010,
+            73011011,
+            73011012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 11:25-27",
+          "verse_ids": [
+            58011025,
+            58011026,
+            58011027
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Act 26:27",
+          "verse_ids": [
+            59026027
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gal 3:13-24",
+          "verse_ids": [
+            63003013,
+            63003014,
+            63003015,
+            63003016,
+            63003017,
+            63003018,
+            63003019,
+            63003020,
+            63003021,
+            63003022,
+            63003023,
+            63003024
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 1:24",
+          "verse_ids": [
+            62001024
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 5:46-47",
+          "verse_ids": [
+            58005046,
+            58005047
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Heb 11:13-24",
+          "verse_ids": [
+            73011013,
+            73011014,
+            73011015,
+            73011016,
+            73011017,
+            73011018,
+            73011019,
+            73011020,
+            73011021,
+            73011022,
+            73011023,
+            73011024
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 14:1",
+          "verse_ids": [
+            58014001
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 5:7",
+          "verse_ids": [
+            62005007
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mrk 9:14-25",
+          "verse_ids": [
+            56009014,
+            56009015,
+            56009016,
+            56009017,
+            56009018,
+            56009019,
+            56009020,
+            56009021,
+            56009022,
+            56009023,
+            56009024,
+            56009025
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eph 4:5",
+          "verse_ids": [
+            64004005
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gal 3:25-29",
+          "verse_ids": [
+            63003025,
+            63003026,
+            63003027,
+            63003028,
+            63003029
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 20:5-7",
+          "verse_ids": [
+            19020005,
+            19020006,
+            19020007
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 26:1-4",
+          "verse_ids": [
+            23026001,
+            23026002,
+            23026003,
+            23026004
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g16",
+      "question": "What does the Bible say about repentance?",
+      "category": "study",
+      "canon": "66",
+      "keywords": [
+        "repent",
+        "repentance",
+        "turn from",
+        "contrite",
+        "confess"
+      ],
+      "nave_topics": [
+        "REPENTANCE (570)",
+        "CONFESSION (44)"
+      ],
+      "must": [
+        {
+          "ref": "Jhn 9:22-33",
+          "verse_ids": [
+            58009022,
+            58009023,
+            58009024,
+            58009025,
+            58009026,
+            58009027,
+            58009028,
+            58009029,
+            58009030,
+            58009031,
+            58009032,
+            58009033
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 3:1-12",
+          "verse_ids": [
+            55003001,
+            55003002,
+            55003003,
+            55003004,
+            55003005,
+            55003006,
+            55003007,
+            55003008,
+            55003009,
+            55003010,
+            55003011,
+            55003012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 10:32-33",
+          "verse_ids": [
+            55010032,
+            55010033
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Sa 15:29",
+          "verse_ids": [
+            9015029
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 10:9-11",
+          "verse_ids": [
+            60010009,
+            60010010,
+            60010011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mrk 6:12",
+          "verse_ids": [
+            56006012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rev 2:19-22",
+          "verse_ids": [
+            81002019,
+            81002020,
+            81002021,
+            81002022
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 15:1-10",
+          "verse_ids": [
+            57015001,
+            57015002,
+            57015003,
+            57015004,
+            57015005,
+            57015006,
+            57015007,
+            57015008,
+            57015009,
+            57015010
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "1Jn 4:2-3",
+          "verse_ids": [
+            77004002,
+            77004003
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 12:8-9",
+          "verse_ids": [
+            57012008,
+            57012009
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 9:34-38",
+          "verse_ids": [
+            58009034,
+            58009035,
+            58009036,
+            58009037,
+            58009038
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Jn 4:15",
+          "verse_ids": [
+            77004015
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rev 2:5",
+          "verse_ids": [
+            81002005
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Act 19:4-5",
+          "verse_ids": [
+            59019004,
+            59019005
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eze 33:9-19",
+          "verse_ids": [
+            26033009,
+            26033010,
+            26033011,
+            26033012,
+            26033013,
+            26033014,
+            26033015,
+            26033016,
+            26033017,
+            26033018,
+            26033019
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 13:1-5",
+          "verse_ids": [
+            57013001,
+            57013002,
+            57013003,
+            57013004,
+            57013005
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 1:12-18",
+          "verse_ids": [
+            58001012,
+            58001013,
+            58001014,
+            58001015,
+            58001016,
+            58001017,
+            58001018
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Isa 57:15",
+          "verse_ids": [
+            23057015
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 5:32",
+          "verse_ids": [
+            57005032
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 12:42-43",
+          "verse_ids": [
+            58012042,
+            58012043
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g17",
+      "question": "What are the fruits of the Spirit?",
+      "category": "study",
+      "canon": "66",
+      "keywords": [
+        "fruit of the Spirit",
+        "longsuffering",
+        "gentleness",
+        "temperance",
+        "love, joy, peace"
+      ],
+      "nave_topics": [
+        "HOLY SPIRIT (454)",
+        "FRUITS (5)",
+        "RIGHTEOUSNESS (314)"
+      ],
+      "must": [
+        {
+          "ref": "Gal 5:22-25",
+          "verse_ids": [
+            63005022,
+            63005023,
+            63005024,
+            63005025
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 8:13-24",
+          "verse_ids": [
+            60008013,
+            60008014,
+            60008015,
+            60008016,
+            60008017,
+            60008018,
+            60008019,
+            60008020,
+            60008021,
+            60008022,
+            60008023,
+            60008024
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eph 5:9",
+          "verse_ids": [
+            64005009
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Jn 4:2-13",
+          "verse_ids": [
+            77004002,
+            77004003,
+            77004004,
+            77004005,
+            77004006,
+            77004007,
+            77004008,
+            77004009,
+            77004010,
+            77004011,
+            77004012,
+            77004013
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 3:11-18",
+          "verse_ids": [
+            74003011,
+            74003012,
+            74003013,
+            74003014,
+            74003015,
+            74003016,
+            74003017,
+            74003018
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 13:1-12",
+          "verse_ids": [
+            61013001,
+            61013002,
+            61013003,
+            61013004,
+            61013005,
+            61013006,
+            61013007,
+            61013008,
+            61013009,
+            61013010,
+            61013011,
+            61013012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 5:1-5",
+          "verse_ids": [
+            60005001,
+            60005002,
+            60005003,
+            60005004,
+            60005005
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 1:26-29",
+          "verse_ids": [
+            1001026,
+            1001027,
+            1001028,
+            1001029
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Rom 8:1-12",
+          "verse_ids": [
+            60008001,
+            60008002,
+            60008003,
+            60008004,
+            60008005,
+            60008006,
+            60008007,
+            60008008,
+            60008009,
+            60008010,
+            60008011,
+            60008012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Col 3:9-17",
+          "verse_ids": [
+            66003009,
+            66003010,
+            66003011,
+            66003012,
+            66003013,
+            66003014,
+            66003015,
+            66003016,
+            66003017
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Jn 4:14-21",
+          "verse_ids": [
+            77004014,
+            77004015,
+            77004016,
+            77004017,
+            77004018,
+            77004019,
+            77004020,
+            77004021
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Ti 3:11",
+          "verse_ids": [
+            69003011
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jhn 16:7-15",
+          "verse_ids": [
+            58016007,
+            58016008,
+            58016009,
+            58016010,
+            58016011,
+            58016012,
+            58016013,
+            58016014,
+            58016015
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Pe 3:1-11",
+          "verse_ids": [
+            75003001,
+            75003002,
+            75003003,
+            75003004,
+            75003005,
+            75003006,
+            75003007,
+            75003008,
+            75003009,
+            75003010,
+            75003011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Tit 2:2-13",
+          "verse_ids": [
+            71002002,
+            71002003,
+            71002004,
+            71002005,
+            71002006,
+            71002007,
+            71002008,
+            71002009,
+            71002010,
+            71002011,
+            71002012,
+            71002013
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 1:11-12",
+          "verse_ids": [
+            1001011,
+            1001012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eph 1:12-14",
+          "verse_ids": [
+            64001012,
+            64001013,
+            64001014
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 2:5-16",
+          "verse_ids": [
+            20002005,
+            20002006,
+            20002007,
+            20002008,
+            20002009,
+            20002010,
+            20002011,
+            20002012,
+            20002013,
+            20002014,
+            20002015,
+            20002016
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 2:14-25",
+          "verse_ids": [
+            74002014,
+            74002015,
+            74002016,
+            74002017,
+            74002018,
+            74002019,
+            74002020,
+            74002021,
+            74002022,
+            74002023,
+            74002024,
+            74002025
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 5:5",
+          "verse_ids": [
+            55005005
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g18",
+      "question": "What does the Bible say about the resurrection of Jesus?",
+      "category": "study",
+      "canon": "66",
+      "keywords": [
+        "resurrection",
+        "risen",
+        "raised",
+        "third day",
+        "empty tomb"
+      ],
+      "nave_topics": [
+        "RESURRECTION (197)",
+        "JESUS, THE CHRIST (5053)"
+      ],
+      "must": [
+        {
+          "ref": "1Co 15:12-23",
+          "verse_ids": [
+            61015012,
+            61015013,
+            61015014,
+            61015015,
+            61015016,
+            61015017,
+            61015018,
+            61015019,
+            61015020,
+            61015021,
+            61015022,
+            61015023
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 22:25-36",
+          "verse_ids": [
+            55022025,
+            55022026,
+            55022027,
+            55022028,
+            55022029,
+            55022030,
+            55022031,
+            55022032,
+            55022033,
+            55022034,
+            55022035,
+            55022036
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 15:35-46",
+          "verse_ids": [
+            61015035,
+            61015036,
+            61015037,
+            61015038,
+            61015039,
+            61015040,
+            61015041,
+            61015042,
+            61015043,
+            61015044,
+            61015045,
+            61015046
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eze 37:1-12",
+          "verse_ids": [
+            26037001,
+            26037002,
+            26037003,
+            26037004,
+            26037005,
+            26037006,
+            26037007,
+            26037008,
+            26037009,
+            26037010,
+            26037011,
+            26037012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 20:33-44",
+          "verse_ids": [
+            57020033,
+            57020034,
+            57020035,
+            57020036,
+            57020037,
+            57020038,
+            57020039,
+            57020040,
+            57020041,
+            57020042,
+            57020043,
+            57020044
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Heb 11:35",
+          "verse_ids": [
+            73011035
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 15:47-57",
+          "verse_ids": [
+            61015047,
+            61015048,
+            61015049,
+            61015050,
+            61015051,
+            61015052,
+            61015053,
+            61015054,
+            61015055,
+            61015056,
+            61015057
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mrk 12:13-24",
+          "verse_ids": [
+            56012013,
+            56012014,
+            56012015,
+            56012016,
+            56012017,
+            56012018,
+            56012019,
+            56012020,
+            56012021,
+            56012022,
+            56012023,
+            56012024
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Php 3:10-11",
+          "verse_ids": [
+            65003010,
+            65003011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 6:14",
+          "verse_ids": [
+            61006014
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 25:1-12",
+          "verse_ids": [
+            55025001,
+            55025002,
+            55025003,
+            55025004,
+            55025005,
+            55025006,
+            55025007,
+            55025008,
+            55025009,
+            55025010,
+            55025011,
+            55025012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 20:21-32",
+          "verse_ids": [
+            57020021,
+            57020022,
+            57020023,
+            57020024,
+            57020025,
+            57020026,
+            57020027,
+            57020028,
+            57020029,
+            57020030,
+            57020031,
+            57020032
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 15:24-32",
+          "verse_ids": [
+            61015024,
+            61015025,
+            61015026,
+            61015027,
+            61015028,
+            61015029,
+            61015030,
+            61015031,
+            61015032
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Act 23:6-11",
+          "verse_ids": [
+            59023006,
+            59023007,
+            59023008,
+            59023009,
+            59023010,
+            59023011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Act 24:14-15",
+          "verse_ids": [
+            59024014,
+            59024015
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Act 2:24-35",
+          "verse_ids": [
+            59002024,
+            59002025,
+            59002026,
+            59002027,
+            59002028,
+            59002029,
+            59002030,
+            59002031,
+            59002032,
+            59002033,
+            59002034,
+            59002035
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 5:1-5",
+          "verse_ids": [
+            62005001,
+            62005002,
+            62005003,
+            62005004,
+            62005005
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Act 26:6-8",
+          "verse_ids": [
+            59026006,
+            59026007,
+            59026008
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Gen 19:23",
+          "verse_ids": [
+            1019023
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 8:10-11",
+          "verse_ids": [
+            60008010,
+            60008011
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g19",
+      "question": "What does the Bible say about almsgiving and mercy to the poor?",
+      "category": "study",
+      "canon": "both",
+      "keywords": [
+        "alms",
+        "give to the poor",
+        "needy",
+        "mercy",
+        "poor"
+      ],
+      "nave_topics": [
+        "ALMS (57)",
+        "POOR (344)",
+        "MERCY (37)",
+        "LIBERALITY (651)"
+      ],
+      "must": [
+        {
+          "ref": "Deu 15:2-13",
+          "verse_ids": [
+            5015002,
+            5015003,
+            5015004,
+            5015005,
+            5015006,
+            5015007,
+            5015008,
+            5015009,
+            5015010,
+            5015011,
+            5015012,
+            5015013
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 8:1-12",
+          "verse_ids": [
+            62008001,
+            62008002,
+            62008003,
+            62008004,
+            62008005,
+            62008006,
+            62008007,
+            62008008,
+            62008009,
+            62008010,
+            62008011,
+            62008012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "2Co 9:1-12",
+          "verse_ids": [
+            62009001,
+            62009002,
+            62009003,
+            62009004,
+            62009005,
+            62009006,
+            62009007,
+            62009008,
+            62009009,
+            62009010,
+            62009011,
+            62009012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Act 4:32-37",
+          "verse_ids": [
+            59004032,
+            59004033,
+            59004034,
+            59004035,
+            59004036,
+            59004037
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 6:1-4",
+          "verse_ids": [
+            55006001,
+            55006002,
+            55006003,
+            55006004
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Job 31:13-22",
+          "verse_ids": [
+            18031013,
+            18031014,
+            18031015,
+            18031016,
+            18031017,
+            18031018,
+            18031019,
+            18031020,
+            18031021,
+            18031022
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 12:8",
+          "verse_ids": [
+            60012008
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 25:34-45",
+          "verse_ids": [
+            55025034,
+            55025035,
+            55025036,
+            55025037,
+            55025038,
+            55025039,
+            55025040,
+            55025041,
+            55025042,
+            55025043,
+            55025044,
+            55025045
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Isa 58:6-12",
+          "verse_ids": [
+            23058006,
+            23058007,
+            23058008,
+            23058009,
+            23058010,
+            23058011,
+            23058012
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 16:1-4",
+          "verse_ids": [
+            61016001,
+            61016002,
+            61016003,
+            61016004
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Jas 2:13-16",
+          "verse_ids": [
+            74002013,
+            74002014,
+            74002015,
+            74002016
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Mat 5:7",
+          "verse_ids": [
+            55005007
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 41:1-4",
+          "verse_ids": [
+            19041001,
+            19041002,
+            19041003,
+            19041004
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Psa 72:12-14",
+          "verse_ids": [
+            19072012,
+            19072013,
+            19072014
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 19:8",
+          "verse_ids": [
+            57019008
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Act 11:28-30",
+          "verse_ids": [
+            59011028,
+            59011029,
+            59011030
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 28:27",
+          "verse_ids": [
+            20028027
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Rom 15:25-28",
+          "verse_ids": [
+            60015025,
+            60015026,
+            60015027,
+            60015028
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Luk 6:30-40",
+          "verse_ids": [
+            57006030,
+            57006031,
+            57006032,
+            57006033,
+            57006034,
+            57006035,
+            57006036,
+            57006037,
+            57006038,
+            57006039,
+            57006040
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Jn 3:16-22",
+          "verse_ids": [
+            77003016,
+            77003017,
+            77003018,
+            77003019,
+            77003020,
+            77003021,
+            77003022
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    },
+    {
+      "id": "g20",
+      "question": "What does the Bible say about seeking wisdom and where it comes from?",
+      "category": "study",
+      "canon": "both",
+      "keywords": [
+        "get wisdom",
+        "fear of Yahweh",
+        "understanding",
+        "wisdom",
+        "prudence"
+      ],
+      "nave_topics": [
+        "WISDOM (656)",
+        "KNOWLEDGE (83)"
+      ],
+      "must": [
+        {
+          "ref": "Pro 2:1-12",
+          "verse_ids": [
+            20002001,
+            20002002,
+            20002003,
+            20002004,
+            20002005,
+            20002006,
+            20002007,
+            20002008,
+            20002009,
+            20002010,
+            20002011,
+            20002012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 3:13-24",
+          "verse_ids": [
+            20003013,
+            20003014,
+            20003015,
+            20003016,
+            20003017,
+            20003018,
+            20003019,
+            20003020,
+            20003021,
+            20003022,
+            20003023,
+            20003024
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 8:1-12",
+          "verse_ids": [
+            20008001,
+            20008002,
+            20008003,
+            20008004,
+            20008005,
+            20008006,
+            20008007,
+            20008008,
+            20008009,
+            20008010,
+            20008011,
+            20008012
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 4:4-13",
+          "verse_ids": [
+            20004004,
+            20004005,
+            20004006,
+            20004007,
+            20004008,
+            20004009,
+            20004010,
+            20004011,
+            20004012,
+            20004013
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 15:33",
+          "verse_ids": [
+            20015033
+          ],
+          "origins": [
+            "fts",
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 23:23",
+          "verse_ids": [
+            20023023
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 1:21-32",
+          "verse_ids": [
+            20001021,
+            20001022,
+            20001023,
+            20001024,
+            20001025,
+            20001026,
+            20001027,
+            20001028,
+            20001029,
+            20001030,
+            20001031,
+            20001032
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Job 28:12-23",
+          "verse_ids": [
+            18028012,
+            18028013,
+            18028014,
+            18028015,
+            18028016,
+            18028017,
+            18028018,
+            18028019,
+            18028020,
+            18028021,
+            18028022,
+            18028023
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "should": [
+        {
+          "ref": "Pro 2:13-22",
+          "verse_ids": [
+            20002013,
+            20002014,
+            20002015,
+            20002016,
+            20002017,
+            20002018,
+            20002019,
+            20002020,
+            20002021,
+            20002022
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 3:1-12",
+          "verse_ids": [
+            20003001,
+            20003002,
+            20003003,
+            20003004,
+            20003005,
+            20003006,
+            20003007,
+            20003008,
+            20003009,
+            20003010,
+            20003011,
+            20003012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 3:25-35",
+          "verse_ids": [
+            20003025,
+            20003026,
+            20003027,
+            20003028,
+            20003029,
+            20003030,
+            20003031,
+            20003032,
+            20003033,
+            20003034,
+            20003035
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 13:9-12",
+          "verse_ids": [
+            61013009,
+            61013010,
+            61013011,
+            61013012
+          ],
+          "origins": [
+            "nave"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Ecc 9:13-18",
+          "verse_ids": [
+            21009013,
+            21009014,
+            21009015,
+            21009016,
+            21009017,
+            21009018
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Ki 4:29-34",
+          "verse_ids": [
+            11004029,
+            11004030,
+            11004031,
+            11004032,
+            11004033,
+            11004034
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 1:2-7",
+          "verse_ids": [
+            20001002,
+            20001003,
+            20001004,
+            20001005,
+            20001006,
+            20001007
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 19:8",
+          "verse_ids": [
+            20019008
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 16:16",
+          "verse_ids": [
+            20016016
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "1Co 1:17-28",
+          "verse_ids": [
+            61001017,
+            61001018,
+            61001019,
+            61001020,
+            61001021,
+            61001022,
+            61001023,
+            61001024,
+            61001025,
+            61001026,
+            61001027,
+            61001028
+          ],
+          "origins": [
+            "fts",
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Pro 8:25-36",
+          "verse_ids": [
+            20008025,
+            20008026,
+            20008027,
+            20008028,
+            20008029,
+            20008030,
+            20008031,
+            20008032,
+            20008033,
+            20008034,
+            20008035,
+            20008036
+          ],
+          "origins": [
+            "nave",
+            "tsk"
+          ],
+          "canon": "protestant"
+        },
+        {
+          "ref": "Eph 1:8",
+          "verse_ids": [
+            64001008
+          ],
+          "origins": [
+            "fts",
+            "tsk"
+          ],
+          "canon": "protestant"
+        }
+      ],
+      "status": "draft"
+    }
+  ],
+  "smoke": [
+    {
+      "id": "s01",
+      "question": "What does the Bible say about raising children?",
+      "category": "life"
+    },
+    {
+      "id": "s02",
+      "question": "What does the Bible say about honoring my parents?",
+      "category": "life"
+    },
+    {
+      "id": "s03",
+      "question": "What does the Bible say about work and laziness?",
+      "category": "life"
+    },
+    {
+      "id": "s04",
+      "question": "What does the Bible say about lying and telling the truth?",
+      "category": "life"
+    },
+    {
+      "id": "s05",
+      "question": "What does the Bible say about loneliness?",
+      "category": "life"
+    },
+    {
+      "id": "s06",
+      "question": "What does the Bible say about lust and sexual sin?",
+      "category": "life"
+    },
+    {
+      "id": "s07",
+      "question": "What does the Bible say about drunkenness?",
+      "category": "life"
+    },
+    {
+      "id": "s08",
+      "question": "What does the Bible say about caring for the poor?",
+      "category": "life"
+    },
+    {
+      "id": "s09",
+      "question": "What does the Bible say about patience and waiting on God?",
+      "category": "life"
+    },
+    {
+      "id": "s10",
+      "question": "What does the Bible say about gossip and controlling my tongue?",
+      "category": "life"
+    },
+    {
+      "id": "s11",
+      "question": "What does the Bible say about friendship?",
+      "category": "life"
+    },
+    {
+      "id": "s12",
+      "question": "What does the Bible say about contentment and envy?",
+      "category": "life"
+    },
+    {
+      "id": "s13",
+      "question": "What does the Bible say about rest and the Sabbath?",
+      "category": "life"
+    },
+    {
+      "id": "s14",
+      "question": "What does the Bible say about wisdom?",
+      "category": "study"
+    },
+    {
+      "id": "s15",
+      "question": "What is the fear of the Lord?",
+      "category": "study"
+    },
+    {
+      "id": "s16",
+      "question": "What does the Bible say about angels?",
+      "category": "study"
+    },
+    {
+      "id": "s17",
+      "question": "What does the Bible say about justice?",
+      "category": "study"
+    },
+    {
+      "id": "s18",
+      "question": "What does the Bible say about fasting?",
+      "category": "study"
+    },
+    {
+      "id": "s19",
+      "question": "What does the Bible say about giving and generosity?",
+      "category": "study"
+    },
+    {
+      "id": "s20",
+      "question": "What does the Bible say about idolatry?",
+      "category": "study"
+    }
+  ]
+}

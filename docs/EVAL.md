@@ -12,24 +12,104 @@ measured on this project's own data.
 
 Location: data/eval/questions.json
 
-Roughly 40 questions of the kind a pastor would actually ask, spanning everyday
-life topics and doctrinally neutral study topics. Each question carries a gold
-list: the passages a correct answer should surface.
+Forty questions of the kind a pastor would actually ask, split in two.
 
-How gold lists are made: Claude drafts candidates from the built indexes. Jared
-reviews and approves every list. Gold lists are judgment, not output. They are
-not auto-generated and not delegated. P2 does not begin until the gold lists are
-approved.
+Twenty graded questions, g01 to g20, carry gold lists and produce the numbers
+that gate a model. Twelve are everyday-life questions and eight are doctrinally
+neutral study questions. Two of them, g19 and g20, are chosen because their
+subject matter is treated at length in the deuterocanonical books as well as
+the protestant ones; they run under both canon modes and exist to measure what
+the canon toggle actually changes.
 
-The eval set does not exist yet. It is built in P1/P2 once there is an index to
-draw candidates from.
+Twenty smoke questions, s01 to s20, carry no gold lists and gate nothing. They
+are run in P3 so Jared can read the answers and see whether they look sane
+across a wider spread of topics than twenty questions can cover. They exist so
+that topic coverage does not come at the price of a review burden nobody can
+sustain.
+
+### MUST and SHOULD
+
+Each graded question has two lists.
+
+MUST is five to eight passages a pastor would say the answer cannot omit.
+Retrieval recall@25 is measured against MUST only. Every MUST list is approved
+by Jared personally. Nothing else gates anything.
+
+SHOULD is a further set of relevant passages. It is Claude's draft, it is
+labelled unreviewed, and it does not gate. It exists so that a passage which is
+clearly relevant but not indispensable is recorded rather than lost, and so
+that Jared has somewhere to promote a passage from.
+
+A gold passage is a verse range inside a single chapter. Never a whole chapter,
+never a whole book: a chapter-wide gold entry cannot tell good retrieval apart
+from lucky retrieval.
+
+### How the candidate lists were drafted
+
+Drafted in the P2-prep session by pipeline/draft_gold.py, entirely from
+index.db. No passage was written down from memory. A passage reaches the draft
+only because one of three sources put it there:
+
+  nave  the passage is in a matching Nave's topic. A topic's weight falls as
+        the topic grows, because membership of a forty-verse topic says far
+        more about a verse than membership of an eighteen-hundred-verse one.
+  fts   the passage matched one of the question's keywords in the FTS5 index,
+        weighted by its rank in that keyword's results.
+  tsk   the passage was reached by one Treasury of Scripture Knowledge hop from
+        a high-scoring anchor. Weighted lightly: a cross-reference suggests a
+        passage is related, not that it is central.
+
+Adjacent hits are grouped into ranges within a chapter and ranked by score
+density, so a long range cannot win merely by covering more verses. A MUST
+candidate must carry at least two of the three origins; a single-origin passage
+drops to SHOULD rather than being discarded.
+
+The keyword list for each question is stored in the JSON alongside the gold
+lists, so that P2 can compare it against the query rewrites the chat model
+produces on its own.
+
+This procedure proposes. It does not decide. Plan 6.2 is explicit that gold
+lists are judgment, are not auto-generated and are not delegated.
+
+### File schema
+
+    {
+      "schema": 1,
+      "status": "draft" | "approved",
+      "generated_from_index": "<build_checksum of the index.db used>",
+      "index_version": "0.1.0",
+      "graded": [ { "id": "g01",
+                    "question": "...",
+                    "category": "life" | "study",
+                    "canon": "66" | "both",
+                    "keywords": ["...", ...],
+                    "nave_topics": ["ANGER (230)", ...] or ["none"],
+                    "must":   [ passage, ... ],
+                    "should": [ passage, ... ],
+                    "status": "draft" | "approved" } ],
+      "smoke": [ { "id": "s01",
+                   "question": "...",
+                   "category": "life" | "study" } ]
+    }
+
+    passage = { "ref": "Mat 6:24-34",
+                "verse_ids": [6006024, ...],
+                "origins": ["fts", "nave", "tsk"],
+                "canon": "protestant" | "deutero" }
+
+verse_ids are the index's own primary keys, book_id*1000000 + chapter*1000 +
+verse. They are what recall is computed against; ref is for human eyes.
+
+Smoke entries carry id, question and category and nothing else. A gold field on
+a smoke entry is a bug, and tests/test_eval_set.py fails on it.
 
 ## Metrics
 
 Retrieval recall@25
-  Fraction of gold passages appearing in the top 25 retrieved passages, measured
-  per question and averaged. Measures index and retrieval quality, independent of
-  the chat model. Reported per configuration in P2.
+  Fraction of MUST passages appearing in the top 25 retrieved passages, measured
+  per question and averaged. SHOULD passages do not count towards it and do not
+  count against it. Measures index and retrieval quality, independent of the
+  chat model. Reported per configuration in P2.
   Threshold: set in P3.
 
 Fabricated-reference count
