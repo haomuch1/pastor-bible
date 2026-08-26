@@ -68,7 +68,7 @@ session whether the ground has shifted.
 
 ## P2-prep session, 2026-08-26
 
-- 2026-08-26 — Footnotes and cross-references are omitted from verse text, permanently for v1. Reason: eBible.org permits extracts; the WEB trademark condition only forbids changing the words or punctuation, which we never do.
+- 2026-08-26 — Footnotes and cross-references are omitted from verse text, permanently for v1. Reason: eBible.org permits extracts, listing "quote" among the permitted uses; the WEB trademark condition applies "if you CHANGE the actual text of the World English Bible in any way", and we never change the text, only omit the apparatus around it.
 - 2026-08-26 — NOTICE.md WEB entry states plainly that verse text is reproduced unmodified and that translator footnotes and cross-references are omitted. Reason: the one legal obligation on our main source deserves an explicit, checkable statement rather than an inference.
 - 2026-08-26 — Eval set is 20 graded questions with MUST and SHOULD gold lists, plus 20 ungraded smoke questions with no gold lists, run in P3 for Jared's eyeball review only. Reason: keeps Jared's approval burden proportionate; the smoke set preserves topic coverage.
 - 2026-08-26 — Gold list structure: MUST = 5-8 passages a pastor would say the answer cannot omit, and recall@25 in P2 is measured against MUST only; Jared approves every MUST list. SHOULD = further relevant passages, Claude's draft, non-gating, labeled unreviewed. Reason: only the gating part needs approval.
@@ -79,3 +79,13 @@ session whether the ground has shifted.
 - 2026-08-26 — Nave's topic weight falls as the topic grows (3.0 * 200/(200+n) per verse). Reason: membership of a 40-verse topic is strong evidence about a verse and membership of an 1855-verse topic is nearly none; unweighted, the large topics filled MUST lists with passages that shared a theme but did not answer the question.
 - 2026-08-26 — Candidate ranges are ranked by score density, total score divided by the square root of the range length. Reason: without it a long range wins on volume alone.
 - 2026-08-26 — Keywords use WEB vocabulary, notably "fear of Yahweh" rather than "fear of the Lord". Reason: the WEB Classic renders the divine name as Yahweh, so the conventional phrasing matches nothing.
+
+## P2 session, 2026-08-26
+
+- 2026-08-26 — Gold lists are approved as drafted. They are index-derived (Nave's, TSK, FTS) and unreviewed by a pastor; docs/EVAL.md and data/eval/questions.json say so in those words. Jared is not a pastor and declines to hand-judge; a future contributor may revise. Reason: honest standard for a scripture-only tool; no better ground truth exists at zero cost.
+- 2026-08-26 — The six Deuterocanon passages set aside in the P2-prep handoff are added to the g19 and g20 MUST lists, tagged deutero, approved the same way. Reason: without them the canon test measures nothing.
+- 2026-08-26 — Because the gold lists share sources with the topic, cross-reference and keyword retrieval paths, full-pipeline recall against them is near-circular; it is reported but not treated as evidence. The primary retrieval metric is ablation: vector-only recall@25 against MUST. Reason: measures what embeddings add, which is the only open question.
+- 2026-08-26 — Vector store is plain float32 BLOBs in SQLite tables, searched brute force by cosine. sqlite-vec is not used. Reason: about 70,000 small vectors search in milliseconds, and no native extension has to be bundled into the installer. PLAN 3.2 updated and the sqlite-vec VERIFY item in section 16 struck.
+- 2026-08-26 — The embedding and reranker models must run under llama.cpp at runtime, and index-time embeddings are produced through llama.cpp too, so index and query vectors come from identical code. Reason: eliminates train/serve mismatch.
+- 2026-08-26 — PLAN 7.2 amended: the passage panel shows the full retrieved and expanded set grouped by book, cited passages marked and the rest collapsed one click away, with matched Nave's topics shown by name and their full verse lists. Reason: the reader chooses what to read; scripture-first.
+- 2026-08-26 — PLAN 5.6 and 7.2 amended: two answer modes, the default themed synopsis over the top ~25 passages and, on demand, a themed summary of the entire retrieved set built in batches and merged, with the citation verifier applied at every stage including the merge. Never the default; P3 measures latency and quality first. Reason: full-set reading is impractical, and the summary must still be verifiable.
