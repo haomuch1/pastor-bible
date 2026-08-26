@@ -94,7 +94,12 @@ class Retriever(object):
         return self._topic_vecs
 
     def _canon_ok(self, verse_id, canon_mode):
-        return canon_mode != '66' or self.canon_of[verse_id // 1000000] == 'protestant'
+        canon = self.canon_of[verse_id // 1000000]
+        if canon_mode == '66':
+            return canon == 'protestant'
+        if canon_mode == 'deutero-only':
+            return canon == 'deutero'
+        return True
 
     # -- individual retrieval paths ----------------------------------------
 
@@ -157,6 +162,8 @@ class Retriever(object):
             args = [t]
             if canon_mode == '66':
                 sql += " AND b.canon = 'protestant'"
+            elif canon_mode == 'deutero-only':
+                sql += " AND b.canon = 'deutero'"
             sql += ' ORDER BY bm25(verse_fts) LIMIT ?'
             args.append(limit)
             try:
@@ -206,7 +213,39 @@ class Retriever(object):
 
     def search(self, qvec, keywords, canon_mode='66', use_vector_verses=True,
                use_vector_pericopes=True, use_fts=True, use_topics=False,
-               use_tsk=False, top_n=25, pool=100):
+               use_tsk=False, top_n=25, pool=100, additive_deutero=True,
+               deutero_slice=8):
+        """Entry point. In both-canon mode retrieval is additive by default.
+
+        P2 measured that simply unfiltering the Deuterocanon displaces up to 15
+        of the 25 protestant passages: turning the setting on took passages away
+        from the reader rather than adding to them. Additive mode instead runs
+        the canon-66 search unchanged, then a Deuterocanon-only search, and
+        appends the best of the latter. The 66 result is therefore always a
+        prefix of the both result, and the toggle can only add.
+        """
+        if canon_mode == 'both' and additive_deutero:
+            base_full, base_top, topics = self._search(
+                qvec, keywords, '66', use_vector_verses, use_vector_pericopes,
+                use_fts, use_topics, use_tsk, top_n, pool)
+            deut_full, _, _ = self._search(
+                qvec, keywords, 'deutero-only', use_vector_verses,
+                use_vector_pericopes, use_fts, use_topics, use_tsk, top_n, pool)
+            extra = deut_full[:deutero_slice]
+            # Score them below the protestant tail so ordering stays stable.
+            floor = base_full[-1]['score'] if base_full else 0.0
+            for i, c in enumerate(extra):
+                c = dict(c)
+                c['score'] = round(floor - 1e-6 * (i + 1), 9)
+                base_full.append(c)
+            return base_full, base_full[:top_n + len(extra)], topics
+        return self._search(qvec, keywords, canon_mode, use_vector_verses,
+                            use_vector_pericopes, use_fts, use_topics,
+                            use_tsk, top_n, pool)
+
+    def _search(self, qvec, keywords, canon_mode='66', use_vector_verses=True,
+                use_vector_pericopes=True, use_fts=True, use_topics=False,
+                use_tsk=False, top_n=25, pool=100):
         """Returns (full_set, top_n_cut, matched_topics).
 
         full_set is every candidate with its score and origin tags, before any

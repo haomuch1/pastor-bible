@@ -203,3 +203,48 @@ def test_ranges_never_span_a_chapter(retriever, db):
     for r in retriever.as_ranges(full):
         chapters = {i // 1000 for i in r['ids']}
         assert len(chapters) == 1, r['ref']
+
+
+# ------------------------------------------- additive canon retrieval (P3)
+
+def test_66_result_is_a_prefix_of_the_both_result(retriever, db):
+    """The canon toggle may only add.
+
+    P2 measured that unfiltering the Deuterocanon displaced up to 15 of the 25
+    protestant passages, so a reader turning the setting on lost passages. P3
+    made both-canon retrieval additive; this asserts the property that change
+    was made to guarantee.
+    """
+    import json
+    import os
+    qpath = os.path.join(ROOT, 'data', 'eval', 'questions.json')
+    data = json.load(open(qpath, encoding='utf-8'))
+    for qid in ('g19', 'g20'):
+        q = next(g for g in data['graded'] if g['id'] == qid)
+        vid = db.execute(
+            'SELECT verse_id FROM verses ORDER BY verse_id LIMIT 1').fetchone()[0]
+        qv = _qvec(retriever, vid)
+        base, _, _ = retriever.search(qv, q['keywords'], canon_mode='66',
+                                      use_topics=True, use_tsk=True)
+        both, _, _ = retriever.search(qv, q['keywords'], canon_mode='both',
+                                      use_topics=True, use_tsk=True,
+                                      additive_deutero=True)
+        base_ids = [c['verse_id'] for c in base]
+        both_ids = [c['verse_id'] for c in both]
+        assert both_ids[:len(base_ids)] == base_ids, \
+            '%s: canon 66 result is not a prefix of the both result' % qid
+        assert set(base_ids) <= set(both_ids), qid
+
+
+def test_additive_mode_actually_adds_deuterocanon(retriever, db):
+    import json
+    import os
+    qpath = os.path.join(ROOT, 'data', 'eval', 'questions.json')
+    data = json.load(open(qpath, encoding='utf-8'))
+    q = next(g for g in data['graded'] if g['id'] == 'g19')
+    vid = db.execute(
+        'SELECT verse_id FROM verses ORDER BY verse_id LIMIT 1').fetchone()[0]
+    both, _, _ = retriever.search(_qvec(retriever, vid), q['keywords'],
+                                  canon_mode='both', use_topics=True,
+                                  use_tsk=True, additive_deutero=True)
+    assert any(c['canon'] == 'deutero' for c in both)
