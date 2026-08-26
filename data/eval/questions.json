@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "draft",
+  "status": "approved-as-drafted",
   "generated_from_index": "d8eae746b6bc6ce285b3300e9693fc3c8a41fe88ad2e8b35cef07cda1c5b0e6d",
   "index_version": "0.1.0",
   "graded": [
@@ -306,7 +306,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g02",
@@ -604,7 +604,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g03",
@@ -930,7 +930,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g04",
@@ -1271,7 +1271,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g05",
@@ -1666,7 +1666,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g06",
@@ -2109,7 +2109,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g07",
@@ -2440,7 +2440,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g08",
@@ -2815,7 +2815,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g09",
@@ -3116,7 +3116,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g10",
@@ -3432,7 +3432,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g11",
@@ -3800,7 +3800,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g12",
@@ -4142,7 +4142,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g13",
@@ -4498,7 +4498,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g14",
@@ -4839,7 +4839,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g15",
@@ -5168,7 +5168,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g16",
@@ -5491,7 +5491,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g17",
@@ -5866,7 +5866,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g18",
@@ -6250,7 +6250,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g19",
@@ -6421,6 +6421,72 @@
             "tsk"
           ],
           "canon": "protestant"
+        },
+        {
+          "ref": "Tob 12:8-9",
+          "verse_ids": [
+            40012008,
+            40012009
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
+        },
+        {
+          "ref": "Tob 4:7-11",
+          "verse_ids": [
+            40004007,
+            40004008,
+            40004009,
+            40004010,
+            40004011
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
+        },
+        {
+          "ref": "2Es 2:20",
+          "verse_ids": [
+            52002020
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
+        },
+        {
+          "ref": "Bar 3:2",
+          "verse_ids": [
+            45003002
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
+        },
+        {
+          "ref": "Tob 14:10-11",
+          "verse_ids": [
+            40014010,
+            40014011
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
+        },
+        {
+          "ref": "Sir 31:4",
+          "verse_ids": [
+            44031004
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
         }
       ],
       "should": [
@@ -6601,7 +6667,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     },
     {
       "id": "g20",
@@ -6778,6 +6844,67 @@
             "tsk"
           ],
           "canon": "protestant"
+        },
+        {
+          "ref": "Sir 19:20-22",
+          "verse_ids": [
+            44019020,
+            44019022
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
+        },
+        {
+          "ref": "4Ma 11:21",
+          "verse_ids": [
+            53011021
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
+        },
+        {
+          "ref": "Sir 1:4",
+          "verse_ids": [
+            44001004
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
+        },
+        {
+          "ref": "Bar 3:12",
+          "verse_ids": [
+            45003012
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
+        },
+        {
+          "ref": "Sir 25:9",
+          "verse_ids": [
+            44025009
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
+        },
+        {
+          "ref": "Wis 6:20",
+          "verse_ids": [
+            43006020
+          ],
+          "origins": [
+            "fts"
+          ],
+          "canon": "deutero"
         }
       ],
       "should": [
@@ -6986,7 +7113,7 @@
           "canon": "protestant"
         }
       ],
-      "status": "draft"
+      "status": "approved-as-drafted"
     }
   ],
   "smoke": [
@@ -7090,5 +7217,6 @@
       "question": "What does the Bible say about idolatry?",
       "category": "study"
     }
-  ]
+  ],
+  "note": "These gold lists are index-derived: every passage was proposed by Nave's Topical Bible, the FTS5 keyword index, or a Treasury of Scripture Knowledge hop, and none has been reviewed by a pastor. Jared is not a pastor and declines to hand-judge them. They are approved as drafted so that P2 has a fixed target to measure against. A future contributor may revise them. Because the lists share their sources with the topic, cross-reference and keyword retrieval paths, recall measured against them for any configuration that uses those paths is near-circular and is reported but not treated as evidence; the vector-only ablations are the evidence."
 }

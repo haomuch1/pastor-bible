@@ -1,7 +1,7 @@
 """Checks on the evaluation set in data/eval/questions.json.
 
-The gold lists are a draft awaiting Jared's approval, so nothing here judges
-whether a passage is the right one. What is checked is that the file is
+The gold lists are approved as drafted, not vetted by a pastor, so nothing here
+judges whether a passage is the right one. What is checked is that the file is
 structurally sound and that every reference in it points at verses that
 actually exist: a gold list containing a passage the index cannot produce
 would make every recall figure in P2 meaningless.
@@ -46,10 +46,12 @@ def all_passages(data):
 
 # ------------------------------------------------------------------ structure
 
-def test_status_is_draft(data):
-    # P2 flips this to approved only after Jared has signed off every MUST list.
-    assert data['status'] == 'draft'
-    assert all(g['status'] == 'draft' for g in data['graded'])
+def test_status_is_approved_as_drafted(data):
+    # P2 set this. "as drafted" is load-bearing: the lists are index-derived and
+    # were never reviewed by a pastor, and the note field says so.
+    assert data['status'] == 'approved-as-drafted'
+    assert all(g['status'] == 'approved-as-drafted' for g in data['graded'])
+    assert 'reviewed by a pastor' in data['note']
 
 
 def test_counts(data):
@@ -67,9 +69,24 @@ def test_ids_are_unique_and_well_formed(data):
     assert all(i.startswith('s') for i in sids)
 
 
-def test_every_graded_question_has_5_to_8_must_entries(data):
+def test_must_list_sizes(data):
+    # 5 to 8 for the 18 canon-66 questions. g19 and g20 carry 6 extra
+    # deuterocanonical passages each, added in P2 so that the canon toggle has
+    # something to be measured against; the rule is amended for them alone.
     for g in data['graded']:
-        assert MUST_MIN <= len(g['must']) <= MUST_MAX, g['id']
+        if g['id'] in ('g19', 'g20'):
+            assert len(g['must']) == MUST_MAX + 6, g['id']
+        else:
+            assert MUST_MIN <= len(g['must']) <= MUST_MAX, g['id']
+
+
+def test_deutero_must_entries_only_on_g19_g20(data):
+    for g in data['graded']:
+        deut = [p for p in g['must'] if p['canon'] == 'deutero']
+        if g['id'] in ('g19', 'g20'):
+            assert len(deut) == 6, g['id']
+        else:
+            assert not deut, g['id']
 
 
 def test_should_is_non_gating_but_present(data):
@@ -166,8 +183,15 @@ def test_origins_are_known_and_non_empty(data):
 def test_must_passages_are_corroborated(data):
     # A gating passage carries at least two independent origins. Recorded in
     # DECISIONS.md; asserted here so the rule cannot quietly lapse.
+    #
+    # Deuterocanonical passages are exempt and cannot be otherwise: neither
+    # Nave's nor TSK indexes those books, so keyword search is the only origin
+    # available to them. That is the limitation g19 and g20 exist to measure.
     for g in data['graded']:
         for p in g['must']:
+            if p['canon'] == 'deutero':
+                assert p['origins'] == ['fts'], '%s %s' % (g['id'], p['ref'])
+                continue
             assert len(p['origins']) >= 2, '%s %s' % (g['id'], p['ref'])
 
 
