@@ -46,3 +46,8 @@ session whether the ground has shifted.
 - 2026-08-26 — tauri-plugin-opener, serde and serde_json were removed from the scaffold. Reason: P0 requires only a window; the opener plugin grants a capability to launch external programs, which an offline app should not carry until something needs it.
 - 2026-08-26 — Commit author email is the GitHub noreply address 293447797+haomuch1@users.noreply.github.com, set locally for this repo only. Reason: GitHub rejected the first push with GH007 rather than publish Jared's private address; noreply keeps that protection on and keeps his real address out of a repo that becomes public at v1.0.0.
 - 2026-08-26 — Application icons remain the stock Tauri logo for now. Reason: icon design is an aesthetic choice and belongs to Jared; must be replaced before packaging in P6.
+
+## P1 session, 2026-08-26
+
+- 2026-08-26 — CODE_OF_CONDUCT.md contact method is "by opening an issue on the pastor-bible GitHub repository"; the preceding word "at" was dropped so the sentence is grammatical. Reason: the instructed replacement inserted verbatim produced "at by opening an issue"; the CoC is public-facing and must read correctly. Reverses the P0 entry that left the placeholder in place.
+- 2026-08-26 — NOTICE.md now records the CoC as modified, with both the new and the upstream checksum. Reason: CC BY 4.0 requires modifications to be indicated, so editing the file obliged the notice to change with it.

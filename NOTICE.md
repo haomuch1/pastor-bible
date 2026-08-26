@@ -26,8 +26,10 @@ phase that vendors or ships it.
 
 ## Vendored files
 
-Files copied into this repository unmodified. Checksums are of the committed
-file and can be re-derived with sha256sum.
+Files copied into this repository from an external source. Checksums are of the
+committed file and can be re-derived with sha256sum. Where a file has been
+changed, the change is stated and the upstream checksum is given alongside, as
+CC BY 4.0 requires modifications to be indicated.
 
 Contributor Covenant Code of Conduct, version 2.1
   File:      CODE_OF_CONDUCT.md
@@ -35,10 +37,14 @@ Contributor Covenant Code of Conduct, version 2.1
   License:   Creative Commons Attribution 4.0 International (CC BY 4.0)
              https://creativecommons.org/licenses/by/4.0/
   Retrieved: 2026-08-26
-  SHA-256:   977d781349351fd7c1f076e4c7dc7de2a05b40e12c773542c3815dd4ce7f37ba
-  Note:      Shipped unmodified, including its "[INSERT CONTACT METHOD]"
-             placeholder, which must be replaced with a real reporting address
-             before this repository is made public.
+  SHA-256:   afe11bf27e117489d05850d4d12af620307500bb9687d20af9a234153b94a2c1
+  Upstream:  977d781349351fd7c1f076e4c7dc7de2a05b40e12c773542c3815dd4ce7f37ba
+  Modified:  Yes. One change, on 2026-08-26: the template's
+             "[INSERT CONTACT METHOD]" placeholder was replaced with a real
+             reporting route, "by opening an issue on the pastor-bible GitHub
+             repository", and the now-redundant preposition "at" preceding it
+             was dropped so the sentence reads correctly. No other text differs
+             from the upstream 2.1 markdown.
 
 Apache License, Version 2.0
   File:      LICENSE
