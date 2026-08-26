@@ -65,3 +65,13 @@ session whether the ground has shifted.
 - 2026-08-26 — Every reference from either corpus is resolved against the verses actually parsed from the WEB, and anything that does not land on a real row is quarantined with a reason rather than dropped. Reason: a cross-reference the app cannot display is one it must not claim.
 - 2026-08-26 — The build is deterministic and its build date defaults to 1970-01-01 so repeat builds are byte-identical. Reason: plan 4.3 requires same sources plus same model to yield the same checksum; a real date is stamped by the release job that publishes an index.
 - 2026-08-26 — .gitattributes marks *.zip as binary explicitly. Reason: the vendored source archives have their checksums recorded in NOTICE.md, and no line-ending normalization may ever touch them.
+
+## P2-prep session, 2026-08-26
+
+- 2026-08-26 — Footnotes and cross-references are omitted from verse text, permanently for v1. Reason: eBible.org permits extracts; the WEB trademark condition only forbids changing the words or punctuation, which we never do.
+- 2026-08-26 — NOTICE.md WEB entry states plainly that verse text is reproduced unmodified and that translator footnotes and cross-references are omitted. Reason: the one legal obligation on our main source deserves an explicit, checkable statement rather than an inference.
+- 2026-08-26 — Eval set is 20 graded questions with MUST and SHOULD gold lists, plus 20 ungraded smoke questions with no gold lists, run in P3 for Jared's eyeball review only. Reason: keeps Jared's approval burden proportionate; the smoke set preserves topic coverage.
+- 2026-08-26 — Gold list structure: MUST = 5-8 passages a pastor would say the answer cannot omit, and recall@25 in P2 is measured against MUST only; Jared approves every MUST list. SHOULD = further relevant passages, Claude's draft, non-gating, labeled unreviewed. Reason: only the gating part needs approval.
+- 2026-08-26 — A gold passage is a verse range within one chapter, never a whole chapter or book. Reason: a chapter-wide gold entry cannot distinguish good retrieval from lucky retrieval.
+- 2026-08-26 — Known limitation, measured in P2: TSK and Nave's index the 66 protestant books only, so Deuterocanon passages are reachable by vector and keyword search alone. Questions g19 and g20 exist to measure this. No fix is built until P2 numbers show one is needed.
+- 2026-08-26 — Pericopes remain WEB paragraphs; no headings are added. P2 reports paragraph length distribution and recall before any change is considered. Reason: no public-domain heading set exists, and generated headings would inject interpretation.
