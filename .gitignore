@@ -48,3 +48,4 @@ models/
 
 # Evaluation scratch output; the kept copy lives in data/eval/
 /eval_results.json
+data/eval/runs/*/raw/
