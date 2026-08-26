@@ -101,3 +101,54 @@ CREATE TABLE meta (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+-- ---------------------------------------------------------------------------
+-- Embeddings (P2).
+--
+-- Plain float32 little-endian BLOBs, unit-normalized at write time so that a
+-- cosine similarity is a plain dot product. Searched brute force: about 70,000
+-- small vectors per model, which scans in milliseconds and spares the installer
+-- a bundled native extension. sqlite-vec is deliberately not used; see
+-- DECISIONS.md and PLAN.md 3.2.
+--
+-- All shortlisted models are stored side by side. The retrieval harness selects
+-- one by model_id, so configurations can be compared without a rebuild.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE verse_embeddings (
+    model_id TEXT    NOT NULL,
+    verse_id INTEGER NOT NULL REFERENCES verses(verse_id),
+    dim      INTEGER NOT NULL,
+    vec      BLOB    NOT NULL,
+    PRIMARY KEY (model_id, verse_id)
+) WITHOUT ROWID;
+
+CREATE TABLE pericope_embeddings (
+    model_id    TEXT    NOT NULL,
+    pericope_id INTEGER NOT NULL REFERENCES pericopes(pericope_id),
+    part        INTEGER NOT NULL DEFAULT 0,  -- >0 when a pericope was split
+    dim         INTEGER NOT NULL,
+    vec         BLOB    NOT NULL,
+    start_verse_id INTEGER NOT NULL,
+    end_verse_id   INTEGER NOT NULL,
+    PRIMARY KEY (model_id, pericope_id, part)
+) WITHOUT ROWID;
+
+CREATE TABLE topic_embeddings (
+    model_id TEXT    NOT NULL,
+    topic_id INTEGER NOT NULL REFERENCES nave_topics(topic_id),
+    dim      INTEGER NOT NULL,
+    vec      BLOB    NOT NULL,
+    PRIMARY KEY (model_id, topic_id)
+) WITHOUT ROWID;
+
+CREATE TABLE embedding_models (
+    model_id      TEXT PRIMARY KEY,
+    gguf_file     TEXT NOT NULL,
+    sha256        TEXT NOT NULL,
+    dim           INTEGER NOT NULL,
+    n_ctx         INTEGER NOT NULL,
+    doc_prefix    TEXT NOT NULL,
+    query_prefix  TEXT NOT NULL,
+    normalized    INTEGER NOT NULL DEFAULT 1
+);

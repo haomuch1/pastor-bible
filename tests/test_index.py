@@ -220,8 +220,12 @@ def test_meta_matches_the_data(db):
         assert len(meta[k]) == 64
 
 
-def test_no_embedding_tables_yet(db):
+def test_embedding_tables_exist(db):
+    # P1 asserted these were absent. P2 created them; the guard now runs the
+    # other way, and the single generic "embeddings" table sketched in PLAN 3.2
+    # is deliberately still absent, replaced by three specific ones.
     names = {r[0] for r in db.execute(
         "SELECT name FROM sqlite_master WHERE type='table'")}
     assert 'embeddings' not in names
-    assert 'topic_embeddings' not in names
+    assert {'verse_embeddings', 'pericope_embeddings', 'topic_embeddings',
+            'embedding_models'} <= names

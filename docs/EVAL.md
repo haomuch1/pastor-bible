@@ -103,6 +103,91 @@ verse. They are what recall is computed against; ref is for human eyes.
 Smoke entries carry id, question and category and nothing else. A gold field on
 a smoke entry is a bug, and tests/test_eval_set.py fails on it.
 
+## Embedding and reranker shortlist (P2)
+
+Every model here meets all of the conditions set for P2: an Apache-2.0 or MIT
+licence, English, small enough to run on a CPU, available as GGUF, and
+supported by llama-server's embedding or rerank endpoint. The licence quoted is
+the `license` field of the model's own card on Hugging Face, read from the API
+rather than from a README.
+
+Index-time vectors and query-time vectors are produced by the same binary
+through the same endpoint, so there is no train/serve mismatch to chase later.
+
+    tool          llama.cpp, release b10639, win-cpu-x64 prebuilt binary
+                  reported by the binary as: version 0.3.0-dev (build 10639,
+                  commit 5e6a37cb1), built with Clang 20.1.8
+                  kept in tools/, gitignored, never committed
+
+Embedding candidates:
+
+    bge-small-en-v1.5
+      licence     mit          (BAAI/bge-small-en-v1.5)
+      params      33.4M        dim 384      model context 512
+      GGUF        CompendiumLabs/bge-small-en-v1.5-gguf, bge-small-en-v1.5-f16.gguf
+      sha256      f0b2fef971e8366438bfd2d9aefea1b0115919389448806d290237f638bae999
+      size        64.2 MB
+      prefixes    documents: none
+                  queries:   "Represent this sentence for searching relevant passages: "
+
+    nomic-embed-text-v1.5
+      licence     apache-2.0   (nomic-ai/nomic-embed-text-v1.5)
+      params      136.7M       dim 768      model context 2048
+      GGUF        nomic-ai/nomic-embed-text-v1.5-GGUF, nomic-embed-text-v1.5.f16.gguf
+      sha256      f7af6f66802f4df86eda10fe9bbcfc75c39562bed48ef6ace719a251cf1c2fdb
+      size        261.6 MB
+      prefixes    documents: "search_document: "
+                  queries:   "search_query: "
+
+    qwen3-embedding-0.6b
+      licence     apache-2.0   (Qwen/Qwen3-Embedding-0.6B)
+      params      595.8M       dim 1024     model context 32768, used at 2048
+      GGUF        Qwen/Qwen3-Embedding-0.6B-GGUF, Qwen3-Embedding-0.6B-Q8_0.gguf
+      sha256      06507c7b42688469c4e7298b0a1e16deff06caf291cf0a5b278c308249c3e439
+      size        609.5 MB
+      prefixes    documents: none
+                  queries:   "Instruct: Given a question about the Bible, retrieve
+                              passages of scripture that answer it
+Query: "
+
+Reranker candidate:
+
+    bge-reranker-v2-m3
+      licence     apache-2.0   (BAAI/bge-reranker-v2-m3, and the GGUF repo
+                  gpustack/bge-reranker-v2-m3-GGUF is apache-2.0 as well)
+      params      567.8M       model context 8194, used at 2048
+      GGUF        gpustack/bge-reranker-v2-m3-GGUF, bge-reranker-v2-m3-Q8_0.gguf
+      sha256      a43c7c9b11a4c1517e5bf95151960e1621d1b72f7a493364b01e386cf1aaa1d3
+      size        606.2 MB
+
+Only one reranker made the list. The obvious smaller alternative,
+bge-reranker-base, is MIT but its only GGUF builds are third-party repositories
+with a few dozen downloads, which is not a checksum this project should stake a
+release on. Qwen3-Reranker-0.6B is Apache-2.0 but has no first-party GGUF, and
+its yes/no-logit scoring is a different mechanism from the classification head
+that llama-server's rerank endpoint expects. Rerank is not gating, so one
+candidate is enough to answer whether it earns its place.
+
+Prefixes matter. Each of these models states a convention on its card, and
+nomic's is mandatory rather than advisory. Using the wrong prefix, or none,
+costs real recall, so the exact strings are stored in the index alongside the
+vectors, in the embedding_models table, and the harness reads them from there
+rather than hardcoding them.
+
+## Embedding text templates
+
+Recorded because changing one of these invalidates every vector in the database.
+
+    verse     "{abbrev} {chapter}:{verse}[ — {heading}]
+{verse text}"
+    pericope  "{abbrev} {chapter}:{first}-{last}[ — {heading}]
+{verse texts}"
+    topic     "{heading}", or "{parent heading} — {heading}" for a subtopic
+
+The heading is appended only where the source actually has one, which is 10
+pericopes out of 10,052. The document prefix for the model in use is prepended
+to all three.
+
 ## Metrics
 
 Retrieval recall@25
@@ -134,6 +219,49 @@ Latency and peak RAM
   with the numbers. Feeds the hardware floor stated in README (plan 6.5) and the
   installer's automatic model choice (plan 6.4).
   Threshold: no pass/fail gate; these numbers define the stated requirements.
+
+## Retrieval evaluation method (P2)
+
+Run by pipeline/evaluate.py against the built index.db, over the 20 approved
+graded questions.
+
+What recall@k means here. Candidates come back as ranked verses, are grouped
+into contiguous ranges within a chapter, and the best k ranges are the
+retrieved passages. That matches PLAN 5.5, which sends "top ~25 passages" to
+generation, rather than counting 25 individual verses. A MUST passage counts as
+recalled if it shares at least one verse with a retrieved passage. Recall is
+the fraction of MUST passages recalled, averaged across questions.
+
+The query. No chat model runs in P2, so PLAN 5.2's query rewriting does not
+happen. The stored keyword list for each question stands in for it: the vector
+paths receive the plain question text followed by its keywords, and the FTS
+path receives the keywords as separate ranked searches. P3 replaces this with
+the model's own rewrites and can compare them against the stored lists.
+
+Configurations:
+
+    A   vector only, verses
+    B   vector only, pericopes
+    C   vector only, verses + pericopes fused
+    D   FTS only
+    E   C + D fused, hybrid with no expansion
+    F   E + Nave's topic expansion + TSK one-hop expansion
+    G   F + reranker
+
+A, B and C are the evidence. D through G all use the topic, cross-reference or
+keyword paths that the gold lists were themselves drawn from, so measuring them
+against those lists is close to marking their own homework: a passage is in the
+gold list partly because Nave's or TSK or a keyword search proposed it, and
+those same paths then retrieve it. Their numbers are reported for completeness
+and to see the shape of the pipeline, and they are not evidence of quality. The
+vector paths had no hand in drafting the gold lists, so what they recall is the
+one thing these questions can honestly measure.
+
+Fusion is reciprocal rank fusion with k=60 over each contributing ranked list.
+Topic expansion contributes the verse list of each of the top 5 matching Nave's
+topics, capped at 60 verses per topic. TSK expansion follows cross-references
+one hop from the 25 highest-scoring candidates, capped at 200 verses. Both are
+tagged by origin so a passage's provenance is visible in the output.
 
 ## Gates
 

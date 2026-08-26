@@ -195,7 +195,13 @@ def test_must_passages_are_corroborated(data):
             assert len(p['origins']) >= 2, '%s %s' % (g['id'], p['ref'])
 
 
-def test_generated_from_the_current_index(db, data):
-    checksum = db.execute("SELECT value FROM meta WHERE key='build_checksum'"
-                          ).fetchone()[0]
-    assert data['generated_from_index'] == checksum
+def test_gold_list_provenance_is_recorded(db, data):
+    # The gold lists were drawn from the 0.1.0 index. Adding embeddings changes
+    # the file and therefore its checksum, so the link is kept by an explicit
+    # meta row rather than by comparing against the live checksum. The lists
+    # remain valid because every verse_id in them still resolves, which
+    # test_every_passage_resolves_to_real_verses checks directly.
+    row = db.execute("SELECT value FROM meta WHERE key='gold_lists_index'"
+                     ).fetchone()
+    assert row is not None, 'index.db does not record gold_lists_index'
+    assert data['generated_from_index'] == row[0]

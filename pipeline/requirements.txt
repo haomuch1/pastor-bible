@@ -3,3 +3,5 @@
 pysword==0.2.8   # MIT. Used only for its KJV versification table, which the
                  # Treasury of Scripture Knowledge module is indexed against.
 pytest==9.1.1    # MIT. Runs tests/ against the produced index.db.
+numpy==2.5.2     # BSD-3-Clause. Brute-force cosine in the P2 evaluation
+                 # harness only. The shipped Rust backend uses no Python.
