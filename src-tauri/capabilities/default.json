@@ -1,9 +1,10 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "What the window may do. Nothing here reaches the network or the file system on its own: the model download and the history export are Rust commands, and the only file dialog is the save box the reader opens for that export.",
   "windows": ["main"],
   "permissions": [
-    "core:default"
+    "core:default",
+    "dialog:allow-save"
   ]
 }

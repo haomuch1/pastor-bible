@@ -6,6 +6,7 @@
 pub mod api;
 pub mod crisis;
 pub mod download;
+pub mod hardware;
 pub mod index;
 pub mod paths;
 pub mod pipeline;
