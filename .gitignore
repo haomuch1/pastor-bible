@@ -48,8 +48,12 @@ dist-ssr
 *.suo
 *.sw?
 
-# Python pipeline (build-time only, never shipped)
+# Python pipeline (build-time only, never shipped). A virtual environment is
+# ignored wherever it is put: the pipeline's own, and any a contributor makes at
+# the root, which is where most people make one.
 pipeline/.venv/
+.venv/
+venv/
 __pycache__/
 *.pyc
 .pytest_cache/
