@@ -1,0 +1,32 @@
+[package]
+name = "pastor-bible-core"
+version = "0.0.1"
+description = "Retrieval, citation verifier and generation for The Pastor Bible."
+authors = ["Jared", "Claude (Anthropic)"]
+edition = "2021"
+license = "Apache-2.0"
+
+# The core carries no GUI dependency. It is the whole query pipeline, and the
+# Tauri shell in P5 is one caller of it; the CLI harness is another. Keeping it
+# a separate crate means the tests that matter run without building a webview.
+
+[lib]
+name = "pastor_bible_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pastor-bible-cli"
+path = "src/bin/cli.rs"
+
+[dependencies]
+rusqlite = { version = "0.37", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+ureq = { version = "2", default-features = false }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_JobObjects", "Win32_System_Threading"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

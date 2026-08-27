@@ -28,8 +28,11 @@ def test_vector(i, text, expected, got, violations):
         i, text, got, [v['text'] for v in violations])
 
 
-def test_all_twenty_five_vectors_present():
-    assert len(TEST_VECTORS) == 25
+def test_all_thirty_five_vectors_present():
+    # The count is asserted so a vector cannot be quietly dropped. It grew from
+    # 25 to 35 on 2026-08-26 when Rule B was corrected to see multi-word book
+    # names; docs/VERIFIER.md carries the list.
+    assert len(TEST_VECTORS) == 35
 
 
 def test_stripping_removes_only_the_offending_span():

@@ -51,6 +51,26 @@ by a chapter number. The forms recognised are:
     First Corinthians 13     ordinal word prefix
     I Corinthians 13         roman numeral prefix
     Song of Solomon 2:1      multi-word book name
+    Wisdom of Solomon 3:1    multi-word deuterocanonical name
+    1 Maccabees 2:15         numeric prefix, deuterocanonical
+
+The written forms are taken from index.db itself: each book's USFM code, its
+abbreviation, its full title, that title without a leading "The", and the
+Treasury of Scripture Knowledge abbreviation table. A short alias list supplies
+the common English names that none of those spells out, which are "Song of
+Songs", "Canticles", "Acts of the Apostles", "Wisdom of Solomon", "Wisdom",
+"Ecclesiasticus", "Sirach", "Ben Sira", "Prayer of Manasseh", "Greek Esther",
+"Greek Daniel", and "1" through "4 Maccabees" and "1" and "2 Esdras".
+
+*Corrected 2026-08-26, P4.* Until this date the implementation built its
+pattern from the normalised form of each name, which has spaces stripped, so no
+multi-word written form could ever match. Measured against 83 realistic book
+names, 14 were undetected: "Song of Solomon", "Song of Songs", "Acts of the
+Apostles" and eleven deuterocanonical names, which are exactly what a
+both-canon answer cites. Both implementations now build the pattern word by
+word from the written form. The correction changes no verdict on any output P3
+produced: 41 first-pass verdicts, 14 violation records with identical kind,
+text, reason and span, and 41 final answers, all unchanged.
 
 A chapter-only reference such as `Ps 23` claims the whole chapter. It resolves
 only if every verse of that chapter is in the sent set, which is rarely true of
@@ -112,15 +132,19 @@ sent set`).
 
 ## Test vectors
 
-25 vectors, in pipeline/verifier.py as `TEST_VECTORS`, run by
-tests/test_verifier.py. The sent set for all of them is:
+35 vectors, in pipeline/verifier.py as `TEST_VECTORS`, run by
+tests/test_verifier.py and by the Rust port's own test. The sent set for all of
+them is:
 
     [P1] Matthew 6:25-34      [P2] Philippians 4:6-7
     [P3] Psalm 23:1-4         [P4] 1 Peter 5:6-7
 
 Vectors 1 to 8 must pass. Vectors 9 to 17 must be flagged. Vectors 18 to 25 are
-the false positives that must not be flagged. The file is the authority on
-their exact text; this list is the summary.
+the false positives that must not be flagged. Vectors 26 to 31 are the
+multi-word and deuterocanonical names the 2026-08-26 correction added, and 32
+to 35 are the same names in ordinary prose with no chapter number, which must
+still not be flagged. The file is the authority on their exact text; this list
+is the summary.
 
     1   cites [P1] only                                        ok
     2   cites [P1] and [P2]                                    ok
@@ -147,3 +171,13 @@ their exact text; this list is the summary.
     23  "he acts 2 ways", lower case                           ok
     24  "Judges 12 times", unit noun follows                   ok
     25  Numbers, Kings, Acts as words in a sentence            ok
+    26  Song of Solomon 2:1                                    violation
+    27  Song of Songs 2:1                                      violation
+    28  The Acts of the Apostles 2:38                          violation
+    29  Wisdom of Solomon 3:1                                  violation
+    30  1 Maccabees 2:15                                       violation
+    31  Sirach 3:1                                             violation
+    32  "the song of songs" sung, no chapter                   ok
+    33  "the acts of the apostles" as prose, no chapter        ok
+    34  Wisdom personified, no chapter                         ok
+    35  "the prayer of Manasseh" read aloud, no chapter        ok

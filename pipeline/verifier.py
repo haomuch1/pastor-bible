@@ -32,7 +32,7 @@ TOKEN_RE = re.compile(r'\[P(\d+)\]')
 AMBIGUOUS = {
     'job', 'mark', 'acts', 'numbers', 'judges', 'kings', 'song', 'songs',
     'revelation', 'chronicles', 'romans', 'hebrews', 'lamentations', 'kings',
-    'proverbs', 'psalm', 'psalms', 'james', 'philemon', 'ruth',
+    'proverbs', 'psalm', 'psalms', 'james', 'philemon', 'ruth', 'wisdom',
 }
 
 # A number followed by one of these is a count, not a chapter.
@@ -54,18 +54,47 @@ def _norm(tok):
     return re.sub(r'[\s.]', '', tok).lower()
 
 
+# Common English names of books that neither the WEB's own long titles nor the
+# TSK abbreviation table spells out. Without these, "Song of Solomon 3:1" and
+# every deuterocanonical reference are invisible to Rule B: measured on
+# 2026-08-26, 14 of 83 realistic book names were undetected, and 11 of the 14
+# were the Deuterocanon, which is exactly what a both-canon answer cites.
+ALIASES = {
+    'SNG': ['Song of Songs', 'Song of Solomon', 'Canticles'],
+    'ACT': ['Acts of the Apostles'],
+    'WIS': ['Wisdom of Solomon', 'Wisdom'],
+    'SIR': ['Ecclesiasticus', 'Sirach', 'Ben Sira'],
+    'MAN': ['Prayer of Manasseh', 'Prayer of Manasses'],
+    'ESG': ['Greek Esther'],
+    'DAG': ['Greek Daniel'],
+    '1ES': ['1 Esdras'],
+    '2ES': ['2 Esdras'],
+    '1MA': ['1 Maccabees'],
+    '2MA': ['2 Maccabees'],
+    '3MA': ['3 Maccabees'],
+    '4MA': ['4 Maccabees'],
+}
+
+
 class BookNames(object):
     """Maps written book names onto book ids, from the index itself."""
 
     def __init__(self, con):
         self.by_name = {}
+        # The written form each normalised key came from, so the reference
+        # pattern can be rebuilt with its spaces intact. Without it a
+        # multi-word name is escaped as one run of letters and can never match.
+        self.written_of = {}
         self.ambiguous_ids = set()
         rows = con.execute(
             'SELECT book_id, usfm_code, name, abbrev FROM books').fetchall()
         for book_id, code, name, abbrev in rows:
             for variant in self._variants(code, name, abbrev):
-                self.by_name.setdefault(_norm(variant), book_id)
-                if _norm(variant) in AMBIGUOUS:
+                key = _norm(variant)
+                if key not in self.by_name:
+                    self.by_name[key] = book_id
+                    self.written_of[key] = variant
+                if key in AMBIGUOUS:
                     self.ambiguous_ids.add(book_id)
         # Abbreviations and common forms the source does not spell out.
         try:
@@ -74,7 +103,10 @@ class BookNames(object):
                 'SELECT book_id, usfm_code FROM books')}
             for abbr, code in TSK_ABBREV.items():
                 if code in codes:
-                    self.by_name.setdefault(_norm(abbr), codes[code])
+                    key = _norm(abbr)
+                    if key not in self.by_name:
+                        self.by_name[key] = codes[code]
+                        self.written_of[key] = abbr
         except Exception:  # noqa: BLE001
             pass
 
@@ -86,6 +118,12 @@ class BookNames(object):
         tail = re.sub(r'^.*\bCalled\b\s*', '', name).strip()
         out.append(tail)
         out.append(name)
+        # "The Song of Solomon" is how the WEB titles the book; "Song of
+        # Solomon" is how anyone writes it.
+        for v in (tail, name):
+            if v.lower().startswith('the '):
+                out.append(v[4:])
+        out.extend(ALIASES.get(code, []))
         # Numeric-prefixed books: 1SA -> "1 Samuel", "First Samuel",
         # "I Samuel", all normalising to the same key.
         m = re.match(r'^([123])(.*)$', code)
@@ -116,27 +154,40 @@ class BookNames(object):
         return None
 
 
+ORDINAL_ALT = {'1': 'First|1st|I', '2': 'Second|2nd|II', '3': 'Third|3rd|III'}
+
+
+def book_alternative(written):
+    """A permissive pattern for one written book name.
+
+    The name is matched word by word so that a multi-word title keeps its
+    spaces. An earlier version built the pattern from the normalised key, which
+    has the spaces stripped, so "Song of Solomon 3:1" and every
+    deuterocanonical reference slipped past Rule B unflagged.
+    """
+    parts = []
+    for i, tok in enumerate(written.split()):
+        m = re.match(r'^([123])(.*)$', tok) if i == 0 else None
+        if m:
+            pre, rest = m.group(1), m.group(2)
+            head = r'(?:%s|%s)' % (pre, ORDINAL_ALT[pre])
+            parts.append(head + (r'\s*\.?\s*' + re.escape(rest) if rest else ''))
+        else:
+            parts.append(re.escape(tok))
+    # A full stop may follow any word of an abbreviated name.
+    return r'\.?\s+'.join(parts)
+
+
 def build_reference_re(book_names):
     """One alternation over every known written form, longest first."""
     keys = sorted(book_names.by_name, key=len, reverse=True)
-    # Rebuild a permissive spelling for each normalised key: allow spaces and
-    # full stops between the characters the normaliser strips.
     alts = []
     seen = set()
     for k in keys:
         if k in seen:
             continue
         seen.add(k)
-        m = re.match(r'^([123])(.+)$', k)
-        if m:
-            pre, rest = m.group(1), m.group(2)
-            alts.append(r'(?:%s|%s|%s)\s*\.?\s*%s' % (
-                pre,
-                {'1': 'First|1st|I', '2': 'Second|2nd|II',
-                 '3': 'Third|3rd|III'}[pre],
-                pre, re.escape(rest)))
-        else:
-            alts.append(re.escape(k))
+        alts.append(book_alternative(book_names.written_of.get(k, k)))
     body = '|'.join(alts)
     return re.compile(
         r'\b(?P<book>%s)\s*\.?\s+(?P<chapter>\d{1,3})'
@@ -297,6 +348,21 @@ TEST_VECTORS = [
     ('He acts 2 ways depending on who is watching [P2].', 'ok'),
     ('Judges 12 times refused to listen to the warning [P1].', 'ok'),
     ('Numbers and Kings and Acts all tell parts of the story [P3].', 'ok'),
+    # 26-31 multi-word and deuterocanonical names must be flagged. Before
+    # 2026-08-26 every one of these passed as clean prose.
+    ('Song of Solomon 2:1 speaks of love.', 'violation'),
+    ('Song of Songs 2:1 speaks of love.', 'violation'),
+    ('The Acts of the Apostles 2:38 records the sermon.', 'violation'),
+    ('Wisdom of Solomon 3:1 says the souls of the righteous are in God hands.',
+     'violation'),
+    ('1 Maccabees 2:15 tells of the revolt.', 'violation'),
+    ('Sirach 3:1 counsels children to honour their parents.', 'violation'),
+    # 32-35 the same names in ordinary prose, with no chapter number, must not
+    # be flagged. Detection must not cost the reader a retry over a sentence.
+    ('The song of songs was sung by the whole congregation [P3].', 'ok'),
+    ('The acts of the apostles were many and are still told [P1].', 'ok'),
+    ('Wisdom builds her house and calls out to the simple [P2].', 'ok'),
+    ('He read the prayer of Manasseh aloud at the vigil [P4].', 'ok'),
 ]
 
 
