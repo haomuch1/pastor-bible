@@ -43,7 +43,10 @@ __pycache__/
 .pytest_cache/
 
 # Build-time tools and model files: never committed, never shipped in this form.
-tools/
+# The fetcher itself is source and must be in the repository: it is what pins
+# the llama.cpp release and refuses to unpack an archive whose checksum is wrong.
+tools/*
+!tools/fetch_llama.py
 models/
 
 # Evaluation scratch output; the kept copy lives in data/eval/

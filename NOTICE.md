@@ -19,9 +19,46 @@ are met by this repository.
 This file lists only what is actually present in the repository today. It grows
 as each phase adds material. Nothing is listed before it exists.
 
-Not yet present, and therefore deliberately absent from this file: llama.cpp,
-and the chat, embedding and reranker models. Each is added in the phase that
-vendors or ships it.
+llama.cpp is pinned and fetched by tools/fetch_llama.py but is not vendored
+into this repository; it is listed below because the backend runs it. The chat
+and embedding model files are likewise not in the repository: the embedding
+model is bundled by the installer and the chat model is downloaded on first
+run, and both are listed here because they ship to users. No reranker is used.
+
+## Pinned binaries and models
+
+Not vendored into this repository. Listed because they ship to the user or are
+run by the backend, and because their licences travel with them.
+
+llama.cpp, the local model server
+  Project:   https://github.com/ggml-org/llama.cpp
+  Licence:   MIT
+  Release:   b10639, commit 5e6a37cb115dc1074e274ac004373f5661909695
+  Assets:    llama-b10639-bin-win-cpu-x64.zip
+               sha256 3bffee4da688dc404e8599571a6f79ca5f38f42b428c4f74a51945520305284e
+             llama-b10639-bin-ubuntu-x64.tar.gz
+               sha256 3f928f12abc5aaec2b21e9c8116292910f9f5e76eb2605ae6a9578b0413de626
+  Fetched by tools/fetch_llama.py, which refuses to unpack a mismatched
+  checksum. The MIT licence text ships beside the binaries in the archive and
+  is included in the installer.
+
+Qwen3-8B, the default answering model
+  Project:   https://huggingface.co/Qwen/Qwen3-8B-GGUF
+  Licence:   Apache-2.0
+  File:      Qwen3-8B-Q4_K_M.gguf
+  sha256     d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785
+
+Qwen3-1.7B, the smaller answering model
+  Project:   https://huggingface.co/Qwen/Qwen3-1.7B-GGUF
+  Licence:   Apache-2.0
+  File:      Qwen3-1.7B-Q8_0.gguf
+  sha256     061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a
+
+nomic-embed-text-v1.5, the search model
+  Project:   https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF
+  Licence:   Apache-2.0
+  File:      nomic-embed-text-v1.5.f16.gguf
+  sha256     f7af6f66802f4df86eda10fe9bbcfc75c39562bed48ef6ace719a251cf1c2fdb
 
 ## Vendored files
 
