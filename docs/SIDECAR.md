@@ -31,6 +31,13 @@ The Vulkan build, measured in P4 as a candidate second sidecar and not bundled:
 sha256 before unpacking, and refuses on a mismatch. The zip already on this
 machine was checksum-matched against the release asset rather than re-fetched.
 
+`--sidecar` also places the build in `src-tauri/binaries`, naming the server
+for its target triple as Tauri's externalBin convention requires. Run on
+2026-08-26 it placed 51 files with the server as
+`llama-server-x86_64-pc-windows-msvc.exe`. That directory is gitignored except
+for its `.gitkeep`: the sidecar is fetched by tag and checksum and bundled by
+the installer, and nothing binary is ever committed.
+
 ## Binary name
 
     Windows   llama-server.exe

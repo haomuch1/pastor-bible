@@ -8,6 +8,11 @@ the process that reads the model and answers on the user's machine.
   python tools/fetch_llama.py win-cpu-x64          -> tools/llama/
   python tools/fetch_llama.py win-vulkan-x64       -> tools/llama-vulkan/
   python tools/fetch_llama.py win-cpu-x64 --check  verify what is already here
+  python tools/fetch_llama.py win-cpu-x64 --sidecar
+      also place the build in src-tauri/binaries, with the server binary named
+      for its target triple as Tauri's externalBin convention requires. The
+      directory is gitignored; nothing binary is ever committed. P6 confirms
+      the layout against a built installer.
 
 Run by hand. Nothing in the app or the build calls it.
 """
@@ -34,6 +39,8 @@ ASSETS = {
         'sha256': '3bffee4da688dc404e8599571a6f79ca5f38f42b428c4f74a51945520305284e',
         'size': 18076865,
         'dest': 'llama',
+        'triple': 'x86_64-pc-windows-msvc',
+        'exe': 'llama-server.exe',
     },
     'win-vulkan-x64': {
         'file': 'llama-b10639-bin-win-vulkan-x64.zip',
@@ -46,6 +53,8 @@ ASSETS = {
         'sha256': '3f928f12abc5aaec2b21e9c8116292910f9f5e76eb2605ae6a9578b0413de626',
         'size': 16306861,
         'dest': 'llama-linux',
+        'triple': 'x86_64-unknown-linux-gnu',
+        'exe': 'llama-server',
     },
 }
 
@@ -79,6 +88,8 @@ def main():
     ap.add_argument('asset', choices=sorted(ASSETS))
     ap.add_argument('--check', action='store_true',
                     help='verify the archive already here and stop')
+    ap.add_argument('--sidecar', action='store_true',
+                    help='also place the build in src-tauri/binaries')
     args = ap.parse_args()
     spec = ASSETS[args.asset]
 
@@ -111,6 +122,8 @@ def main():
     dest = os.path.join(HERE, spec['dest'])
     if os.path.exists(dest):
         print('%s already exists; leaving it alone' % dest)
+        if args.sidecar:
+            place_sidecar(dest, spec)
         return 0
     tmp = dest + '.part'
     if os.path.exists(tmp):
@@ -132,7 +145,37 @@ def main():
         os.rmdir(inner)
     os.rename(tmp, dest)
     print('unpacked into %s' % dest)
+    if args.sidecar:
+        place_sidecar(dest, spec)
     return 0
+
+
+def place_sidecar(src, spec):
+    """Copy the build into src-tauri/binaries under Tauri's naming rule.
+
+    Tauri's externalBin resolves one file per target triple, so the server is
+    copied as llama-server-<triple>. The Windows build is not one file: the exe
+    loads a dozen DLLs and one ggml-cpu-<microarch> per CPU generation, chosen
+    at run time, so the whole directory travels with it and P6 declares the
+    rest as bundle resources.
+    """
+    triple, exe = spec.get('triple'), spec.get('exe')
+    if not triple:
+        print('no target triple recorded for this asset; not placing it')
+        return
+    dest = os.path.join(ROOT, 'src-tauri', 'binaries')
+    os.makedirs(dest, exist_ok=True)
+    stem, ext = os.path.splitext(exe)
+    n = 0
+    for name in sorted(os.listdir(src)):
+        s_path = os.path.join(src, name)
+        if not os.path.isfile(s_path):
+            continue
+        out = '%s-%s%s' % (stem, triple, ext) if name == exe else name
+        shutil.copy2(s_path, os.path.join(dest, out))
+        n += 1
+    print('placed %d files in src-tauri/binaries, server as %s-%s%s'
+          % (n, stem, triple, ext))
 
 
 if __name__ == '__main__':

@@ -42,6 +42,11 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
+# The llama.cpp sidecar, placed by tools/fetch_llama.py --sidecar. Fetched by
+# tag and checksum, bundled by the installer, never committed.
+src-tauri/binaries/*
+!src-tauri/binaries/.gitkeep
+
 # Build-time tools and model files: never committed, never shipped in this form.
 # The fetcher itself is source and must be in the repository: it is what pins
 # the llama.cpp release and refuses to unpack an archive whose checksum is wrong.
