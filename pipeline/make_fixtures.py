@@ -29,6 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
+from chat import load_prompt, prompt_version  # noqa: E402
 from embed import Embedder, normalize  # noqa: E402
 from retrieve import CONFIGS, Retriever  # noqa: E402
 from verifier import TEST_VECTORS, Verifier, sent_set  # noqa: E402
@@ -81,6 +82,10 @@ def verifier_fixtures():
                 print('  missing raw output: %s/%s' % (tag, row['question_id']))
                 continue
             d = json.load(io.open(raw, encoding='utf-8'))
+            if 'first_pass' not in d or 'sent' not in d:
+                # A P4 run stores the API answer, not P3's dump. Those are
+                # checked by the Rust pipeline's own tests, not here.
+                continue
             for stage in ('first_pass', 'final'):
                 verdict, violations = v.check(d[stage], d['sent'])
                 rows.append({
@@ -102,6 +107,21 @@ def verifier_fixtures():
                 })
     write(os.path.join(OUT, 'p3_verifier.json'), {'rows': rows})
     return len(cases), len(rows)
+
+
+def prompt_fixtures():
+    """The prompt bodies as the Python harness strips them.
+
+    The Rust loader has to drop the same header and keep the same body, byte
+    for byte: an instruction lost at the top of the prompt is a behaviour
+    change nobody would see in a diff.
+    """
+    out = {}
+    for name in ('synopsis', 'retry', 'rewrite', 'summarize_batch',
+                 'summarize_merge'):
+        out[name] = {'version': prompt_version(name), 'body': load_prompt(name)}
+    write(os.path.join(OUT, 'prompts.json'), out)
+    return out
 
 
 def retrieval_fixtures():
@@ -167,13 +187,25 @@ def retrieval_fixtures():
     return index
 
 
-if __name__ == '__main__':
-    sys.stdout.reconfigure(encoding='utf-8')
+def main():
+    only = sys.argv[1] if len(sys.argv) > 1 else 'all'
     n_vec, n_rows = verifier_fixtures()
     print('verifier: %d contract vectors, %d P3 output rows' % (n_vec, n_rows))
+    p = prompt_fixtures()
+    print('prompts: %s' % ', '.join('%s v%s' % (k, v['version']) for k, v in p.items()))
+    if only == 'no-model':
+        # The retrieval fixtures need the embedding server, and no model may be
+        # loaded while another run is in progress.
+        print('skipping the retrieval fixtures: no model may be loaded now')
+        return
     idx = retrieval_fixtures()
     print('retrieval: %d cases' % len(idx))
     for c in idx:
         print('  %-9s full %5d  ranges %4d  cut %3d  %.3fs'
               % (c['case'], c['full_set'], c['ranges'], c['cut'],
                  c['python_seconds']))
+
+
+if __name__ == '__main__':
+    sys.stdout.reconfigure(encoding='utf-8')
+    main()

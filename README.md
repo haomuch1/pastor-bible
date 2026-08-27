@@ -48,6 +48,11 @@ based on how much memory your computer has, and you can change it in settings.
       disk          about 2.3 GB in total
       an answer     around 1 to 2 minutes
 
+The smaller model answers faster and writes a plainer answer: where the larger
+model gathers what it found into several themes, the smaller one tends to give
+one heading and then work through the passages in turn. Both cite only passages
+that were actually found, and neither can invent a reference.
+
 Those disk figures are everything: the program, the Bible index that ships with
 it, and the answering model that downloads once on first run. The index and the
 search model together are about 630 MB of it and arrive with the installer. The
