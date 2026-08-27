@@ -28,8 +28,13 @@ no browser storage anywhere: `grep -rn "localStorage\|sessionStorage\|indexedDB"
 src/` returns nothing, and every setting and every answer goes through user.db
 by way of a command.
 
-docs/screenshots/ holds seventeen PNGs of the app as it stands. tools/shot.ps1
-is what captured them.
+docs/screenshots/ holds seventeen PNGs of the app as it stands, captured by
+tools/shot.ps1 and read back as images. One screen is missing from them: an
+answer that cites a deuterocanonical passage, with the dashed "Deuterocanon"
+tag on it. The both-canon question that was asked sent eight deuterocanonical
+verses and the model cited none of them, so the tag never appeared; the tag is
+implemented and the passage panel applies it from `canon`, but nobody has seen
+it. Step 9 of the checklist below is how to see it.
 
 Tests: 46 in cargo, 2 more that are run explicitly, and 134 in pytest, all
 passing.
@@ -136,9 +141,10 @@ From a fresh state. To start over: close the app and delete the folder
    verse text, look at the origin tags.
 8. **Stop.** Ask something and press Stop. It should give up within about three
    seconds and leave the app usable.
-9. **The Deuterocanon.** Turn it on beside the question box, ask about
-   almsgiving or wisdom, and look for the dashed "Deuterocanon" tags in the
-   passage panel and the footer line under the answer.
+9. **The Deuterocanon.** Turn it on beside the question box and ask about
+   wisdom, almsgiving or the fear of God. Look for the dashed "Deuterocanon"
+   tags in the passage panel, and for the footer line under the answer if the
+   answer happens to cite one. *This is the one screen no screenshot shows.*
 10. **A question in the reader's own words about despair or self-harm.** The
     crisis note must appear above the answer, and the answer must still run.
 11. **History.** Click a past question: the answer and its passages come back.
