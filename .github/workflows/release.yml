@@ -121,29 +121,44 @@ jobs:
       - name: run the suite with no network
         shell: bash
         run: |
-          sudo apt-get install -y -qq bubblewrap >/dev/null 2>&1 || true
-          # unshare gives the step a network namespace with only loopback, which
-          # is what the sidecar and the tests' own HTTP server need and all they
-          # need. Anything reaching outward fails to resolve.
-          sudo unshare --net -- bash -c '
+          # unshare gives the step a network namespace holding only loopback,
+          # which is what the tests' own HTTP server needs and all it needs.
+          # Anything reaching outward has nowhere to go.
+          #
+          # The namespace is entered as root, because creating one needs to be;
+          # the tests are then run back as the runner's own user, so that
+          # rustup, the cargo home and the build cache are the ones the earlier
+          # step filled. Running them as root instead finds no toolchain at all.
+          CARGO="$(command -v cargo)"
+          sudo unshare --net -- bash -c "
             ip link set lo up
-            su - "$USER" -c "cd $PWD && cargo test --manifest-path src-tauri/core/Cargo.toml --locked" ' ||
-          sudo unshare --net --map-root-user -- bash -c '
-            ip link set lo up
-            cargo test --manifest-path src-tauri/core/Cargo.toml --locked '
+            exec sudo -u '$USER' \
+              env PATH='$PATH' HOME='$HOME' CARGO_HOME='${CARGO_HOME:-$HOME/.cargo}' \
+                  RUSTUP_HOME='${RUSTUP_HOME:-$HOME/.rustup}' CARGO_TERM_COLOR=always \
+              '$CARGO' test --manifest-path src-tauri/core/Cargo.toml --locked
+          "
 
       - name: prove the network really was gone
         shell: bash
         run: |
+          # A gate that quietly had a network would be worse than no gate, so
+          # the same namespace is asked to reach the model host and must fail.
           set +e
-          sudo unshare --net --map-root-user -- bash -c 'ip link set lo up; curl -sS --max-time 10 https://huggingface.co > /dev/null'
+          sudo unshare --net -- bash -c \
+            'ip link set lo up; curl -sS --max-time 15 https://huggingface.co > /dev/null'
           rc=$?
+          # And loopback must still work, or the suite above proved nothing
+          # either: it would have passed by having no server to talk to.
+          sudo unshare --net -- bash -c \
+            'ip link set lo up; timeout 5 bash -c "cat < /dev/null > /dev/tcp/127.0.0.1/1" 2>/dev/null; exit 0'
+          lo=$?
           set -e
           if [ $rc -eq 0 ]; then
             echo "::error::the offline job reached the internet, so it proves nothing"
             exit 1
           fi
-          echo "the downloader's host was unreachable inside the namespace, as it must be"
+          echo "the model host was unreachable inside the namespace (curl exit $rc), as it must be"
+          echo "loopback was still usable (exit $lo)"
 
   # --------------------------------------------------------------- installers
   build:
