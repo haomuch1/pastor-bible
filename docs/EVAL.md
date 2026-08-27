@@ -917,6 +917,55 @@ The context in use is 8,192, which is smaller than the derived figure rather
 than larger: on the worst question the prompt and its output fill 82 per cent
 of it. There is no oversized context to trim.
 
+Re-running the three largest-prompt questions at 8,448 confirms how gently the
+KV cache scales here.
+
+    question   ctx 8,192            ctx 8,448
+    g05        9,001 MB   210.1 s   9,037 MB   203.4 s
+    g12        9,001 MB   180.7 s   9,037 MB   171.1 s
+    g18        8,999 MB   173.1 s   9,035 MB   177.6 s
+
+256 more tokens of context cost 36 MB and no measurable time. Getting the peak
+meaningfully below 9 GB would mean cutting the context far below what the
+prompts need. The context stays at 8,192.
+
+### Vulkan, measured but not decided
+
+The same three questions on the same 8B, through the Vulkan build of the same
+pinned llama.cpp release, all layers offloaded to an RTX 3080. The bundling
+question belongs to P6; this is the measurement it will need.
+
+    question   CPU end to end   Vulkan end to end   speed-up
+    g05              203.4 s              31.5 s        6.5x
+    g12              171.1 s              10.7 s       16.0x
+    g18              177.6 s              12.0 s       14.8x
+    median           177.6 s              12.0 s       14.8x
+
+    stage                       CPU              Vulkan
+    prompt processing      62 tok/s            253 tok/s
+    generation            4.8 to 6.0 tok/s      87 to 93 tok/s
+    model load                 3.7 s           2.9 to 6.1 s
+    host RAM, peak           9,037 MB            5,363 MB
+    VRAM, peak                     -    7,504 MiB of 10,240
+                                        1,721 MiB of that was already in use
+    GPU utilisation                -                  99 per cent
+
+g05 gains least because its 5,819-token prompt is the largest of the three and
+model load and prompt processing are a bigger share of a short answer.
+
+Verdict parity holds: all three Vulkan answers passed the verifier on the first
+attempt with zero fabrications, as the CPU runs did, and produced five themes
+each against the CPU run's four, five and five. The answers are not identical
+text, and would not be expected to be: the two builds do the same arithmetic in
+different orders and greedy sampling amplifies any divergence into different
+wording.
+
+What this does not settle: whether a Vulkan build is bundled, what happens on
+machines with less VRAM than a 3080 or no discrete GPU at all, and whether the
+selection is automatic. P6 decides all three. What it does settle is the size
+of the prize: two and a half minutes becomes twelve seconds on hardware that
+many readers already own.
+
 ### Query rewriting, decided
 
 P3 measured that model rewrites lowered recall@25 against the hand-written

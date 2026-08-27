@@ -1,0 +1,25 @@
+{
+ "tag": "p4-rust-8b-ctx8448",
+ "model": "default",
+ "canon": "66",
+ "gpu_layers": 0,
+ "llama_server": "(default cpu build)",
+ "query_mode": "raw",
+ "questions": 3,
+ "fabrications_reaching_output": 0,
+ "first_pass_violation_rate": 0.0,
+ "retry_rate": 0.0,
+ "fallback_rate": 0.0,
+ "structure_ok_rate": 1.0,
+ "citation_precision": 0.23196881091617935,
+ "citation_coverage": 0.75,
+ "recall25_sent": 0.4583333333333333,
+ "median_wall_s": 177.62,
+ "max_wall_s": 203.41,
+ "peak_ram_mb": 9036.953125,
+ "themes": [
+  4,
+  5,
+  5
+ ]
+}

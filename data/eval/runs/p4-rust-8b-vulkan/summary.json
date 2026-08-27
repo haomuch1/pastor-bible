@@ -1,0 +1,25 @@
+{
+ "tag": "p4-rust-8b-vulkan",
+ "model": "default",
+ "canon": "66",
+ "gpu_layers": 99,
+ "llama_server": "D:/Haomuch-Programs/The-Pastor-Bible/tools/llama-vulkan/llama-server.exe",
+ "query_mode": "raw",
+ "questions": 3,
+ "fabrications_reaching_output": 0,
+ "first_pass_violation_rate": 0.0,
+ "retry_rate": 0.0,
+ "fallback_rate": 0.0,
+ "structure_ok_rate": 1.0,
+ "citation_precision": 0.28365384615384615,
+ "citation_coverage": 0.8035714285714286,
+ "recall25_sent": 0.4583333333333333,
+ "median_wall_s": 12.02,
+ "max_wall_s": 31.51,
+ "peak_ram_mb": 5362.6484375,
+ "themes": [
+  5,
+  5,
+  5
+ ]
+}

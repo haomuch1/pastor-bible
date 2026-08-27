@@ -1,208 +1,195 @@
 # HANDOFF
 
-Session: P3 Chat model evaluation
+Session: P4 Generation and verifier in the Rust backend
 Date: 2026-08-26
-Status: P3 COMPLETE, including the secondary Deuterocanon work
+Status: P4 COMPLETE
 
 ## State
 
 Repository at D:\Haomuch-Programs\The-Pastor-Bible, branch main, pushed to
 https://github.com/haomuch1/pastor-bible, still private.
 
-Default chat model: Qwen3-8B, Q4_K_M, Apache-2.0. Fallback: Qwen3-1.7B, Q8_0,
-Apache-2.0. Qwen3-4B was evaluated and rejected. Both selections are logged in
-DECISIONS.md as decided, with the gate table in docs/EVAL.md behind them.
+The Rust backend exists and answers. `src-tauri/core` is a new crate,
+`pastor-bible-core`, carrying the whole query pipeline with no GUI dependency:
+index access, retrieval, the citation verifier, the crisis matcher, prompt
+loading, the sidecar manager and the orchestration that ties them together. The
+Tauri shell in `src-tauri` is now a workspace root over it and is otherwise
+untouched; P5 wires the two together.
 
-The evaluation set now carries p3_graded, the ten questions P3 graded, and
-smoke_pool, the thirty that did not gate. The ten graded questions that moved
-to the pool kept their gold lists untouched; twenty pool questions are reserved
-for post-v1 testing.
+`pastor-bible-cli` is the harness. `ask "<question>"` runs the whole pipeline
+and prints the answer structure as JSON plus a readable rendering, with
+`--canon 66|both`, `--model default|fallback|<file>`, `--query raw|rewrite|fused`,
+`--ctx N`, `--threads N`, `--gpu-layers N`, `--allow-both-servers`, `--json <path>`
+and `--quiet`. `selftest` exercises the sidecar without a chat model.
 
-New documents. docs/VERIFIER.md is the citation-guarantee specification with 25
-test vectors, and it is the contract P4 ports to Rust. docs/SMOKE.md holds ten
-answers exactly as the verifier passed them, with the passages each cited, for
-reading rather than rating. README's hardware section is written from
-measurement and no longer says "filled in at P3".
+New documents: docs/SIDECAR.md closes PLAN section 16's llama-server VERIFY
+item with flags and endpoints verified against the binary; docs/API.md
+specifies the answer structure P5 consumes. docs/VERIFIER.md now carries 35
+test vectors rather than 25, and records why. docs/EVAL.md has a "Rust backend
+(P4)" section with every number this session measured.
 
-New code in pipeline/: verifier.py implements docs/VERIFIER.md; chat.py runs
-llama-server for generation with a single slot, a free-RAM check and
-below-normal priority; run_p3.py is the sequential graded and smoke harness;
-summarize_all.py is the batched full-set path; report_p3.py recomputes metrics
-uniformly from the stored artifacts; write_smoke.py renders SMOKE.md.
+data/crisis_terms.txt is populated: 117 phrases covering harm to self, harm to
+others, and the language of despair and danger. data/crisis_note.txt is the
+single source for PLAN 9.3's wording, and a test asserts README quotes it
+exactly.
 
-data/prompts/ holds five versioned prompts: rewrite, synopsis, retry,
-summarize_batch, summarize_merge, all version 1.
-
-data/eval/runs/ holds committed metrics.jsonl and summary.json per run. The raw
-per-question dumps are gitignored; the metrics are not.
-
-Four chat GGUFs and the llama.cpp binaries are in models/ and tools/, both
-gitignored. Nothing binary is committed.
+New Python: pipeline/make_fixtures.py writes the parity fixtures,
+pipeline/rewrite_decision.py measured the query-mode question,
+pipeline/run_p4.py drives the CLI over the graded set, pipeline/report_p4.py
+recomputes every figure from the stored artefacts. tools/fetch_llama.py fetches
+a pinned llama.cpp asset and refuses to unpack a mismatched checksum; it is the
+one file under tools/ that is committed.
 
 ## Verified
 
-Sequential execution is enforced, not merely intended. llama-server runs with
--np 1 so it cannot serve two requests concurrently. The harness loops one
-question at a time and appends each metrics row before starting the next. The
-embedding server and the chat server never overlap: the whole question set is
-embedded first, the embedding server is stopped, and only then does the chat
-server start, which every summary records as embed_phase_separate true. One
-bug of exactly this kind was written and caught in review before it ran: an
-early draft of summarize_all.py opened a chat server and an embedding server in
-the same with-statement, and was fixed before execution.
+**The sidecar cannot be orphaned.** Three lifecycle tests: spawn, health,
+embed, stop with the child confirmed gone; a second spawn refused while one is
+alive and the manager usable again afterwards; and the one that matters, a
+child that does not survive a hard kill of its parent. That last test launches
+the CLI as a separate process, reads the sidecar's pid from it, kills the
+parent with TerminateProcess so no destructor and no handler runs, and asserts
+the sidecar died with it. On Windows the guarantee is a Job Object with
+KILL_ON_JOB_CLOSE; on Linux it is PR_SET_PDEATHSIG set before exec.
 
-Machine safety held throughout. Free RAM was read before every load and each
-model was checked against its file size plus 2 GB. Readings were 18.5 to 21.0
-GB free; the largest requirement was 6.7 GB for the 8B. No candidate was
-refused, nothing swapped, and servers ran below normal priority. The machine is
-an AMD Ryzen 7 5800X, 8 physical and 16 logical cores, 31.9 GB RAM. The
-llama.cpp build is win-cpu-x64, so the RTX 3080 present in the machine was not
-used and every figure is a CPU figure.
+**Retrieval reproduces the Python harness exactly.** 14 cases, 12,685
+candidates in rank order with scores, origin tags and canon tags, the passages
+they group into, the cut sent to generation and the matched topics. Zero
+mismatches at a 1e-5 tolerance that was not loosened. One real mismatch was
+found and fixed: a sequential f32 dot product ranked two passages whose true
+cosines differ by 1.8e-7 the wrong way round, and accumulating in f64 is both
+more accurate and what the harness does.
 
-The verifier passes all 25 of its test vectors. Two of them failed on the first
-implementation, "First Corinthians 13" and "I Corinthians 13", because the
-ordinal-word and roman-numeral prefixes normalised to keys the book table did
-not hold; the lookup now rewrites such a prefix to its digit and only accepts
-the result if it names a real book, so "Isaiah" is not mangled into "1saiah".
-The vectors include the eight false positives P3 named: "the third day", "seven
-times", "chapter and verse", Job and Mark as names, lower-case "he acts 2
-ways", "Judges 12 times", and Numbers, Kings and Acts used as ordinary words.
+**The verifier agrees with Python on everything either has ever seen.** All 35
+contract vectors, with identical violation records rather than merely identical
+verdicts. Then all 82 outputs P3 stored, being the first pass and the final
+answer of 41 generations, compared on verdict, on each violation's kind, text,
+reason and character span, on the stripped text, on the retry note and on the
+fallback rendering. Zero differences.
 
-Ten graded questions were run through each of the three candidates in canon 66,
-one question at a time, 30 runs. Results are in docs/EVAL.md. The headline gate
-numbers: first-pass violation rate 0.00, 0.30, 0.00 for the 1.7B, 4B and 8B;
-fallback rate 0.00 for all three; structure compliance 1.00, 0.70, 1.00;
-median end-to-end 63.5, 119.7 and 156.3 seconds.
+**A hole in the citation guarantee was found and closed.** Rule B could not see
+any multi-word book name, because the pattern was built from the space-stripped
+normalised key. Measured against 83 realistic book names, 14 were invisible:
+"Song of Solomon", "Song of Songs", "Acts of the Apostles" and eleven
+deuterocanonical names, which is exactly what a both-canon answer cites. Fixed
+in Python and Rust together, ten new contract vectors added in both directions,
+and proved to change nothing on P3's record: 41 first-pass verdicts, 14
+violation records field by field, 41 final answers, all identical before and
+after. Jared decided this rather than the alternative of porting the gap for
+parity's sake.
 
-No fabricated reference reached a simulated reader in any of the 31 generations
-this session. That holds by construction rather than by good behaviour: the
-verifier strips, retries once, and falls back. The fallback path was never
-reached, so every answer shown was a clean generation. tests/test_p3_runs.py
-asserts this property against the committed artifacts rather than trusting the
-report.
+**Ten graded questions end to end, canon 66, Qwen3-8B, through the CLI.**
+Fabricated references reaching output: 0, checked against the text a reader
+would see. First-pass violations 0, retries 0, fallbacks 0, structure
+compliance 1.00 with four or five themes every time. Median 157.2 seconds
+against P3's 156.3, maximum 210.1 against P3's 234.1. Peak sidecar RAM 9,001
+MB on every question.
 
-Structure compliance was recomputed from the stored outputs by report_p3.py
-using one definition for all three models, because the harness's own check was
-tightened after the first model had already run. The definition used is P3's:
-headings present, every theme cites at least one sent token, no theme cites an
-unsent token.
+**Sanity runs.** Two questions on the fallback 1.7B: verdict ok both, zero
+fabrications, 30 and 34 seconds, peak 2,769 MB, and one theme each, which is
+the list-style behaviour P3 documented and README now warns about. g19 in
+both-canon mode: 32 passages sent of which 7 deuterocanonical, canon tags
+carried in the passage panel, the Deuterocanon footer present, verdict ok, zero
+fabrications.
 
-The hardware floor was measured twice, deliberately, because peak resident
-memory and private bytes answer different questions. Controlled single answer:
-the 8B at 8998 MB resident and 4615 MB private, the 1.7B at 2768 MB and 1076
-MB, the embedding server at 246 MB and 139 MB. Observed worst case over a full
-ten-question run: 15068 MB for the 8B and 7095 MB for the 1.7B. Disk was
-measured from the files: a shipping index.db carrying only the chosen embedding
-model's vectors is 366.8 MB, built by copying the index, deleting the other two
-models' vectors and vacuuming, rather than estimated.
+**The crisis matcher.** 117 phrases, both halves present, 15 positive and 15
+negative sentences all correct, and a list with no terms in it refuses to load
+rather than pretending to work.
 
-Additive canon retrieval works and is proven. The canon-66 result is a prefix
-of the both-canon result by construction, asserted for g19 and g20 in
-tests/test_embeddings.py. Two bugs were found and fixed while proving it: the
-retriever returned a longer prefix of the full set instead of the 66 slice plus
-the appended slice, and the run harness re-derived its own top 25 from the full
-set and so never saw the appended passages at all. After the fixes, 32 passages
-were sent for g19 of which 7 were deuterocanonical, all 7 were cited, and the
-"(Deuterocanon)" marker survived into the output.
+**Context window.** PLAN's assumption that P3's 15 GB came from an oversized
+context is wrong, and the measurement says so. Prompt lengths are 2,709 to
+5,819 tokens; with the 900-token budget and a 25 per cent margin the derived
+context is 8,398, larger than the 8,192 in use. Re-running the three largest
+questions at 8,448 cost 36 MB and no time. The 15 GB was server lifetime: P3
+kept one llama-server alive across ten questions; a fresh one per question
+peaks at 9,001 MB.
 
-The test suite runs and passes: 112 tests.
+**Query rewriting, decided by measurement.** raw 0.3625, rewrite 0.3500, fused
+0.4000 recall@25 against MUST; fused minus raw is +0.0375 with a 95 per cent
+interval of [-0.0125, +0.0875]. Not separable on ten questions, so the tie goes
+to the cheaper mode. Default is raw; the other two are one flag away.
 
 ## Not verified
 
-Ten questions is a small sample and the differences between models are mostly
-not separable on it. The selection rests on gate failures that are categorical,
-0.70 structure compliance and a 378-second worst case for the 4B, rather than
-on small differences in averages.
+The fallback path has still never been reached in a real run. Across P3 and P4
+together, 55 generations, no retry has ever failed. Its output shape is covered
+by tests and by the fixtures; it has not been seen in production of any kind.
 
-Answer quality was not rated. No rubric was applied and none was asked for;
-docs/SMOKE.md exists so Jared can read ten answers and form a view. Citation
-precision is an index-derived proxy against gold lists that no pastor has
-reviewed, and is reported as such.
+Citation precision and coverage are not a like-for-like comparison with P3. P3
+retrieved with the model's rewrites and P4 retrieves from the raw question, so
+the two runs sent different passages. The verifier figures, the fabrication
+count and the latency are like for like.
 
-The fallback path was never exercised in a real run, because no retry ever
-failed. Its output shape is covered by the verifier's own tests but has not
-been seen in production of any kind.
+Ten questions is still a small sample, and the gold lists are still
+index-derived and unreviewed by a pastor.
 
-The summarize-all path was run once, on one question, with one model, at one
-batch size. Its 33-minute wall time and its dropped citations are one
-measurement, not a curve.
+Peak memory was measured with a fresh server per question. P5 will keep a
+server alive between questions for speed and must measure again before
+README's 16 GB floor is trusted; P3's 15,068 MB is what a long-lived server
+looked like.
 
-Nothing was measured on any machine but this one, and nothing was measured
-under memory pressure. The 16 GB and 8 GB figures in README are a judgement
-drawn from the measurements, labelled as such there, and P7 tests them on a
-clean machine.
+The concurrent-sidecar path was smoke-tested, not measured. `--allow-both-servers`
+keeps the embedding server up beside the chat server and the answer records
+that it did; nobody has measured what it saves.
 
-The Rust port does not exist. Everything verified here is verified in Python.
+Nothing was measured on any machine but this one.
 
 ## Flags for Jared
 
-Query rewriting hurts. Every model's rewrites lowered retrieval recall against
-the hand-written keyword lists, by 0.16 to 0.26 recall@25, consistently across
-questions. PLAN 5.2 assumes the opposite. I have not changed the plan: 5.2 is
-an approved decision and ten questions is thin evidence. But P4 should measure
-it again and decide, because on this evidence the rewrite step is costing the
-reader answers.
+**The verifier had a hole and it is worth knowing how it got there.** The
+implementation and its own specification disagreed for two phases, and nothing
+caught it because the 25 test vectors were written from the same mental model
+as the code. The ten new vectors were written from the failure. It is worth
+assuming there are others, and the cheapest defence is more vectors drawn from
+what models actually write.
 
-Summarize-all is not viable as specified. Thirty-three minutes for one
-question, 16.9 GB of memory, and the merge dropped 130 of the 253 passages the
-batches had cited. The citation guarantee held at every stage, so it is not
-unsafe, just impractical. It needs a smaller model for the batching, a merge
-that cannot drop citations, or a smaller promise. Worth deciding before P4
-builds it.
+**The Deuterocanon marker cannot be left to the model.** On g19 the 8B cited a
+deuterocanonical passage and dropped the "(Deuterocanon)" marker the prompt told
+it to keep. The passage panel carries `canon` on every passage, so P5 renders
+the tag itself. The prompt still asks; nothing rests on the asking now.
 
-The middle model was the worst model. Qwen3-4B failed structure compliance and
-worst-case latency while sitting between two models that passed everything.
-Size did not order quality. If the 8B proves too heavy for real machines in P7,
-the answer is the 1.7B, not the 4B.
+**Nave's headings are not usable as headings.** The topic grouping that
+replaces summarize-all is grouped under Nave's subtopic labels, and some of
+those labels are whole paragraphs; one matched topic on g01 has a heading 1,200
+characters long listing every instance of answered prayer in scripture. The
+answer structure carries `heading_display`, a trimmed label, beside the source
+text. It makes the grouping shippable rather than good. Better topic labels are
+a P1 change to how subtopics were derived, and it is worth deciding whether the
+grouping earns its place at all if the labels stay like this.
 
-The 1.7B passes the gates but writes lists, not synopses. Nine of its ten
-answers were one heading followed by a passage-by-passage paraphrase. It is the
-fallback, so a reader on a small machine gets a visibly poorer answer than one
-on a large machine. That is a product consequence worth knowing about, and it
-is not visible in any gate number.
+**Hand-written keywords still beat everything the product can do.** 0.4875
+recall@25 against 0.3625 for the raw question. That gap is the single largest
+retrieval lever left, and it is not a prompt problem: it is that a person who
+knows the Bible picks better search terms than a question does. Worth thinking
+about whether some curated query expansion could ship in the index.
 
-Two minutes to four minutes per answer is the honest speed on a fast desktop
-processor. README now says so plainly. If that is too slow to ship, the lever
-is the model size, and the fallback already shows what the smaller end looks
-like.
+**Two and a half minutes is still the honest speed.** Nothing this session
+changed it. The Vulkan measurement is in EVAL.md and P6 decides what to do with
+it.
 
-All three candidates are Qwen3. That was chosen to make size the only variable,
-and it is the only current family with Apache-2.0 weights and first-party GGUF
-builds at all three sizes. It does mean the selection has no cross-family
-check. Phi-4-mini is MIT and is the obvious comparison if one is wanted.
-
-The verifier does not flag a bare book name with no chapter after it. "The
-passage from Hebrews says" passes, and should: it names no reference that could
-be false. The prompt forbids it and the models mostly comply, but the guarantee
-is about references, not about style.
+**Answer quality is still unrated.** The graded answers from this session are
+in data/eval/runs/p4-rust-8b/raw/ as JSON if you want to read ten of them.
 
 ## Next session
 
-P4 Generation and verifier in the Rust backend, per plan section 13.
+P5 Frontend and first-run, per PLAN section 7 and the amendments logged today.
 
-Port docs/VERIFIER.md to Rust with its 25 test vectors, which are the shared
-contract: the Python and Rust implementations must agree on all 25. Then the
-sidecar lifecycle, the prompt, the themed synopsis, the retry and fallback, the
-crisis matcher, and Deuterocanon labelling. Deliverable per the plan:
-end-to-end answers from a CLI harness with zero fabrications on the eval set.
+Screens per section 7, with three things this session decided. Retrieved
+passages are displayed as soon as retrieval returns, which is 40 milliseconds,
+so the reader is in the text while generation runs. The synopsis appears only
+after the verifier passes; nothing unverified is ever on screen, even briefly.
+Progress is a stage indicator and a token counter, never streamed text.
 
-P4 owes three answers this session created:
+The full passage set is grouped under the matched Nave's topic headings, per
+the amended PLAN 5.6 and 7.2: topics in match order, passages within a topic in
+canonical order, everything else under "Other passages". The backend already
+returns this as `topic_groups`. Summarize-all is gone from v1.
 
-Whether to keep query rewriting. Measure it again with the selected model and
-decide; if it is kept, consider making it additive to the raw question rather
-than a replacement.
+The Deuterocanon tag in the synopsis is rendered from `passages[].canon`, not
+from the model's prose. See docs/API.md.
 
-What to do about summarize-all. Rescope, re-engineer, or drop.
+History per section 8, in user.db in the app data directory. The downloader,
+with checksum and resume, is for the chat model only: the embedding model is
+bundled. Self-test on first run.
 
-data/crisis_terms.txt is still a comment-only placeholder, and P4 owns it. The
-file says in its own text that P4's tests must fail while it has no terms.
-
-VERIFY items from plan section 16 owned by P4: the llama-server binary name,
-flags and OpenAI-compatible endpoint. P3 has already exercised much of this and
-pipeline/chat.py records the exact invocation that works: -np 1 for a single
-slot, -c for context, -ngl 0 for CPU, --no-webui, /health for readiness and
-/completion for generation. The rerank and embedding endpoints were exercised
-in P2.
-
-Read PLAN.md, DECISIONS.md, VERIFIER.md and this file before starting. Do not
-begin P5.
+Read PLAN.md, DECISIONS.md, API.md, SIDECAR.md and this file before starting.
+Do not begin P6.
