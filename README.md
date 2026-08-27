@@ -17,11 +17,17 @@ A free, offline, nondenominational Bible study tool with cited answers.
 ## Install
 
 Installers are published with each release. Download the one for your system
-from the latest release page.
+from the [releases page](https://github.com/haomuch1/pastor-bible/releases).
+
+> **v1.0.0 is marked a pre-release.** Everything works and it is the build to
+> install; the mark means one thing has not been done yet, which is to check a
+> first install on a computer that has never had this program on it. Because it
+> is a pre-release, GitHub does not put a "Latest" badge on it — take the
+> topmost release on that page. The mark comes off once that check is made.
 
 ### Windows
 
-1. Download `The Pastor Bible_<version>_x64-setup.exe` from the release page.
+1. Download `The.Pastor.Bible_<version>_x64-setup.exe` from the releases page.
 2. Run it.
 3. **Windows will warn you.** See below.
 4. It installs for you alone, into your own user folder, and asks for no

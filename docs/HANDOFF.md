@@ -1,18 +1,26 @@
 # HANDOFF
 
-Session: P7-prep, the v1.0.0 candidate
+Session: P7-prep, then P7-publish
 Date: 2026-08-27
-Status: The draft release exists and is unpublished. Nothing is public. The
-repository is still private. What remains is P7 itself, which only Jared can
-do: install on a clean machine and follow the README.
+Status: The repository is public and v1.0.0 is published as a pre-release.
+What remains is P7 itself, which only Jared can do: install on a clean machine
+and follow the README.
 
-## The draft release
+## The release
 
-    https://github.com/haomuch1/pastor-bible/releases/tag/untagged-9daa14f14a2eebe72091
+    https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.0
 
-That is a draft, so it has no tag URL yet and it is visible only to someone
-signed in to GitHub with access to this private repository. It appears at the
-top of https://github.com/haomuch1/pastor-bible/releases marked **Draft**.
+Public, and reachable by anyone with no account. It is marked **Pre-release**,
+because nothing README claims about a first install has been checked on a
+machine that did not build the program. That flag is the whole point: it says
+in GitHub's own vocabulary what a paragraph of prose would need a reader to
+notice. It comes off when the test passes.
+
+Because a pre-release carries no "Latest" badge, `/releases/latest` does not
+resolve to it -- the API returns 404 and the web URL falls back to the releases
+index, which does list it. README's install section now sends people to the
+releases page and says to take the topmost entry, rather than to "the latest
+release page", which would have been the stranger's very first stumble.
 
 Four assets, from tag `v1.0.0`, commit `200b97b`:
 
@@ -25,9 +33,11 @@ Four assets, from tag `v1.0.0`, commit `200b97b`:
 
     093f26f2a8eb39bb21c5b32d28921278c291743fa11804b960f9e7ca47f616c0
 
-That was verified by downloading the asset from the draft release and hashing
-it, not by reading the build log. It matches the line in `SHA256SUMS.txt`. The
-release notes carry the index.db checksum,
+That was verified twice: once by downloading the asset from the draft and
+hashing it, and again after publication from a shell with no GitHub credentials
+at all -- no token in the environment, `curl` rather than `gh` -- which is the
+path a stranger takes. Both matched, and neither read the build log. It matches
+the line in `SHA256SUMS.txt`. The release notes carry the index.db checksum,
 `d3b0579281b6a5044b6f59a0e50ec3424ef3fc25dac43042d5c8168cb29bec58`, and its
 byte count.
 
@@ -52,8 +62,9 @@ up.
    hashes are correct.
 
 Both are cosmetic and both cost a full rebuild to fix — about 69 billable
-minutes. They are not worth spending that before the clean-machine test. If the
-test fails and the tag has to be remade anyway, fix them in the same pass.
+minutes, though minutes are free now that the repository is public. They are not
+worth a rebuild of their own before the clean-machine test. Fix them in whatever
+build comes next, whether that is v1.0.1 or a later version.
 
 ## The workflow run
 
@@ -65,7 +76,7 @@ Run 33102314189, on tag `v1.0.0`. Every job green:
     build      20m47s    windows-latest   NSIS
     upgrade    2m35s     windows-latest   ran the candidate twice
     sign       skipped                    waiting on SignPath, by design
-    publish    1m5s      ubuntu           draft
+    publish    1m5s      ubuntu           draft, published since
 
 **Billable: 69 minutes.** 68 for this run and 1 for the run before it, which the
 version gate stopped in 13 seconds. Windows is counted at 2x and each job is
@@ -74,8 +85,9 @@ returns zero for both runs, so these are computed from the job durations, the
 same way P6's 84 was.
 
 The upgrade gate found no previous release and said so in the log, running the
-candidate twice. That tests reinstall over itself, not a version change.
-Publishing this release makes the next one a real version change.
+candidate twice. That tests reinstall over itself, not a version change. v1.0.0
+is published now, so the next tag makes it a real version change by itself —
+including a v1.0.1 built on the fail path below.
 
 ## What this session changed before tagging
 
@@ -121,11 +133,12 @@ Then the tag itself found a ninth thing, fixed in `200b97b`.
 ## The laptop script
 
 Before starting: the laptop must never have had The Pastor Bible, Rust, Node, or
-the dev tools on it. Because the repo is private, you will sign in to GitHub in
-the laptop's browser to reach the draft release; that is the only step a
-stranger would not do.
+the dev tools on it. Do not sign in to GitHub on it, and do not sign in to
+anything else either. The repository is public now, so every step below is a
+step a stranger takes, and that is the point of the test.
 
-1. Download the Windows installer from the draft release. Run it. Take a
+1. Download the Windows installer from
+   https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.0 . Run it. Take a
    screenshot of the SmartScreen warning if one appears, and of the
    "More info / Run anyway" step. Record whether the README's description
    matched what you saw.
@@ -179,23 +192,32 @@ say, and each would otherwise look like a failure.
 
 ## The two paths afterwards
 
-**If it passes**, that is P8: publish the release, make the repository public,
-and apply to SignPath. Making it public also stops Actions minutes being
-metered. Do not start P8 in the same session as the report; it is its own
-session.
+**Pass** -- remove the prerelease flag and retitle:
 
-**If it fails**, fix the fault, then:
+    gh release edit v1.0.0 --repo haomuch1/pastor-bible \
+      --prerelease=false \
+      --title "The Pastor Bible 1.0.0"
 
-    gh release delete v1.0.0 --repo haomuch1/pastor-bible --cleanup-tag
-    git tag -d v1.0.0
-    git push origin :refs/tags/v1.0.0     # if --cleanup-tag did not
-    git tag -a v1.0.0 -m "The Pastor Bible 1.0.0"
-    git push origin v1.0.0
+Then drop the pre-release note from README's install section, add the two
+SmartScreen screenshots, and that is v1.0.0 finished. Applying to SignPath is
+what remains, and it is P8's, in its own session.
 
-The version stays 1.0.0: nothing was published, so nothing was released, and the
-version gate now asks about published releases rather than tags, so a remade tag
-passes. That is what excluding drafts in the gate is for. Fix the two
-SHA256SUMS.txt warts above in the same pass, since the rebuild is being spent
+**Fail** -- fix the fault and ship **v1.0.1**. Do not remake v1.0.0:
+
+    # bump src-tauri/Cargo.toml to 1.0.1, commit
+    git tag -a v1.0.1 -m "The Pastor Bible 1.0.1"
+    git push origin main v1.0.1
+
+v1.0.0 is published and public, so somebody may already have it. A published
+release is not a draft and must not be deleted and recreated under the same
+number: that would leave two different files claiming to be v1.0.0, and the
+whole point of printing a checksum is that a version names exactly one file.
+This is the one thing that changed when the repository went public, and it is
+why the version gate asks about published releases -- it will now correctly
+refuse a second v1.0.0.
+
+Leave v1.0.0 in place, marked pre-release, and let v1.0.1 supersede it. Fix the
+two SHA256SUMS.txt warts above in the same pass, since a rebuild is being spent
 anyway.
 
 ## Still not verified
@@ -210,8 +232,8 @@ anyway.
   `libgtk-3-0` and has not met a real apt.
 - **WebView2 bootstrapping.** The silent downloadBootstrapper has never actually
   run; this machine already had WebView2. The laptop is the first place it will.
-- **The upgrade gate has still never seen a version change.** Publishing this
-  release fixes that by itself.
+- **The upgrade gate has still never seen a version change.** v1.0.0 is now a
+  published release, so the next tag makes it a real version change by itself.
 - **Everything visual is still Jared's.** Nothing this session touched the
   palette, the type or the spacing.
 
