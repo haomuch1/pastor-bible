@@ -11,7 +11,12 @@
 
 mod common;
 
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
+
+/// Only one session at a time: these count the model servers that are alive in
+/// this process, and three tests loading two each at once would count six.
+static SERIAL: Mutex<()> = Mutex::new(());
 
 use pastor_bible_core::pipeline::{
     Engine, QueryMode, Settings, EMBED_GGUF, FALLBACK_CHAT_GGUF,
@@ -59,6 +64,7 @@ fn gone(pid: u32) -> bool {
 
 #[test]
 fn both_models_are_loaded_at_once_and_both_stop_on_close() {
+    let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let engine = Engine::open(settings()).expect("open the engine");
     let mut session = Session::new(engine);
 
@@ -93,6 +99,7 @@ fn both_models_are_loaded_at_once_and_both_stop_on_close() {
 
 #[test]
 fn dropping_a_session_stops_its_models_too() {
+    let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     // The close handler is the polite path. If the window goes without it, or a
     // panic unwinds through, the Drop must still stop them.
     let engine = Engine::open(settings()).expect("open the engine");
@@ -117,6 +124,7 @@ fn dropping_a_session_stops_its_models_too() {
 
 #[test]
 fn a_cancelled_generation_leaves_the_server_able_to_answer_again() {
+    let _guard = SERIAL.lock().unwrap_or_else(|e| e.into_inner());
     let engine = Engine::open(settings()).expect("open the engine");
     let mut session = Session::new(engine);
     session.ensure_loaded(&mut |_| {}).expect("load");

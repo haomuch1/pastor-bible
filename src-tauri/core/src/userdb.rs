@@ -97,6 +97,10 @@ pub struct HistoryDetail {
     pub timings: serde_json::Value,
     /// Rendered now, from the index that is installed now.
     pub passages: Vec<PassageOut>,
+    /// False for an entry stored before the [P#] numbering was kept. The
+    /// answer's citation markers cannot be linked to passages, so they are not
+    /// shown as though they could be.
+    pub tokens_resolvable: bool,
     /// Set when the answer was written against a different index version.
     pub index_note: Option<String>,
 }
@@ -328,7 +332,7 @@ impl UserDb {
             return Ok(None);
         };
 
-        let sent: Vec<Vec<i64>> = parse_sent(&sent_json);
+        let (sent, tokens_resolvable) = parse_sent(&sent_json);
         let cited: std::collections::HashSet<i64> =
             serde_json::from_str::<Vec<i64>>(&cited_json).unwrap_or_default().into_iter().collect();
 
@@ -347,7 +351,8 @@ impl UserDb {
             row,
             answer_md,
             timings: serde_json::from_str(&timings_json).unwrap_or(serde_json::Value::Null),
-            passages: render_passages(index, &sent, &cited),
+            passages: render_passages(index, &sent, &cited, tokens_resolvable),
+            tokens_resolvable,
             index_note,
         }))
     }
@@ -411,7 +416,7 @@ impl UserDb {
                 "\n  model {}, Bible index {}, {} passages found\n",
                 row.model_id,
                 row.index_version,
-                parse_sent(&sent_json).len()
+                parse_sent(&sent_json).0.len()
             ));
         }
         if n == 0 {
@@ -449,14 +454,19 @@ fn preview_of(answer: &str) -> String {
     s
 }
 
-/// The sent passages, however they were stored.
+/// The sent passages, however they were stored, and whether their [P#]
+/// numbering can be trusted.
 ///
-/// The current form is one array of verse ids per passage. Entries written by
-/// the very first build of this file hold a flat list; those are regrouped by
-/// adjacency, which recovers the passages but not their original numbering.
-fn parse_sent(json: &str) -> Vec<Vec<i64>> {
+/// The current form is one array of verse ids per passage, in the order they
+/// were sent, so [P1]..[Pn] rebuild exactly. Entries written by the very first
+/// build of this file hold a flat list of verse ids; those can be regrouped by
+/// adjacency, which recovers the passages but NOT which one was [P1]. Numbering
+/// them anyway would put a reference in front of a reader that the answer never
+/// made, which is the one thing this program must not do, so such an entry
+/// reports false and its tokens are left unresolved.
+fn parse_sent(json: &str) -> (Vec<Vec<i64>>, bool) {
     if let Ok(v) = serde_json::from_str::<Vec<Vec<i64>>>(json) {
-        return v;
+        return (v, true);
     }
     let mut ids: Vec<i64> = serde_json::from_str::<Vec<i64>>(json).unwrap_or_default();
     ids.sort();
@@ -474,7 +484,7 @@ fn parse_sent(json: &str) -> Vec<Vec<i64>> {
             _ => groups.push(vec![id]),
         }
     }
-    groups
+    (groups, false)
 }
 
 /// The sent passages, with their text read from the index installed now and
@@ -483,6 +493,7 @@ fn render_passages(
     index: &Index,
     sent: &[Vec<i64>],
     cited: &std::collections::HashSet<i64>,
+    tokens_resolvable: bool,
 ) -> Vec<PassageOut> {
     sent.iter()
         .enumerate()
@@ -513,7 +524,7 @@ fn render_passages(
             PassageOut {
                 cited: g.iter().any(|v| cited.contains(v)),
                 sent: true,
-                token: Some(format!("[P{}]", i + 1)),
+                token: if tokens_resolvable { Some(format!("[P{}]", i + 1)) } else { None },
                 reference,
                 canon: index.canon_of_verse(g[0]).to_string(),
                 verse_ids: g,

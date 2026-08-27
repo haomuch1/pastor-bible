@@ -237,5 +237,6 @@ export interface HistoryDetail {
   answer_md: string;
   timings: Timings;
   passages: PassageOut[];
+  tokens_resolvable: boolean;
   index_note: string | null;
 }

@@ -294,6 +294,35 @@ fn every_sent_passage_keeps_its_own_token() {
 }
 
 #[test]
+fn an_entry_stored_before_the_numbering_was_kept_does_not_invent_one() {
+    let db_index = common::require_index();
+    let index = Index::open(&db_index).unwrap();
+    let dir = temp_dir("legacy");
+    let db = UserDb::open(&dir.join("user.db").to_string_lossy()).unwrap();
+
+    let a = answer("Old entry", vec![55006025], "## A
+It says so [P1] [P7].");
+    let id = db.save_answer(&a).unwrap();
+    // Rewrite it in the old flat form, which is what the first build wrote.
+    db.con
+        .execute(
+            "UPDATE history SET passage_ids = ? WHERE id = ?",
+            rusqlite::params!["[55006025,55006026,19023001]", id],
+        )
+        .unwrap();
+
+    let got = db.get(id, &index).unwrap().unwrap();
+    assert!(!got.tokens_resolvable, "a flat list cannot yield [P#] numbering");
+    assert!(
+        got.passages.iter().all(|p| p.token.is_none()),
+        "a passage was numbered anyway, which would show the reader a citation the          answer never made"
+    );
+    // The passages themselves are still recovered and still have their text.
+    assert_eq!(got.passages.len(), 2, "two runs of adjacent verses");
+    assert!(got.passages.iter().all(|p| !p.verses.is_empty()));
+}
+
+#[test]
 fn settings_round_trip_and_overwrite() {
     let dir = temp_dir("settings");
     let db = UserDb::open(&dir.join("user.db").to_string_lossy()).unwrap();

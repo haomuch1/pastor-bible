@@ -145,9 +145,17 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
   }
 
   const shownPassages = answer?.passages ?? past?.passages ?? earlyPassages ?? [];
+  const unlinked = past != null && !past.tokens_resolvable;
   const shownMarkdown = answer
     ? answer.synopsis_markdown ?? answer.fallback_markdown
-    : past?.answer_md ?? null;
+    : past
+      ? // An answer stored before the citation markers were kept: the markers
+        // cannot be linked to passages, so they are removed rather than shown
+        // pointing at the wrong ones.
+        unlinked
+        ? past.answer_md.replace(/\s*\[P\d+\]/g, "")
+        : past.answer_md
+      : null;
   const isFallback = answer ? answer.fallback_used : false;
 
   return (
@@ -245,6 +253,13 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
           )}
 
           {past?.index_note && <div className="notice">{past.index_note}</div>}
+          {unlinked && (
+            <div className="notice">
+              This answer was saved before The Pastor Bible kept track of which passage each
+              citation pointed at. The passages it rested on are below; the markers in the text
+              have been removed rather than shown pointing at the wrong ones.
+            </div>
+          )}
 
           {shownMarkdown && (
             <div>

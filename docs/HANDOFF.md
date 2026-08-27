@@ -1,202 +1,203 @@
 # HANDOFF
 
-Session: P4 Generation and verifier in the Rust backend
+Session: P5 Frontend, first run, history
 Date: 2026-08-26
-Status: P4 COMPLETE
+Status: P5 COMPLETE, with everything visual awaiting Jared's eyes
 
 ## State
 
 Repository at D:\Haomuch-Programs\The-Pastor-Bible, branch main, pushed to
 https://github.com/haomuch1/pastor-bible, still private.
 
-The Rust backend exists and answers. `src-tauri/core` is a new crate,
-`pastor-bible-core`, carrying the whole query pipeline with no GUI dependency:
-index access, retrieval, the citation verifier, the crisis matcher, prompt
-loading, the sidecar manager and the orchestration that ties them together. The
-Tauri shell in `src-tauri` is now a workspace root over it and is otherwise
-untouched; P5 wires the two together.
+The app runs. `npx tauri build --no-bundle` produces
+`src-tauri/target/release/pastor-bible.exe`, which opens a window, asks a
+question, shows every passage it found while the answer is being written, and
+keeps the answer in a history file that never leaves the machine.
 
-`pastor-bible-cli` is the harness. `ask "<question>"` runs the whole pipeline
-and prints the answer structure as JSON plus a readable rendering, with
-`--canon 66|both`, `--model default|fallback|<file>`, `--query raw|rewrite|fused`,
-`--ctx N`, `--threads N`, `--gpu-layers N`, `--allow-both-servers`, `--json <path>`
-and `--quiet`. `selftest` exercises the sidecar without a chat model.
+New in the backend (`src-tauri/core`): `userdb.rs` is user.db, history and
+settings with FTS5 and an export; `download.rs` is the model downloader, the
+only code here that reaches the internet; `hardware.rs` reads this machine for
+the advisory first-run check; `session.rs` is one open app, two loaded sidecars,
+staged progress and cancellation. `src-tauri/src/lib.rs` is the Tauri shell:
+twenty commands, two events, and a window-close handler that stops both models.
 
-New documents: docs/SIDECAR.md closes PLAN section 16's llama-server VERIFY
-item with flags and endpoints verified against the binary; docs/API.md
-specifies the answer structure P5 consumes. docs/VERIFIER.md now carries 35
-test vectors rather than 25, and records why. docs/EVAL.md has a "Rust backend
-(P4)" section with every number this session measured.
+New in the frontend (`src/`): `types.ts` and `api.ts` are the whole surface the
+window has; `screens/FirstRun.tsx`, `screens/Main.tsx`, `screens/Settings.tsx`,
+`components/Synopsis.tsx`, `components/PassagePanel.tsx`, `styles.css`. There is
+no browser storage anywhere: `grep -rn "localStorage\|sessionStorage\|indexedDB"
+src/` returns nothing, and every setting and every answer goes through user.db
+by way of a command.
 
-data/crisis_terms.txt is populated: 117 phrases covering harm to self, harm to
-others, and the language of despair and danger. data/crisis_note.txt is the
-single source for PLAN 9.3's wording, and a test asserts README quotes it
-exactly.
+docs/screenshots/ holds seventeen PNGs of the app as it stands. tools/shot.ps1
+is what captured them.
 
-New Python: pipeline/make_fixtures.py writes the parity fixtures,
-pipeline/rewrite_decision.py measured the query-mode question,
-pipeline/run_p4.py drives the CLI over the graded set, pipeline/report_p4.py
-recomputes every figure from the stored artefacts. tools/fetch_llama.py fetches
-a pinned llama.cpp asset and refuses to unpack a mismatched checksum; it is the
-one file under tools/ that is committed. Its --sidecar flag places the build in
-src-tauri/binaries under Tauri's externalBin naming, and that directory is
-gitignored bar its .gitkeep.
+Tests: 46 in cargo, 2 more that are run explicitly, and 134 in pytest, all
+passing.
 
-Tests: 20 in cargo (sidecar lifecycle including the orphan check, retrieval
-parity, verifier parity, crisis, prompts and output serialization) and 134 in
-pytest, all passing. Everything is pushed; remote HEAD is
-1abcc2f8485127b780f1ed824e7d2ddec4b0d76e.
+## Not verified: everything visual
+
+**Claude Code cannot see the window.** The screenshots were captured by a script
+and read back as images, so the layout, the wording and the colours have been
+looked at, but nobody has used the app. Everything in the list below is Jared's
+to judge, and every visual choice in it is a placeholder until he says
+otherwise:
+
+- whether the type is large enough and the spacing generous enough
+- the colour palette, which is a warm off-white with a brown accent
+- the wording of every label and every note
+- whether the topic grouping is worth having at all (see the flags)
+- the window's title bar follows the system theme and is dark while the app is
+  light; nothing was done about it
+- keyboard use beyond Ctrl+Enter, tab order, and anything to do with screen
+  readers: none of it has been tested
+- the app has only ever been run on this machine, at one window size, by a
+  script
 
 ## Verified
 
-**The sidecar cannot be orphaned.** Three lifecycle tests: spawn, health,
-embed, stop with the child confirmed gone; a second spawn refused while one is
-alive and the manager usable again afterwards; and the one that matters, a
-child that does not survive a hard kill of its parent. That last test launches
-the CLI as a separate process, reads the sidecar's pid from it, kills the
-parent with TerminateProcess so no destructor and no handler runs, and asserts
-the sidecar died with it. On Windows the guarantee is a Job Object with
-KILL_ON_JOB_CLOSE; on Linux it is PR_SET_PDEATHSIG set before exec.
+**user.db.** Created on first run at
+`%APPDATA%\io.github.haomuch1.pastorbible\user.db`, schema version 1, with a
+migration hook and a refusal to open a file written by a newer version. History
+with FTS5 over question and answer, settings, and a plain-text export. 14 tests:
+round trip, the passages re-rendered from the index installed now, a note when
+the index version differs, paging, search including hostile input a reader might
+type, delete one, clear all, export contents, and the two token cases below.
 
-**Retrieval reproduces the Python harness exactly.** 14 cases, 12,685
-candidates in rank order with scores, origin tags and canon tags, the passages
-they group into, the cut sent to generation and the matched topics. Zero
-mismatches at a 1e-5 tolerance that was not loosened. One real mismatch was
-found and fixed: a sequential f32 dot product ranked two passages whose true
-cosines differ by 1.8e-7 the wrong way round, and accumulating in f64 is both
-more accurate and what the harness does.
+**The model host, PLAN section 16's last VERIFY item.** huggingface.co, URL form
+`https://huggingface.co/<org>/<repo>/resolve/main/<file>`, no token, Range
+honoured. All three files' sizes and checksums match the host and the copies on
+this machine. Recorded in docs/SIDECAR.md and NOTICE.md.
 
-**The verifier agrees with Python on everything either has ever seen.** All 35
-contract vectors, with identical violation records rather than merely identical
-verdicts. Then all 82 outputs P3 stored, being the first pass and the final
-answer of 41 generations, compared on verdict, on each violation's kind, text,
-reason and character span, on the stripped text, on the retry note and on the
-fallback rendering. Zero differences.
+**The downloader.** 9 tests against a server inside the test process: a clean
+download, a file already correct not fetched again, a truncated partial resumed
+from exactly where it stopped, a corrupt download rejected and deleted, a
+present-but-wrong file replaced, a host offering a different size refused, a
+cancellation keeping what was already fetched, and the allow-list refusing three
+URLs. Two more, run explicitly: the real host's headers, and the checksums of
+the model files on this machine.
 
-**A hole in the citation guarantee was found and closed.** Rule B could not see
-any multi-word book name, because the pattern was built from the space-stripped
-normalised key. Measured against 83 realistic book names, 14 were invisible:
-"Song of Solomon", "Song of Songs", "Acts of the Apostles" and eleven
-deuterocanonical names, which is exactly what a both-canon answer cites. Fixed
-in Python and Rust together, ten new contract vectors added in both directions,
-and proved to change nothing on P3's record: 41 first-pass verdicts, 14
-violation records field by field, 41 final answers, all identical before and
-after. Jared decided this rather than the alternative of porting the gap for
-parity's sake.
+**The self-test.** Three canned questions (s01, s03, s13) end to end in the real
+app: all three verified, zero fabricated references, 7 minutes 33 seconds.
 
-**Ten graded questions end to end, canon 66, Qwen3-8B, through the CLI.**
-Fabricated references reaching output: 0, checked against the text a reader
-would see. First-pass violations 0, retries 0, fallbacks 0, structure
-compliance 1.00 with four or five themes every time. Median 157.2 seconds
-against P3's 156.3, maximum 210.1 against P3's 234.1. Peak sidecar RAM 9,001
-MB on every question.
+**Five questions in one session, through the window.** All five verified, 135.8
+to 184.5 seconds each. Peak resident memory of both sidecars together: 11,763
+MB. The app and its webview: 969 MB. P4 measured 9,001 MB with a fresh server
+per question; P3 measured 15,068 MB over ten. README's memory figure has been
+corrected to say about 9 GB for one answer and about 12 GB over a long session.
 
-**Sanity runs.** Two questions on the fallback 1.7B: verdict ok both, zero
-fabrications, 30 and 34 seconds, peak 2,769 MB, and one theme each, which is
-the list-style behaviour P3 documented and README now warns about. g19 in
-both-canon mode: 32 passages sent of which 7 deuterocanonical, canon tags
-carried in the passage panel, the Deuterocanon footer present, verdict ok, zero
-fabrications.
+**Stop.** Measured at 16.3 seconds before the fix and 2.69 seconds after it: a
+cancellation is only noticed between chunks of the response stream, and during
+prompt processing no chunk arrives for tens of seconds, so two seconds after
+Stop the answering model is stopped outright. It is not reloaded on the way out;
+the next question pays the four seconds. A question asked after two
+cancellations answered normally.
 
-**The crisis matcher.** 117 phrases, both halves present, 15 positive and 15
-negative sentences all correct, and a list with no terms in it refuses to load
-rather than pretending to work.
+**First run, from a fresh application data directory with the model already in
+place.** Window on screen 0.57 seconds after launch; 0.28 seconds on later
+launches. The models are not loaded until the first question, which is why. The
+machine's part of first run is then the checksum of the 4.7 GB model and the
+7 minute 33 second self-test.
 
-**Context window.** PLAN's assumption that P3's 15 GB came from an oversized
-context is wrong, and the measurement says so. Prompt lengths are 2,709 to
-5,819 tokens; with the 900-token budget and a 25 per cent margin the derived
-context is 8,398, larger than the 8,192 in use. Re-running the three largest
-questions at 8,448 cost 36 MB and no time. The 15 GB was server lifetime: P3
-kept one llama-server alive across ten questions; a fresh one per question
-peaks at 9,001 MB.
+**Closing.** Both sidecars stop when the window closes, by a handler and by the
+Job Object P4 built underneath it. Three tests: both models loaded at once and
+both stopped by the close handler, dropping a session stopping them too, and a
+cancellation leaving a server that can still answer.
 
-**Query rewriting, decided by measurement.** raw 0.3625, rewrite 0.3500, fused
-0.4000 recall@25 against MUST; fused minus raw is +0.0375 with a 95 per cent
-interval of [-0.0125, +0.0875]. Not separable on ten questions, so the tie goes
-to the cheaper mode. Default is raw; the other two are one flag away.
+**The crisis note** appears above the answer and never instead of it, on a real
+question, in the running app. Screenshot 14.
 
-## Not verified
+## Jared's click-through checklist
 
-The fallback path has still never been reached in a real run. Across P3 and P4
-together, 55 generations, no retry has ever failed. Its output shape is covered
-by tests and by the fixtures; it has not been seen in production of any kind.
+From a fresh state. To start over: close the app and delete the folder
+`%APPDATA%\io.github.haomuch1.pastorbible`. To run it without an installer:
 
-Citation precision and coverage are not a like-for-like comparison with P3. P3
-retrieved with the model's rewrites and P4 retrieves from the raw question, so
-the two runs sent different passages. The verifier figures, the fabrication
-count and the latency are like for like.
+    set TPB_MODEL_DIR=D:\Haomuch-Programs\The-Pastor-Bible\models
+    src-tauri\target\release\pastor-bible.exe
 
-Ten questions is still a small sample, and the gold lists are still
-index-derived and unreviewed by a pastor.
-
-Peak memory was measured with a fresh server per question. P5 will keep a
-server alive between questions for speed and must measure again before
-README's 16 GB floor is trusted; P3's 15,068 MB is what a long-lived server
-looked like.
-
-The concurrent-sidecar path was smoke-tested, not measured. `--allow-both-servers`
-keeps the embedding server up beside the chat server and the answer records
-that it did; nobody has measured what it saves.
-
-Nothing was measured on any machine but this one.
+1. **Welcome.** The disclaimer and the crisis note, word for word as README has
+   them, then Continue. *Is this the first thing you want a stranger to read?*
+2. **This computer.** Your machine beside the reference machine, five rows, and
+   either a green line saying they match or a plain warning saying what is
+   below. Continue is enabled either way. *Try it on a laptop if you have one.*
+3. **One download.** With the model already in place it says so and Continue
+   lights up. To see the download itself, move Qwen3-8B-Q4_K_M.gguf out of the
+   models folder first; it is 4.7 GB, and stopping it part way and starting
+   again is the thing worth testing.
+4. **A quick check.** Press it and wait about seven and a half minutes. Three
+   questions, three ticks, then Start using The Pastor Bible.
+5. **Ask something.** Within a second the passages appear, under topic headings,
+   with a line saying to read them while the answer is written. Watch the token
+   count climb. *This is the part I would most like you to judge: is the wait
+   bearable now?*
+6. **The answer.** Themed headings, and every citation a small chip with a
+   reference on it. Click one: it scrolls to that passage and outlines it.
+7. **The passage panel.** Switch between Topic and Book. *The topic labels are
+   the thing I am least sure of; see the flags below.* Expand a group, read the
+   verse text, look at the origin tags.
+8. **Stop.** Ask something and press Stop. It should give up within about three
+   seconds and leave the app usable.
+9. **The Deuterocanon.** Turn it on beside the question box, ask about
+   almsgiving or wisdom, and look for the dashed "Deuterocanon" tags in the
+   passage panel and the footer line under the answer.
+10. **A question in the reader's own words about despair or self-harm.** The
+    crisis note must appear above the answer, and the answer must still run.
+11. **History.** Click a past question: the answer and its passages come back.
+    Search for a word that is in an answer but not in a question. Delete one.
+12. **Settings.** Change the canon, change the model (the smaller one downloads,
+    1.7 GB), export the history to a text file and read it, delete all history.
+13. **About.** Credits, licences, index version, model, reference hardware, and
+    the offline statement.
+14. **Close the window** and check Task Manager: no llama-server should remain.
 
 ## Flags for Jared
 
-**The verifier had a hole and it is worth knowing how it got there.** The
-implementation and its own specification disagreed for two phases, and nothing
-caught it because the 25 test vectors were written from the same mental model
-as the code. The ten new vectors were written from the failure. It is worth
-assuming there are others, and the cheapest defence is more vectors drawn from
-what models actually write.
+**The topic grouping is the weakest thing here, and it is a data problem.** P4
+flagged that Nave's subtopic headings are unusable as labels. P5 groups by the
+root topic instead, which turned "INSTANCES OF Ahithophel Naaman, refusing to
+wash in the..." into "PRIDE", and that is a real improvement. But the second
+line still shows the matched subtopic, and some of those are still paragraphs.
+Screenshots 08 and 10 show it. It is worth deciding whether the grouping earns
+its place at all, or whether by-book should be the default.
 
-**The Deuterocanon marker cannot be left to the model.** On g19 the 8B cited a
-deuterocanonical passage and dropped the "(Deuterocanon)" marker the prompt told
-it to keep. The passage panel carries `canon` on every passage, so P5 renders
-the tag itself. The prompt still asks; nothing rests on the asking now.
+**Two defects were found by looking at screenshots, not by tests.** A reopened
+answer showed raw `[P19]` markers, because history stored a flat list of verse
+ids and lost which passage was which; and a reopened answer was grouped under
+the topics of whatever had been asked most recently. Both are fixed, both now
+have tests, and both would have shipped if the screenshots had not been read.
+That is worth knowing about the shape of the risk here: the parts a test can
+check are in good order, and the parts only eyes can check had two real bugs in
+them on the first look.
 
-**Nave's headings are not usable as headings.** The topic grouping that
-replaces summarize-all is grouped under Nave's subtopic labels, and some of
-those labels are whole paragraphs; one matched topic on g01 has a heading 1,200
-characters long listing every instance of answered prayer in scripture. The
-answer structure carries `heading_display`, a trimmed label, beside the source
-text. It makes the grouping shippable rather than good. Better topic labels are
-a P1 change to how subtopics were derived, and it is worth deciding whether the
-grouping earns its place at all if the labels stay like this.
+**Answers still take two and a half minutes, and now the reader has something
+to do.** The passages are on screen within a second. Whether that is enough is
+the judgement I would most like reversed if you disagree.
 
-**Hand-written keywords still beat everything the product can do.** 0.4875
-recall@25 against 0.3625 for the raw question. That gap is the single largest
-retrieval lever left, and it is not a prompt problem: it is that a person who
-knows the Bible picks better search terms than a question does. Worth thinking
-about whether some curated query expansion could ship in the index.
+**Memory is higher than P4 suggested.** 11.8 GB over a five-question session
+against 9.0 GB for a single answer. README now says both. On a 16 GB machine
+that is close, and the smaller model is the answer for one.
 
-**Two and a half minutes is still the honest speed.** Nothing this session
-changed it. The Vulkan measurement is in EVAL.md and P6 decides what to do with
-it.
+**The GPU path is measured and switched off.** P4 measured 12 seconds against
+178. Settings shows the option greyed out and labelled. P6 turns it on.
 
-**Answer quality is still unrated.** The graded answers from this session are
-in data/eval/runs/p4-rust-8b/raw/ as JSON if you want to read ten of them.
+**Nothing here is signed, packaged, or installed.** The app runs from
+`target\release`. P6 does all of that.
 
 ## Next session
 
-P5 Frontend and first-run, per PLAN section 7 and the amendments logged today.
+P6 Packaging and CI, per PLAN sections 11 and 13.
 
-Screens per section 7, with three things this session decided. Retrieved
-passages are displayed as soon as retrieval returns, which is 40 milliseconds,
-so the reader is in the text while generation runs. The synopsis appears only
-after the verifier passes; nothing unverified is ever on screen, even briefly.
-Progress is a stage indicator and a token counter, never streamed text.
+Installers with the fixed product id, in-place upgrade, the uninstall prompt for
+user data, sidecar bundling per Tauri's externalBin convention, WebView2
+bootstrapping on a clean Windows 10, the offline gate, the upgrade gate, and the
+release workflow.
 
-The full passage set is grouped under the matched Nave's topic headings, per
-the amended PLAN 5.6 and 7.2: topics in match order, passages within a topic in
-canonical order, everything else under "Other passages". The backend already
-returns this as `topic_groups`. Summarize-all is gone from v1.
-
-The Deuterocanon tag in the synopsis is rendered from `passages[].canon`, not
-from the model's prose. See docs/API.md.
-
-History per section 8, in user.db in the app data directory. The downloader,
-with checksum and resume, is for the chat model only: the embedding model is
-bundled. Self-test on first run.
+Three things P5 leaves for it. **The app must be built with the Tauri CLI, not
+with `cargo build`**: a plain cargo build produces a binary that loads the dev
+URL and shows "localhost refused to connect". **The Vulkan sidecar** is fetched
+and measured but not bundled; the Compute setting is already in the window,
+disabled, waiting for it. **`tools/fetch_llama.py --sidecar`** already places the
+CPU build in `src-tauri/binaries` under the target-triple name Tauri wants, and
+that layout has not been tested against an actual bundle.
 
 Read PLAN.md, DECISIONS.md, API.md, SIDECAR.md and this file before starting.
-Do not begin P6.
+Do not begin P7.
