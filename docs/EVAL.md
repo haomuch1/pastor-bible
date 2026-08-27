@@ -578,6 +578,219 @@ passages" button has to digest. It does not fit one context window on a small
 CPU model, which is why 5.6 specifies batching and a merge. P3 measures whether
 that is fast enough to offer.
 
+## Chat model evaluation (P3)
+
+Measured 2026-08-26 on an AMD Ryzen 7 5800X, 8 physical cores, 16 logical,
+31.9 GB RAM, with 19 to 21 GB free before each model load. CPU only: the
+llama.cpp build is win-cpu-x64 and the machine's RTX 3080 is not used, so every
+figure here is a CPU figure and the hardware floor is a CPU floor.
+
+Execution was strictly sequential, and that is enforced rather than merely
+intended. llama-server runs with -np 1, a single slot, so it cannot serve two
+requests at once. The harness loops one question at a time and writes each
+metrics row before the next question starts. The embedding server and the chat
+server never run together: query vectors for the whole set are embedded first,
+the embedding server is stopped, and only then is the chat server started.
+Every run records embed_phase_separate true. Before each load the harness reads
+free RAM and refuses any model whose file size plus 2 GB of headroom exceeds
+it; every load this session passed with at least 14 GB to spare. Servers run at
+below-normal priority.
+
+### Candidates
+
+All three are Apache-2.0 with first-party GGUF builds from the Qwen
+organisation, instruction-tuned, and current generation. Holding the family
+constant makes size the variable that PLAN 6.4 selects on.
+
+    Qwen3-1.7B      apache-2.0   Q8_0      1749.4 MB   context used 8192
+      sha256 061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a
+      Q4_K_M is not published for this size by Qwen; Q8_0 is their smallest.
+    Qwen3-4B        apache-2.0   Q4_K_M    2381.6 MB   context used 8192
+      sha256 7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5
+    Qwen3-8B        apache-2.0   Q4_K_M    4794.9 MB   context used 8192
+      sha256 d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785
+
+No candidate was refused for memory. Qwen2.5-3B-Instruct was excluded before
+download: its card's licence field reads "other", not Apache-2.0 or MIT.
+
+Reasoning is disabled with Qwen3's own /no_think switch, and any think block is
+stripped before verification, so what is verified is what the reader would see.
+
+### Results, canon 66, ten graded questions
+
+P3 graded runs, canon 66, 10 questions each
+
+model          fab1st  retry fallbk cit-prec cit-cov  struct  rewrite   med s   max s  peak MB
+----------------------------------------------------------------------------------------------
+qwen3-1.7b       0.00   0.00   0.00   0.212   0.820    1.00   -0.162    63.5    96.0     7095
+qwen3-4b         0.30   0.30   0.00   0.219   0.333    0.70   -0.262   119.7   377.9    13128
+qwen3-8b         0.00   0.00   0.00   0.269   0.792    1.00   -0.250   156.3   234.1    15068
+
+  fab1st   first-pass verifier violation rate
+  retry    fraction of questions that needed a second generation
+  fallbk   fraction that fell back to the passage list
+  cit-prec fraction of cited passages that are in MUST or SHOULD
+  cit-cov  fraction of sent MUST passages the synopsis cited
+  struct   headings present, every theme cites a sent token
+  rewrite  recall@25 with model rewrites minus with hand keywords
+
+Themes per answer, and generation speed
+
+model          themes per question                    tok/s out chars
+qwen3-1.7b     [1, 1, 1, 1, 1, 1, 1, 1, 4, 1]          12.8       958
+qwen3-4b       [1, 0, 4, 5, 4, 4, 3, 0, 5, 0]           6.5      1613
+qwen3-8b       [5, 4, 4, 5, 5, 5, 5, 5, 5, 4]           5.8      2051
+
+Per-question recall@25, model rewrites vs hand keywords
+
+q      qwen3-1.7b         qwen3-4b           qwen3-8b          
+g01    0.50 / 0.75        0.50 / 0.75        0.50 / 0.75       
+g03    0.62 / 0.62        0.50 / 0.62        0.62 / 0.62       
+g04    0.50 / 0.25        0.12 / 0.25        0.25 / 0.25       
+g05    0.50 / 1.00        0.12 / 1.00        0.25 / 1.00       
+g08    0.12 / 0.50        0.12 / 0.50        0.00 / 0.50       
+g11    0.38 / 0.62        0.12 / 0.62        0.38 / 0.62       
+g12    0.00 / 0.12        0.00 / 0.12        0.00 / 0.12       
+g13    0.75 / 1.00        0.75 / 1.00        0.75 / 1.00       
+g14    0.38 / 0.50        0.50 / 0.50        0.25 / 0.50       
+g18    0.62 / 0.62        0.62 / 0.62        0.50 / 0.62
+
+### Gates and selection
+
+Thresholds were fixed before the 4B and 8B results were seen and are recorded
+in DECISIONS.md: first-pass violation rate at or below 0.30; fallback rate
+below 0.10; structure compliance 100 per cent; median end-to-end latency at or
+below 180 seconds with no question above 300.
+
+    model         fab<=0.30  fallback<0.10  structure=1.00  median<=180  max<=300
+    qwen3-1.7b    pass 0.00  pass 0.00      pass 1.00       pass 63.5    pass  96
+    qwen3-4b      pass 0.30  pass 0.00      FAIL 0.70       pass 119.7   FAIL 378
+    qwen3-8b      pass 0.00  pass 0.00      pass 1.00       pass 156.3   pass 234
+
+Applying PLAN 6.4: the smallest model passing every gate is Qwen3-1.7B, so it
+is the fallback. The next size that passes is Qwen3-8B, so it is the default.
+Qwen3-4B is rejected. Size did not order quality here: the middle model was the
+worst of the three on structure, on citation coverage, and on worst-case
+latency.
+
+No fabricated reference reached a simulated reader in any run. That is true by
+construction rather than by the models behaving well: the verifier strips and
+retries, and falls back if the retry also fails. Across 31 generations this
+session, graded, smoke and Deuterocanon together, the fallback was never
+reached, so every answer shown was a clean generation.
+
+### What the gate numbers do not capture
+
+Qwen3-1.7B passes structure compliance as P3 defines it, but nine of its ten
+answers contain exactly one theme heading followed by a passage-by-passage
+paraphrase. Qwen3-8B produced four or five themes on every question. The metric
+asks whether headings exist and cite properly; it does not ask whether the
+result reads as a synopsis rather than a list. Theme counts are reported above
+for that reason, and the difference is plain to a reader in a way the gate is
+not.
+
+Citation precision is an index-derived proxy and should be read as one. A cited
+passage counts as precise if it overlaps a MUST or SHOULD passage, and those
+lists were themselves drafted from the same corpora and never reviewed by a
+pastor. The figures, 0.21 to 0.27, mostly reflect that 25 passages are sent and
+the gold lists cover only a fraction of them.
+
+### Query rewriting makes retrieval worse
+
+Every candidate's rewrites lowered recall@25 against the hand-written keyword
+lists: by 0.162 for the 1.7B, 0.262 for the 4B, 0.250 for the 8B. The effect is
+consistent across models and across questions rather than one bad case. On g05,
+money and debt, the hand keywords reach 1.00 and every model's rewrites reach
+0.50 or less.
+
+PLAN 5.2 assumes the chat model's rewrites help. On this evidence they do not.
+Recorded as a finding rather than acted on: 5.2 is an approved decision and ten
+questions is a small sample. P4 should measure it again and decide whether the
+rewrite step is kept, dropped, or made additive to the raw question rather than
+a replacement for it.
+
+### The summarize-all path is not usable as specified
+
+Run once on g12, the graded question with the largest retrieved set: 548
+passages, grouped by book into 6 batches of 44 to 115 passages.
+
+    total wall time            1993 seconds, 33 minutes
+    batches                    6, from 108 to 278 seconds each
+    merge                      273 seconds
+    fabrication events         1, in batch 5, recovered on its retry
+    merge verdict              ok, no retry needed
+    peak resident memory       16932 MB at 16384 context
+    final output               2960 characters
+    tokens cited by batches    253
+    carried through the merge  123
+    dropped at the merge       130
+
+Thirty-three minutes is not an interactive feature, and the merge silently drops
+just over half the passages the batches cited, which defeats the point of
+summarizing the whole set. The citation guarantee held throughout: the verifier
+ran on all six batches and on the merge, one violation was caught and fixed on
+its retry, and nothing unverified survived.
+
+This is a finding for P4 and P5, not a failure of the plan's intent. The mode
+needs a much smaller model for the batch stage, or a hierarchical merge that
+cannot drop citations, or an honest re-scoping.
+
+### Hardware floor, measured
+
+Disk, from the files themselves:
+
+    index.db, bundled, nomic vectors only        366.8 MB
+    embedding model, bundled                     261.6 MB
+    default chat model, downloaded on first run 4794.9 MB
+    fallback chat model                         1749.4 MB
+    application binary and sidecar               not yet measured; P6
+
+    default configuration total                 5423.3 MB, about 5.3 GB
+    fallback configuration total                2377.8 MB, about 2.3 GB
+
+Memory, measured two ways because they answer different questions. A controlled
+single answer, one model loaded, one query:
+
+    embedding server        peak resident   246 MB    private   139 MB
+    Qwen3-8B Q4_K_M         peak resident  8998 MB    private  4615 MB
+    Qwen3-1.7B Q8_0         peak resident  2768 MB    private  1076 MB
+
+Observed worst case across a full ten-question run, which is what a reader
+could actually hit:
+
+    Qwen3-8B                15068 MB
+    Qwen3-1.7B               7095 MB
+    Qwen3-8B, summarize-all 16932 MB at 16384 context
+
+The two sets differ because Windows lets a working set grow while RAM is free,
+and llama.cpp memory-maps the model file. Private bytes is what the machine
+must find; resident peak is what it will use when it can. On this evidence the
+default model wants 16 GB of RAM to be comfortable and the fallback wants 8 GB.
+Those are the figures README states, and they are a judgement drawn from the
+measurements above rather than a measurement themselves. P7 tests them on a
+clean machine.
+
+### Deuterocanon, secondary and non-gating
+
+Additive canon retrieval was built and is on by default in both-canon mode. The
+canon-66 result is now a prefix of the both-canon result by construction, which
+tests/test_embeddings.py asserts for g19 and g20. Turning the setting on can
+only add passages, never take them away. That closes the displacement P2
+measured, where enabling the Deuterocanon removed up to 15 of 25 protestant
+passages.
+
+Retrieval, configuration F: recall@25 against MUST is unchanged between modes
+for both questions, 0.286 for g19 and 0.571 for g20, because the slice is
+appended rather than substituted. With the slice included in what is sent to
+generation, 2 of the 6 deuterocanonical MUST passages for g19 and 3 of 6 for
+g20 reach the model.
+
+One generation run, g19, both-canon, default model: 32 passages sent of which 7
+were deuterocanonical, all 7 cited, the "(Deuterocanon)" marker preserved in
+the output, citation precision 0.474. The first pass was rejected for writing
+"Psalm 41" and "Job 31" as chapter-only references, and the retry passed. That
+is the verifier doing exactly what it exists for.
+
 ## Results
 
 None yet. Populated in P2 (retrieval) and P3 (full pipeline).

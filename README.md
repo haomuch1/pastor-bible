@@ -31,7 +31,38 @@ Not yet available; filled in at P5.
 
 ## Hardware requirements
 
-Not yet available; filled in at P3.
+Measured on an AMD Ryzen 7 5800X, 8 cores, on 2026-08-26. The Pastor Bible runs
+entirely on your processor; it does not need a graphics card, and it will not
+use one.
+
+There are two versions of the answering model. The installer picks for you
+based on how much memory your computer has, and you can change it in settings.
+
+    Recommended, the larger model
+      memory        16 GB
+      disk          about 5.3 GB in total
+      an answer     around 2 to 4 minutes on a processor like the one above
+
+    Minimum, the smaller model
+      memory        8 GB
+      disk          about 2.3 GB in total
+      an answer     around 1 to 2 minutes
+
+Those disk figures are everything: the program, the Bible index that ships with
+it, and the answering model that downloads once on first run. The index and the
+search model together are about 630 MB of it and arrive with the installer. The
+answering model is the rest, and it is the only thing downloaded afterwards.
+
+If your computer has less than 8 GB of memory or too little free disk, The
+Pastor Bible will tell you so on first run and stop, rather than install
+something that will not work.
+
+Answers take minutes rather than seconds because everything happens on your own
+machine, with nothing sent anywhere. A faster processor is the thing that helps
+most.
+
+The timings above were measured on one machine. They will be checked on a clean
+machine before release.
 
 ## Using it
 

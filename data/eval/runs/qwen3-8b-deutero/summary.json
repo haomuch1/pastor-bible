@@ -1,0 +1,20 @@
+{
+ "model": "qwen3-8b-deutero",
+ "gguf": "Qwen3-8B-Q4_K_M.gguf",
+ "canon": "both",
+ "questions": 1,
+ "peak_ram_chat_mb": 9715.6,
+ "peak_ram_embed_mb": 249.6,
+ "free_ram_before_gb": 20.86,
+ "embed_phase_separate": true,
+ "prompt_versions": {
+  "rewrite": "1",
+  "synopsis": "1",
+  "retry": "1"
+ },
+ "first_pass_violation_rate": 1.0,
+ "fallback_rate": 0.0,
+ "structure_ok_rate": 0.0,
+ "median_end_to_end_s": 386.1,
+ "max_end_to_end_s": 386.1
+}

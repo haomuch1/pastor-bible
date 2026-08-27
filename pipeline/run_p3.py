@@ -190,7 +190,16 @@ def main():
                                      canon_mode=args.canon, top_n=TOP_N, **cfg)
             r_hand = recall_at(ret.as_ranges(fullh), must)
 
-            top = ranges[:TOP_N]
+            # In both-canon mode the Deuterocanon slice is appended at the
+            # bottom of the full set by construction, so slicing the front of
+            # the ranked list would never reach it. Take the canon-66 top
+            # slice and the Deuterocanon slice explicitly.
+            if args.canon == 'both':
+                prot = [r for r in ranges if r['canon'] == 'protestant'][:TOP_N]
+                deut = [r for r in ranges if r['canon'] == 'deutero'][:8]
+                top = prot + deut
+            else:
+                top = ranges[:TOP_N]
             passages_text, sent = render_passages(ret, top)
 
             p = (load_prompt('synopsis')
