@@ -8,6 +8,9 @@
 //!   pastor-bible-cli ask "..." --canon both --model fallback --json out.json
 //!   pastor-bible-cli selftest                 sidecar lifecycle, no model call
 //!   pastor-bible-cli spawn-and-hang           used by the orphan test
+//!   pastor-bible-cli session --questions 5    one open session, several
+//!                                             questions, the way the app runs
+//!   pastor-bible-cli session --cancel-after 20  cancel mid-generation
 
 use std::process::ExitCode;
 
@@ -24,6 +27,7 @@ fn usage() -> &'static str {
      pastor-bible-cli ask \"<question>\" [--canon 66|both] [--model default|fallback|<file>]\n                   \
      [--query raw|rewrite|fused] [--ctx N] [--threads N] [--json <path>] [--quiet]\n  \
      pastor-bible-cli selftest\n  \
+     pastor-bible-cli session [--questions N] [--cancel-after SECONDS] [--model ...]\n  \
      pastor-bible-cli spawn-and-hang [--model <file>]\n"
 }
 
@@ -36,6 +40,7 @@ fn main() -> ExitCode {
     let result = match args[0].as_str() {
         "ask" => cmd_ask(&args[1..]),
         "selftest" => cmd_selftest(),
+        "session" => cmd_session(&args[1..]),
         "spawn-and-hang" => cmd_spawn_and_hang(&args[1..]),
         other => Err(format!("unknown command {:?}\n{}", other, usage())),
     };
@@ -186,6 +191,150 @@ fn render(a: &Answer) -> String {
         out.push_str(&format!("peak sidecar RAM {:.0} MB  sidecar path {}\n", mb, a.sidecar_path));
     }
     out
+}
+
+/// Several questions through one open session, which is how the app runs.
+///
+/// P4 measured a fresh server per question at 9,001 MB. The app keeps both
+/// servers loaded for as long as the window is open, so this is the figure that
+/// actually applies to a reader, and it is the one P3 saw climb to 15 GB over
+/// ten questions with a long-lived server.
+fn cmd_session(args: &[String]) -> Result<(), String> {
+    use pastor_bible_core::session::{Session, Stage};
+
+    let n: usize = flag(args, "--questions").unwrap_or("5").parse().map_err(|_| "--questions wants a number")?;
+    let cancel_after: Option<f64> = match flag(args, "--cancel-after") {
+        Some(v) => Some(v.parse().map_err(|_| "--cancel-after wants a number of seconds")?),
+        None => None,
+    };
+    let chat_model = match flag(args, "--model").unwrap_or("default") {
+        "default" => paths::model(DEFAULT_CHAT_GGUF),
+        "fallback" => paths::model(FALLBACK_CHAT_GGUF),
+        other => paths::model(other),
+    };
+    let settings = Settings {
+        index_db: paths::index_db(),
+        llama_server: paths::llama_server(),
+        chat_model,
+        embed_model: paths::model(EMBED_GGUF),
+        prompts_dir: paths::prompts_dir(),
+        crisis_terms: paths::crisis_terms(),
+        crisis_note: paths::crisis_note(),
+        log_dir: Some(paths::log_dir()),
+        canon: CanonMode::parse(flag(args, "--canon").unwrap_or("66"))?,
+        query_mode: QueryMode::Raw,
+        chat_ctx: 8192,
+        threads: None,
+        gpu_layers: 0,
+        allow_both_servers: true,
+    };
+
+    let questions = session_questions(n)?;
+    println!("free RAM before any model load: {:.2} GB", free_ram_gb());
+    let engine = Engine::open(settings)?;
+    let mut session = Session::new(engine);
+
+    let mut rows = Vec::new();
+    for (i, (id, q)) in questions.iter().enumerate() {
+        let t0 = std::time::Instant::now();
+        let mut last = String::new();
+        let flag_cancel = session.cancel_flag();
+        let deadline = cancel_after;
+        // A cancel is asked for from another thread, exactly as the window does
+        // it: the Stop button calls a command while `ask` is still running.
+        let watcher = deadline.map(|secs| {
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_secs_f64(secs));
+                flag_cancel.store(true, std::sync::atomic::Ordering::SeqCst);
+                std::time::Instant::now()
+            })
+        });
+
+        let mut on = |s: Stage| {
+            let text = match &s {
+                Stage::LoadingModel { role, .. } => format!("loading the {} model", role),
+                Stage::Retrieving => "searching".to_string(),
+                Stage::Retrieved { passages, sent } => {
+                    format!("found {} passages, sending {}", passages, sent)
+                }
+                Stage::Generating { tokens, attempt } => {
+                    format!("writing (attempt {}) {} tokens", attempt, tokens)
+                }
+                Stage::CheckingReferences { .. } => "checking references".to_string(),
+                Stage::Retrying { .. } => "writing again".to_string(),
+                Stage::Done { verdict } => format!("done: {}", verdict),
+                Stage::Cancelled => "cancelled".to_string(),
+                Stage::Failed { message } => format!("failed: {}", message),
+            };
+            if text != last {
+                eprintln!("    [{:6.1}s] {}", t0.elapsed().as_secs_f64(), text);
+                last = text;
+            }
+        };
+
+        println!("\n{}. {}  {}", i + 1, id, q);
+        let outcome = session.ask(q, &mut on);
+        let seconds = t0.elapsed().as_secs_f64();
+        let asked_for_cancel_at = watcher.map(|h| h.join().ok());
+
+        let (embed_peak, chat_peak) = session.sidecar_peak_mb();
+        match outcome {
+            Ok(a) => {
+                println!(
+                    "   verdict {}  cited {}  sent {}  {:.1}s  embed peak {:.0} MB  chat peak {:.0} MB",
+                    a.verdict,
+                    a.cited_tokens.len(),
+                    a.sent_count,
+                    seconds,
+                    embed_peak.unwrap_or(0.0),
+                    chat_peak.unwrap_or(0.0)
+                );
+                rows.push((id.clone(), "ok".to_string(), seconds, embed_peak, chat_peak));
+            }
+            Err(e) if e == pastor_bible_core::sidecar::CANCELLED => {
+                let asked = asked_for_cancel_at.flatten();
+                let stop_to_return = asked.map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
+                println!(
+                    "   cancelled after {:.1}s; the call returned {:.2}s after Stop was pressed",
+                    seconds, stop_to_return
+                );
+                rows.push((id.clone(), format!("cancelled/{:.2}", stop_to_return), seconds, embed_peak, chat_peak));
+            }
+            Err(e) => return Err(e),
+        }
+    }
+
+    let (embed_peak, chat_peak) = session.sidecar_peak_mb();
+    let own = pastor_bible_core::pipeline::own_peak_ram_mb();
+    println!("\n--- one session, {} questions ---", rows.len());
+    for (id, verdict, seconds, _, _) in &rows {
+        println!("  {:<5} {:<18} {:.1}s", id, verdict, seconds);
+    }
+    println!(
+        "  peak resident: search model {:.0} MB, answering model {:.0} MB, both together {:.0} MB",
+        embed_peak.unwrap_or(0.0),
+        chat_peak.unwrap_or(0.0),
+        embed_peak.unwrap_or(0.0) + chat_peak.unwrap_or(0.0)
+    );
+    println!("  peak resident of this process: {:.0} MB", own.unwrap_or(0.0));
+    session.shutdown();
+    Ok(())
+}
+
+fn session_questions(n: usize) -> Result<Vec<(String, String)>, String> {
+    let path = std::path::Path::new(&paths::data_dir()).join("eval").join("questions.json");
+    let text = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    let v: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+    let graded = v["graded"].as_array().ok_or("no graded questions")?;
+    let ids = v["p3_graded"].as_array().ok_or("no p3_graded list")?;
+    let mut out = Vec::new();
+    for id in ids.iter().take(n) {
+        let id = id.as_str().unwrap_or("");
+        if let Some(q) = graded.iter().find(|g| g["id"] == id) {
+            out.push((id.to_string(), q["question"].as_str().unwrap_or("").to_string()));
+        }
+    }
+    Ok(out)
 }
 
 /// Spawn the embedding sidecar, check health, embed one string, stop. Proves

@@ -52,6 +52,7 @@ src-tauri/binaries/*
 # the llama.cpp release and refuses to unpack an archive whose checksum is wrong.
 tools/*
 !tools/fetch_llama.py
+!tools/shot.ps1
 models/
 
 # Evaluation scratch output; the kept copy lives in data/eval/
