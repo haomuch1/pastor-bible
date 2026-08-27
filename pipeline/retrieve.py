@@ -231,14 +231,20 @@ class Retriever(object):
             deut_full, _, _ = self._search(
                 qvec, keywords, 'deutero-only', use_vector_verses,
                 use_vector_pericopes, use_fts, use_topics, use_tsk, top_n, pool)
-            extra = deut_full[:deutero_slice]
-            # Score them below the protestant tail so ordering stays stable.
+            extra = []
+            # Score them below the protestant tail so the full-set ordering is
+            # stable and the canon-66 prefix is untouched.
             floor = base_full[-1]['score'] if base_full else 0.0
-            for i, c in enumerate(extra):
+            for i, c in enumerate(deut_full[:deutero_slice]):
                 c = dict(c)
                 c['score'] = round(floor - 1e-6 * (i + 1), 9)
-                base_full.append(c)
-            return base_full, base_full[:top_n + len(extra)], topics
+                extra.append(c)
+            base_full.extend(extra)
+            # The cut sent to generation is the canon-66 top slice plus the
+            # Deuterocanon slice appended to it. Taking a longer prefix of the
+            # full list instead would return more protestant passages and never
+            # reach the appended ones, which sit at the bottom by construction.
+            return base_full, base_top[:top_n] + extra, topics
         return self._search(qvec, keywords, canon_mode, use_vector_verses,
                             use_vector_pericopes, use_fts, use_topics,
                             use_tsk, top_n, pool)
