@@ -189,9 +189,9 @@ Output: index.db with meta.index_version and a checksum. Committed as a release 
 - Answer quality: Jared rates a fixed subset on a 1–5 rubric.
 - Latency and peak RAM on CPU, per model size.
 
-**6.4 Selection rule.** Smallest size passing the gates (recall threshold set in Phase 3, zero fabrications, quality floor) is the fallback model; one size up is the default. Both are offered by the installer; choice is automatic from detected RAM, overridable in settings.
+**6.4 The model.** Qwen3-8B is the model. There is no automatic selection and the installer does not choose: every install gets the same model, so every reader gets the same answers. Qwen3-1.7B stays in Settings as "Smaller model: faster, needs less memory, gives list-style answers", chosen by the reader and never on their behalf. *(Amended 2026-08-26, P5; replaces the smallest-passing/one-size-up rule and the RAM-threshold auto-selection.)*
 
-**6.5 Hardware floor.** Stated in README from measured peak RAM and disk of the default model, with the fallback model's numbers listed as minimum. Numbers are measured, never estimated.
+**6.5 Reference hardware.** The Pastor Bible is built and tested on one reference class of machine, named in README with the measured numbers behind it. Below that reference it still runs, slower, and README says so in one sentence with the measured CPU-only answer time. The app never refuses to run on hardware grounds; the first-run hardware check is advisory. *(Amended 2026-08-26, P5; replaces the hardware floor and the refusal.)*
 
 ---
 
@@ -200,7 +200,7 @@ Output: index.db with meta.index_version and a checksum. Committed as a release 
 ### 7.1 First run
 
 1. Welcome screen with the disclaimer (9.2) and the credits.
-2. Hardware check: RAM and free disk; refuse cleanly with a plain message if below the fallback model's floor.
+2. Hardware check, advisory only: the machine's memory, free disk and graphics device shown beside the reference machine, with one plain warning line if anything is below it. Continue is always enabled. *(Amended 2026-08-26, P5; replaces the refusal.)*
 3. Model download: progress bar, size and time estimate, resumable, checksum-verified, one plain sentence: "This is the only time The Pastor Bible needs the internet."
 4. Self-test: three canned questions run end to end; a green check.
 5. Open the main screen.
@@ -221,13 +221,30 @@ topics ordered by match strength, passages within a topic in canonical order,
 and anything matching no topic under "Other passages". No model call is
 involved, so the grouping appears with the passages themselves.
 
+*(Amended 2026-08-26, P5.)* The grouping is by the root Nave's topic, found by
+walking parent_topic_id upwards; the root heading is the label and the matched
+subtopic is a trimmed second line beneath it. A switch groups by book instead,
+in canonical order. Cited passages are marked and come first within their
+group; the rest are collapsed behind a count, with expand-all and collapse-all.
+
+The wait is shown, never narrated by the model. Retrieved passages appear as
+soon as retrieval returns, which is under a tenth of a second, so the reader is
+in the text while generation runs. The synopsis appears only after the verifier
+passes; no unverified reference is on screen even briefly. Progress is a stage
+indicator, Retrieving, Generating with a token count, Checking references,
+Done, with elapsed time. Generation can be cancelled.
+
 ### 7.3 Settings
 
-Canon (Protestant 66 / include Deuterocanon), Model (default / smaller), Delete all history, Export history (plain text), About (credits, licenses, index version, app version, offline statement).
+Canon (Protestant 66 / include Deuterocanon), Model (standard / smaller, with its one-line caveat), Compute (Auto / CPU / GPU), Delete all history, Export history (plain text), About (credits, licenses, index version, app version, model in use, reference hardware, offline statement).
+
+*(Amended 2026-08-26, P5.)* Compute is Auto by default: Auto uses the GPU sidecar when a Vulkan device is present and the CPU sidecar otherwise. P5 ships the setting with the CPU path only and the GPU option disabled and labelled; P6 adds the Vulkan sidecar and the detection.
 
 ### 7.4 Close
 
-Sidecar terminated on window close. No background process remains. Reopen from the desktop icon.
+Both sidecars, chat and embedding, terminated on window close. No background process remains. Reopen from the desktop icon.
+
+*(Amended 2026-08-26, P5.)* Both stay loaded for as long as the app is open, so the second question does not pay for a model load. There is no memory-threshold unloading: the reference machine has the memory, and swapping models in and out to save it would make every answer slower for a case the reference machine does not have.
 
 ### 7.5 Upgrades, reinstall, uninstall
 
@@ -357,7 +374,21 @@ Every answered question is stored in user.db with its answer, canon mode, model 
 
 ---
 
-## 15. Future: second app
+## 15. After v1.0.0
+
+### 15.1 Post-v1 items, in order
+
+1. **A static modern-to-biblical vocabulary expansion table, applied before
+   search.** P4 measured hand-written keyword lists at 0.4875 recall@25 against
+   0.3625 for the reader's raw question: the largest retrieval gap left, and it
+   is not a prompt problem. A curated table shipped in the index would close
+   part of it at no run-time cost and with nothing invented. *(Added
+   2026-08-26, P5.)*
+2. Summarize-all, if GPU hardware makes it practical (5.6).
+3. A cross-family model check against Phi-4-mini (MIT).
+4. The remaining twenty smoke questions, held back from P3.
+
+### 15.2 A second app
 
 After The Pastor Bible v1.0.0 is functional and public, a separately named app for public-domain religious and esoteric texts (1 Enoch, Kybalion, and others Jared chooses) is started in its own repo, reusing this architecture. Nothing from that project enters The Pastor Bible.
 

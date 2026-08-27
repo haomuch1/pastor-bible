@@ -31,40 +31,35 @@ Not yet available; filled in at P5.
 
 ## Hardware requirements
 
-Measured on an AMD Ryzen 7 5800X, 8 cores, on 2026-08-26. The Pastor Bible runs
-entirely on your processor; it does not need a graphics card, and it will not
-use one.
+Built and tested on: AMD Ryzen 7 5800X (8 cores), NVIDIA RTX 3080 10 GB, 32 GB
+RAM, Windows 11. Everything below was measured on that machine on 2026-08-26.
 
-There are two versions of the answering model. The installer picks for you
-based on how much memory your computer has, and you can change it in settings.
+    disk           about 5.3 GB in all
+    memory in use  about 9 GB while an answer is being written
+    an answer      around 2 to 4 minutes on the processor, 157 seconds typical
 
-    Recommended, the larger model
-      memory        16 GB
-      disk          about 5.3 GB in total
-      an answer     around 2 to 4 minutes on a processor like the one above
+The Pastor Bible will run on less than that. It will be slower, and on a
+machine with much less memory it may swap and be slower still; it does not
+refuse to start, and it does not check your hardware except to show you one
+plain note on first run if something is below the machine above.
 
-    Minimum, the smaller model
-      memory        8 GB
-      disk          about 2.3 GB in total
-      an answer     around 1 to 2 minutes
+The 5.3 GB is everything: the program, the Bible index that ships with it, and
+the answering model that downloads once on first run. The index and the search
+model are about 630 MB of that and arrive with the installer. The answering
+model is the rest, and it is the only thing downloaded afterwards.
 
-The smaller model answers faster and writes a plainer answer: where the larger
-model gathers what it found into several themes, the smaller one tends to give
-one heading and then work through the passages in turn. Both cite only passages
-that were actually found, and neither can invent a reference.
-
-Those disk figures are everything: the program, the Bible index that ships with
-it, and the answering model that downloads once on first run. The index and the
-search model together are about 630 MB of it and arrive with the installer. The
-answering model is the rest, and it is the only thing downloaded afterwards.
-
-If your computer has less than 8 GB of memory or too little free disk, The
-Pastor Bible will tell you so on first run and stop, rather than install
-something that will not work.
+Every install gets the same answering model, so every reader gets the same
+answers. Settings offers a smaller one for machines that need it: it answers in
+about half a minute instead of two and a half, needs about 2.7 GB of memory
+instead of 9, and writes a plainer answer, usually one heading followed by the
+passages in turn rather than several themes. Both cite only passages that were
+actually found, and neither can invent a reference.
 
 Answers take minutes rather than seconds because everything happens on your own
 machine, with nothing sent anywhere. A faster processor is the thing that helps
-most.
+most. A graphics card will help a great deal in a later release: the same
+answer that takes 157 seconds on this processor takes 12 seconds on the
+graphics card in the machine above, and that path is not switched on yet.
 
 The timings above were measured on one machine. They will be checked on a clean
 machine before release.
