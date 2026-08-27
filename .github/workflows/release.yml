@@ -56,22 +56,39 @@ jobs:
           echo "version=$v" >> "$GITHUB_OUTPUT"
           echo "version in src-tauri/Cargo.toml: $v"
 
-      - name: the version must be greater than the latest release tag
+      - name: the version must be greater than the latest published release
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           v="${{ steps.read.outputs.version }}"
-          # Only a plain vX.Y.Z is a release. index-* is a build input, and a
-          # suffixed tag like v0.9.1-ci is a test of this workflow; neither is
-          # something a version has to be greater than. Without this the gate
-          # compares a tagged build against its own tag and always refuses.
+          # What counts as released is what has actually been released. A tag is
+          # not a release, and the tag being built is in this very checkout, so
+          # reading tags made the gate compare the candidate against itself:
+          # tagging v1.0.0 failed with "version 1.0.0 is already released".
+          #
+          # P6 believed it had fixed this. Its fix filtered the tag list down to
+          # plain vX.Y.Z, which excluded the test tag v0.9.1-ci that every P6 run
+          # used -- and so excluded the only tag those runs could have collided
+          # with. The first tag that was itself a plain vX.Y.Z was the first real
+          # release, which is where it surfaced. A gate exercised only by a tag
+          # shaped unlike a release was never exercised.
+          #
+          # Drafts are not published, and the run that creates one must be able
+          # to run again after a failed candidate's draft is deleted and the tag
+          # remade, which is P7's fail path. So drafts are excluded here, exactly
+          # as the upgrade gate below excludes them.
+          #
           # The braces keep a grep that matches nothing from killing the step:
           # pipefail plus set -e makes "no releases yet" look like a failure.
-          latest=$(git tag -l 'v*' | { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sed 's/^v//' | sort -V | tail -1)
+          latest=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --limit 100 \
+                     --json tagName --jq '.[].tagName' \
+                   | { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sed 's/^v//' | sort -V | tail -1)
           if [ -z "$latest" ]; then
-            echo "no previous v* tag; $v is the first"
+            echo "no published release yet; $v is the first"
             exit 0
           fi
-          echo "latest released: $latest, this build: $v"
+          echo "latest published: $latest, this build: $v"
           if [ "$v" = "$latest" ]; then
             echo "::error::version $v is already released"
             exit 1
