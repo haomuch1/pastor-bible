@@ -1,3 +1,5 @@
+#![allow(dead_code)] // each test binary uses a different part of this
+
 //! Shared test scaffolding.
 //!
 //! index.db is a build artefact and is not in the repository, so a checkout

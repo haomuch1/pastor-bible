@@ -23,10 +23,12 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 regex = "1"
-ureq = { version = "2", default-features = false }
+# Loopback HTTP only: no TLS feature, because the sidecar is on 127.0.0.1
+# and an offline app should not carry a TLS stack it never uses.
+ureq = { version = "2", default-features = false, features = ["json"] }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_JobObjects", "Win32_System_Threading"] }
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_System_SystemInformation", "Win32_System_ProcessStatus"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

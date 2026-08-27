@@ -1,0 +1,128 @@
+{
+ "model_run": "qwen3-8b",
+ "questions": 10,
+ "means": {
+  "raw": 0.3625,
+  "rewrite": 0.35,
+  "fused": 0.4,
+  "hand": 0.4875
+ },
+ "wins": {
+  "raw": 6,
+  "rewrite": 6,
+  "fused": 7
+ },
+ "choice": "fused",
+ "rows": [
+  {
+   "id": "g01",
+   "raw": 0.5,
+   "raw_terms": 2,
+   "rewrite": 0.5,
+   "rewrite_terms": 5,
+   "fused": 0.5,
+   "fused_terms": 7,
+   "hand": 0.75,
+   "hand_terms": 5
+  },
+  {
+   "id": "g03",
+   "raw": 0.5,
+   "raw_terms": 3,
+   "rewrite": 0.625,
+   "rewrite_terms": 5,
+   "fused": 0.625,
+   "fused_terms": 8,
+   "hand": 0.5,
+   "hand_terms": 5
+  },
+  {
+   "id": "g04",
+   "raw": 0.0,
+   "raw_terms": 4,
+   "rewrite": 0.25,
+   "rewrite_terms": 5,
+   "fused": 0.125,
+   "fused_terms": 9,
+   "hand": 0.25,
+   "hand_terms": 5
+  },
+  {
+   "id": "g05",
+   "raw": 0.5,
+   "raw_terms": 2,
+   "rewrite": 0.25,
+   "rewrite_terms": 5,
+   "fused": 0.5,
+   "fused_terms": 7,
+   "hand": 0.75,
+   "hand_terms": 6
+  },
+  {
+   "id": "g08",
+   "raw": 0.0,
+   "raw_terms": 1,
+   "rewrite": 0.0,
+   "rewrite_terms": 5,
+   "fused": 0.0,
+   "fused_terms": 6,
+   "hand": 0.375,
+   "hand_terms": 5
+  },
+  {
+   "id": "g11",
+   "raw": 0.125,
+   "raw_terms": 5,
+   "rewrite": 0.375,
+   "rewrite_terms": 5,
+   "fused": 0.25,
+   "fused_terms": 10,
+   "hand": 0.125,
+   "hand_terms": 5
+  },
+  {
+   "id": "g12",
+   "raw": 0.0,
+   "raw_terms": 3,
+   "rewrite": 0.0,
+   "rewrite_terms": 5,
+   "fused": 0.0,
+   "fused_terms": 8,
+   "hand": 0.125,
+   "hand_terms": 5
+  },
+  {
+   "id": "g13",
+   "raw": 0.75,
+   "raw_terms": 2,
+   "rewrite": 0.75,
+   "rewrite_terms": 5,
+   "fused": 0.875,
+   "fused_terms": 7,
+   "hand": 0.75,
+   "hand_terms": 5
+  },
+  {
+   "id": "g14",
+   "raw": 0.375,
+   "raw_terms": 1,
+   "rewrite": 0.25,
+   "rewrite_terms": 5,
+   "fused": 0.375,
+   "fused_terms": 6,
+   "hand": 0.375,
+   "hand_terms": 5
+  },
+  {
+   "id": "g18",
+   "raw": 0.875,
+   "raw_terms": 2,
+   "rewrite": 0.5,
+   "rewrite_terms": 5,
+   "fused": 0.75,
+   "fused_terms": 7,
+   "hand": 0.875,
+   "hand_terms": 5
+  }
+ ]
+}

@@ -4,17 +4,138 @@
 # match, the static crisis note from PLAN.md 9.3 is shown above the answer. The
 # answer still runs; the note is shown in addition to it, never instead of it.
 #
-# Coverage must include harm to self and harm to others.
+# Coverage includes harm to self and harm to others.
 #
 # Over-triggering is acceptable. Under-triggering is not. When in doubt, include
 # the term.
 #
-# Format, once populated: one term or phrase per line, lowercased. Lines starting
+# Matching: the question is lowercased and its whitespace is collapsed to single
+# spaces, then each phrase below is looked for as a substring. A phrase with no
+# spaces therefore matches inside a longer word, which is deliberate: "suicidal"
+# is found by "suicid". One term or phrase per line, lowercase. Lines starting
 # with # are comments. Blank lines are ignored.
 #
-# THIS FILE IS DELIBERATELY EMPTY OF TERMS. It is a visible placeholder, not a
-# working list. It matches nothing in its current state.
-#
-# Populated in P4, which owns the crisis matcher.
-#
-# P4 tests must fail if this file has no non-comment lines.
+# Populated in P4, 2026-08-26, which owns the crisis matcher.
+
+# --- harm to self -----------------------------------------------------------
+suicid
+kill myself
+killing myself
+kill me
+end my life
+ending my life
+take my own life
+taking my own life
+end it all
+ending it all
+want to die
+wanting to die
+wish i was dead
+wish i were dead
+better off dead
+rather be dead
+ready to die
+don't want to live
+do not want to live
+dont want to live
+no reason to live
+nothing to live for
+tired of living
+hurt myself
+hurting myself
+harm myself
+harming myself
+self harm
+self-harm
+cutting myself
+cut myself
+overdose
+overdosing
+slit my wrists
+hang myself
+shoot myself
+jump off a bridge
+end the pain
+make the pain stop
+disappear forever
+never wake up
+not wake up again
+say goodbye forever
+final note
+suicide note
+took all the pills
+take all the pills
+
+# --- harm to others ---------------------------------------------------------
+kill him
+kill her
+kill them
+kill someone
+kill somebody
+kill people
+killing someone
+killing somebody
+murder someone
+murder somebody
+murder him
+murder her
+murder them
+hurt him
+hurt her
+hurt them
+hurt someone
+hurt somebody
+hurt my wife
+hurt my husband
+hurt my kids
+hurt my children
+harm someone
+harm somebody
+harm others
+shoot someone
+shoot somebody
+shoot up
+stab someone
+stab somebody
+beat her
+beat him
+beat my wife
+beat my husband
+beat my kids
+strangle
+poison him
+poison her
+poison them
+make them pay
+take revenge
+get revenge
+revenge on
+want to hurt
+wanting to hurt
+so angry i could
+angry enough to kill
+
+# --- the language of despair and danger -------------------------------------
+i am in crisis
+in a crisis
+crisis right now
+can't go on
+cannot go on
+cant go on
+can't take it anymore
+cannot take it anymore
+cant take it anymore
+give up on life
+lost the will to live
+plan to die
+planning to die
+worthless and want
+abuse me
+abusing me
+he hits me
+she hits me
+they hit me
+beating me
+being beaten
+afraid for my life
+in danger right now

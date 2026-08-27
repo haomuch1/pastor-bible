@@ -3751,6 +3751,8 @@ dependencies = [
  "base64 0.22.1",
  "log",
  "once_cell",
+ "serde",
+ "serde_json",
  "url",
 ]
 
