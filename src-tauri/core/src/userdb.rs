@@ -105,6 +105,45 @@ pub struct HistoryDetail {
     pub index_note: Option<String>,
 }
 
+/// One stored entry, with its passages regrouped as they were sent.
+///
+/// The plain-text export and the spreadsheet both need the same three things:
+/// the row, the answer, and one array of verse ids per sent passage. Reading
+/// them once, in one place, is what keeps the two exports saying the same thing
+/// about the same entry.
+#[derive(Clone, Debug)]
+pub struct Entry {
+    pub row: HistoryRow,
+    pub answer_md: String,
+    pub passages: Vec<StoredPassage>,
+    /// False for an entry whose passage numbering was never stored. Schema 2
+    /// deletes those, so this is false only for a file older than the
+    /// migration has yet touched.
+    pub tokens_resolvable: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct StoredPassage {
+    /// The verse ids of one sent passage, in the order they were sent.
+    pub verse_ids: Vec<i64>,
+    /// True when the answer cited it.
+    pub cited: bool,
+}
+
+impl Entry {
+    pub fn cited_count(&self) -> usize {
+        self.passages.iter().filter(|p| p.cited).count()
+    }
+
+    /// The stored answer with every `[P#]` replaced by the reference it stood
+    /// for, spelled the way a reader writes it.
+    pub fn answer_resolved(&self, index: &Index) -> String {
+        let refs: Vec<String> =
+            self.passages.iter().map(|p| index.reference_of(&p.verse_ids)).collect();
+        resolve_tokens(&self.answer_md, &refs, self.tokens_resolvable)
+    }
+}
+
 pub struct UserDb {
     pub con: Connection,
     pub path: String,
@@ -274,6 +313,47 @@ impl UserDb {
         })
     }
 
+    /// Every entry, oldest first, with its passages.
+    ///
+    /// Oldest first because both exports read as a record of what was asked, in
+    /// the order it was asked, rather than as the sidebar's newest-first list.
+    pub fn entries(&self) -> Result<Vec<Entry>, String> {
+        let mut st = self
+            .con
+            .prepare("SELECT * FROM history ORDER BY id ASC")
+            .map_err(|e| e.to_string())?;
+        let rows = st
+            .query_map([], |r| {
+                Ok((
+                    Self::row_from(r)?,
+                    r.get::<_, String>("answer_md")?,
+                    r.get::<_, String>("passage_ids")?,
+                    r.get::<_, String>("cited_ids")?,
+                ))
+            })
+            .map_err(|e| e.to_string())?;
+
+        let mut out = Vec::new();
+        for row in rows {
+            let (row, answer_md, sent_json, cited_json) = row.map_err(|e| e.to_string())?;
+            let (sent, tokens_resolvable) = parse_sent(&sent_json);
+            let cited: std::collections::HashSet<i64> = serde_json::from_str::<Vec<i64>>(&cited_json)
+                .unwrap_or_default()
+                .into_iter()
+                .collect();
+            let passages = sent
+                .into_iter()
+                .filter(|g| !g.is_empty())
+                .map(|g| StoredPassage {
+                    cited: g.iter().any(|v| cited.contains(v)),
+                    verse_ids: g,
+                })
+                .collect();
+            out.push(Entry { row, answer_md, passages, tokens_resolvable });
+        }
+        Ok(out)
+    }
+
     /// Newest first, paged.
     pub fn list(&self, limit: usize, offset: usize) -> Result<Vec<HistoryRow>, String> {
         let mut st = self
@@ -381,30 +461,16 @@ impl UserDb {
     /// underneath; the references are read from the index installed now,
     /// exactly as they are on screen.
     pub fn export_text(&self, index: &Index) -> Result<String, String> {
-        let mut st = self
-            .con
-            .prepare("SELECT * FROM history ORDER BY id ASC")
-            .map_err(|e| e.to_string())?;
-        let rows = st
-            .query_map([], |r| {
-                Ok((
-                    Self::row_from(r)?,
-                    r.get::<_, String>("answer_md")?,
-                    r.get::<_, String>("passage_ids")?,
-                ))
-            })
-            .map_err(|e| e.to_string())?;
-
+        let entries = self.entries()?;
         let mut out = String::new();
         out.push_str("THE PASTOR BIBLE - question history\n");
         out.push_str(
             "\nEvery answer below cites only passages that were retrieved from the text.\n\
              Nothing here has ever left this computer.\n",
         );
-        let mut n = 0;
-        for row in rows {
-            let (row, answer_md, sent_json) = row.map_err(|e| e.to_string())?;
-            n += 1;
+        let n = entries.len();
+        for e in &entries {
+            let row = &e.row;
             out.push_str("\n");
             out.push_str(&"-".repeat(72));
             out.push_str(&format!("\n{}  ({})\n\n", row.asked_at, row.canon_mode_label()));
@@ -412,11 +478,11 @@ impl UserDb {
             if row.crisis_flag {
                 out.push_str("  [a crisis note was shown above this answer]\n\n");
             }
-            let (sent, tokens_resolvable) = parse_sent(&sent_json);
-            let refs: Vec<String> = sent.iter().map(|g| index.reference_of(g)).collect();
+            let refs: Vec<String> =
+                e.passages.iter().map(|p| index.reference_of(&p.verse_ids)).collect();
 
             out.push_str("ANSWER\n");
-            for line in resolve_tokens(&answer_md, &refs, tokens_resolvable).lines() {
+            for line in e.answer_resolved(index).lines() {
                 out.push_str("  ");
                 out.push_str(line);
                 out.push('\n');

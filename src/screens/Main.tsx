@@ -35,7 +35,9 @@ interface Props {
   /// Shown here rather than only at the moment a question fails, so the reader
   /// learns about it before the wait rather than after it.
   modelProblem?: string | null;
-  onHistoryCleared?: () => void;
+  /// The history changed under the sidebar, so whatever else counts entries
+  /// should count them again.
+  onHistoryChanged?: () => void;
 }
 
 export function Main({
@@ -45,7 +47,7 @@ export function Main({
   onOpenSettings,
   onOpenAbout,
   modelProblem,
-  onHistoryCleared,
+  onHistoryChanged,
 }: Props) {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<Answer | null>(null);
@@ -60,7 +62,8 @@ export function Main({
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [search, setSearch] = useState("");
   const [activeId, setActiveId] = useState<number | null>(null);
-  const [confirmClear, setConfirmClear] = useState(false);
+  // The entry whose delete has been pressed once. Null when none is asking.
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
   // The chapter a passage came from, when the reader has asked to read one.
   // The answer underneath is never unmounted, so closing this puts them back
@@ -163,13 +166,18 @@ export function Main({
     });
   }
 
-  async function clearHistory() {
+  /// Delete one entry, and only that one.
+  ///
+  /// Never navigates: an entry the reader is deleting is not an entry they are
+  /// asking to read. If it happens to be the one on screen, the screen goes
+  /// back to empty rather than showing an answer that no longer exists.
+  async function deleteEntry(id: number) {
+    setConfirmDelete(null);
     try {
-      await api.historyClear();
-      setConfirmClear(false);
-      if (activeId != null) newQuestion();
+      await api.historyDelete(id);
+      if (activeId === id) newQuestion();
       void refreshHistory();
-      onHistoryCleared?.();
+      onHistoryChanged?.();
     } catch (e) {
       setError(String(e));
     }
@@ -248,47 +256,49 @@ export function Main({
             </p>
           )}
           {history.map((h) => (
-            <button
-              key={h.id}
-              className={activeId === h.id ? "entry active" : "entry"}
-              onClick={() => openEntry(h.id)}
-            >
-              <div className="q">{h.question}</div>
-              <div className="meta">
-                {api.whenAsked(h.asked_at)}
-                {h.canon_mode === "both" && " · with Deuterocanon"}
-                {h.fallback_used && " · passages only"}
-              </div>
-            </button>
-          ))}
-        </div>
-        <footer className="stack" style={{ ["--gap" as string]: "8px" }}>
-          {history.length > 0 &&
-            (confirmClear ? (
-              <div className="stack" style={{ ["--gap" as string]: "6px" }}>
-                <span className="faint">
-                  Delete every question and answer? This cannot be undone.
-                </span>
-                <div className="row">
-                  <button onClick={clearHistory}>Delete all history</button>
-                  <button className="quiet" onClick={() => setConfirmClear(false)}>
-                    Keep it
+            // A row rather than one button: the delete sits beside the entry,
+            // not inside it, so pressing it cannot also open the answer.
+            <div key={h.id} className={activeId === h.id ? "entry active" : "entry"}>
+              <button className="entry-open" onClick={() => openEntry(h.id)}>
+                <div className="q">{h.question}</div>
+                <div className="meta">
+                  {api.whenAsked(h.asked_at)}
+                  {h.canon_mode === "both" && " · with Deuterocanon"}
+                  {h.fallback_used && " · passages only"}
+                </div>
+              </button>
+              {confirmDelete === h.id ? (
+                <div className="entry-confirm">
+                  <button className="danger tiny" onClick={() => void deleteEntry(h.id)}>
+                    Delete
+                  </button>
+                  <button className="quiet tiny" onClick={() => setConfirmDelete(null)}>
+                    Cancel
                   </button>
                 </div>
-              </div>
-            ) : (
-              <button className="quiet" onClick={() => setConfirmClear(true)}>
-                Clear history
-              </button>
-            ))}
-          <div className="row between">
-            <button className="quiet" onClick={onOpenSettings}>
-              Settings
-            </button>
-            <button className="quiet" onClick={onOpenAbout}>
-              About
-            </button>
-          </div>
+              ) : (
+                <button
+                  className="entry-delete"
+                  title="Delete this question"
+                  aria-label="Delete this question"
+                  onClick={() => setConfirmDelete(h.id)}
+                >
+                  <TrashIcon />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        {/* Deleting one entry is done on the entry. Deleting all of them is a
+            different kind of act and lives in Settings, where it is next to
+            the export that would have saved them first. */}
+        <footer className="row between">
+          <button className="quiet" onClick={onOpenSettings}>
+            Settings
+          </button>
+          <button className="quiet" onClick={onOpenAbout}>
+            About
+          </button>
         </footer>
       </aside>
 
@@ -415,7 +425,9 @@ export function Main({
               passages={shownPassages}
               // A reopened answer keeps the passages it rested on but not the
               // topic grouping, which was never stored; it is grouped by book,
-              // rather than under the topics of whatever was asked last.
+              // rather than under the topics of whatever was asked last. By
+              // book is also the default for a fresh answer, so the switch is
+              // only ever a choice the reader made and it is remembered.
               groups={answer ? answer.topic_groups : past ? [] : earlyGroups}
               groupBy={
                 (answer ? answer.topic_groups : past ? [] : earlyGroups).length > 0
@@ -452,6 +464,30 @@ export function Main({
         />
       )}
     </div>
+  );
+}
+
+/// A waste basket, drawn rather than fetched: this app loads no asset it did
+/// not ship, and one icon is not a reason to start.
+function TrashIcon() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M2.5 4h11" />
+      <path d="M6.5 4V2.5h3V4" />
+      <path d="M4 4l.6 9a1 1 0 0 0 1 .9h4.8a1 1 0 0 0 1-.9L12 4" />
+      <path d="M6.6 6.8v4.6M9.4 6.8v4.6" />
+    </svg>
   );
 }
 

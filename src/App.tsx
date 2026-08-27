@@ -88,7 +88,7 @@ export default function App() {
         onOpenSettings={() => setShowSettings(true)}
         onOpenAbout={() => setShowAbout(true)}
         modelProblem={startup.model_problem}
-        onHistoryCleared={load}
+        onHistoryChanged={load}
       />
       {showSettings && (
         <SettingsScreen

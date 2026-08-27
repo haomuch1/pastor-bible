@@ -34,6 +34,8 @@ export function SettingsScreen({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  // The reader has pressed Export and is choosing between the two files.
+  const [choosingExport, setChoosingExport] = useState(false);
   const [progress, setProgress] = useState<DownloadProgress | null>(null);
 
   useEffect(() => {
@@ -70,18 +72,33 @@ export function SettingsScreen({
     setMessage("The model will be loaded on your next question.");
   }
 
-  async function exportHistory() {
+  /// Two files, one history.
+  ///
+  /// The text file is the copy someone prints or keeps in a folder. The
+  /// workbook is the copy someone sorts, filters and hands to another person:
+  /// one sheet per question, with every passage the answer rested on and its
+  /// verse text beside it. The choice is made before the save dialog, so the
+  /// dialog can offer the right extension rather than asking twice.
+  async function exportHistory(format: api.ExportFormat) {
     setError(null);
+    setChoosingExport(false);
+    const spreadsheet = format === "xlsx";
     try {
       const path = await save({
         title: "Save question history",
-        defaultPath: "pastor-bible-history.txt",
-        filters: [{ name: "Text", extensions: ["txt"] }],
+        defaultPath: `pastor-bible-history.${format}`,
+        filters: [
+          spreadsheet
+            ? { name: "Excel workbook", extensions: ["xlsx"] }
+            : { name: "Text", extensions: ["txt"] },
+        ],
       });
       if (!path) return;
-      await api.historyExport(path);
+      setMessage(spreadsheet ? "Writing the spreadsheet…" : null);
+      await api.historyExport(path, format);
       setMessage(`Saved to ${path}`);
     } catch (e) {
+      setMessage(null);
       setError(String(e));
     }
   }
@@ -188,7 +205,19 @@ export function SettingsScreen({
             {info.paths.user_db}. Nothing here has ever been sent anywhere.
           </div>
           <div className="choices">
-            <button onClick={exportHistory}>Export to a text file</button>
+            {choosingExport ? (
+              <>
+                <button onClick={() => void exportHistory("txt")}>Text file (.txt)</button>
+                <button onClick={() => void exportHistory("xlsx")}>Spreadsheet (.xlsx)</button>
+                <button className="quiet" onClick={() => setChoosingExport(false)}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setChoosingExport(true)} disabled={historyCount === 0}>
+                Export history
+              </button>
+            )}
             {confirmClear ? (
               <>
                 <button className="danger" onClick={clearHistory}>

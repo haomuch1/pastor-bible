@@ -294,7 +294,10 @@ fn read_settings(db: &UserDb) -> AppSettings {
         canon: db.get_setting("canon").unwrap_or_else(|| "66".into()),
         model: db.get_setting("model").unwrap_or_else(|| "standard".into()),
         compute: db.get_setting("compute").unwrap_or_else(|| "auto".into()),
-        group_by: db.get_setting("group_by").unwrap_or_else(|| "topic".into()),
+        // By book, in canonical order. Nave's roots are not a category system:
+        // see DECISIONS 2026-08-27. The reader's own choice is remembered and
+        // wins over this.
+        group_by: db.get_setting("group_by").unwrap_or_else(|| "book".into()),
     }
 }
 
@@ -724,16 +727,37 @@ fn history_clear(state: State<'_, AppState>) -> Result<usize, String> {
     db.delete_all()
 }
 
+/// The history as a file the reader keeps.
+///
+/// `format` is "txt" for the plain-text copy, which is what someone prints, or
+/// "xlsx" for the workbook, which is what someone sorts and hands on. Both are
+/// written from the same reader in user.db, so the two cannot come to disagree
+/// about the same entry, and both read their verse text from index.db.
 #[tauri::command]
-fn history_export(state: State<'_, AppState>, path: String) -> Result<String, String> {
+fn history_export(
+    state: State<'_, AppState>,
+    path: String,
+    format: Option<String>,
+) -> Result<String, String> {
     let db = state.db.lock().map_err(lock)?;
     let session = state.session.lock().map_err(lock)?;
-    let text = match session.as_ref() {
-        Some(s) => db.export_text(&s.engine.retriever.index)?,
-        None => db.export_text(&pastor_bible_core::index::Index::open(&state.paths.index_db)?)?,
+    let opened;
+    let index = match session.as_ref() {
+        Some(s) => &s.engine.retriever.index,
+        None => {
+            opened = pastor_bible_core::index::Index::open(&state.paths.index_db)?;
+            &opened
+        }
     };
-    std::fs::write(&path, text.as_bytes())
-        .map_err(|e| format!("cannot write {}: {}", path, e))?;
+    match format.as_deref().unwrap_or("txt") {
+        "txt" => {
+            let text = db.export_text(index)?;
+            std::fs::write(&path, text.as_bytes())
+                .map_err(|e| format!("cannot write {}: {}", path, e))?;
+        }
+        "xlsx" => pastor_bible_core::spreadsheet::write(&db, index, &path)?,
+        other => return Err(format!("unknown export format {:?}", other)),
+    }
     Ok(path)
 }
 

@@ -173,17 +173,67 @@ button.wide { width: 100%; justify-content: center; }
 .sidebar .list { overflow-y: auto; flex: 1; padding: 8px; }
 .sidebar footer { padding: 10px 12px; border-top: 1px solid var(--rule); }
 
+/* One past question. A row, not a button: the delete control sits beside the
+   entry rather than inside it, so pressing it cannot also open the answer.
+
+   The delete is always visible. A control that appears on hover is a control
+   that does not exist for anyone reading with a keyboard, on a touch screen, or
+   simply not expecting it to be there; P5 shipped no control at all and nobody
+   noticed for a session, which is the same failure one step further along. */
 .entry {
   width: 100%;
-  text-align: left;
   border: 1px solid transparent;
   background: transparent;
   border-radius: 6px;
-  padding: 10px 12px;
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding-right: 6px;
 }
 .entry:hover { background: #efe9df; }
 .entry.active { background: var(--panel); border-color: var(--rule-strong); }
+
+.entry-open {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  padding: 10px 4px 10px 12px;
+  display: block;
+}
+.entry-open:hover { background: transparent; border-color: transparent; }
+
+.entry-delete {
+  flex: none;
+  margin-top: 8px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-faint);
+  border-radius: 6px;
+}
+.entry-delete:hover:not(:disabled) {
+  color: #9c3b34;
+  border-color: #d8a5a0;
+  background: var(--crisis-bg);
+}
+
+.entry-confirm {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+}
+
+button.tiny { font-size: 0.78rem; padding: 3px 8px; }
 .entry .q { font-weight: 600; font-size: 0.95rem; }
 .entry .meta { font-size: 0.8rem; color: var(--ink-faint); margin-top: 3px; }
 

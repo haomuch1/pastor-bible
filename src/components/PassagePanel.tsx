@@ -5,10 +5,16 @@
 // the rest are behind a count, present rather than discarded. Verse text comes
 // from index.db by way of the answer structure and never from the model.
 //
-// Grouping is by the root Nave's topic by default, with the matched subtopic as
-// a second line, and by book on the switch. P4 flagged that Nave's subtopic
-// headings are unusable as labels because some are whole paragraphs, so the
-// root heading is what a group is called.
+// Grouping is by book, in canonical order, which is the order a reader already
+// has in their head. Passages within a book run in chapter and verse order, and
+// a cited passage is marked where it falls rather than lifted to the top: the
+// point of Bible order is that it is Bible order.
+//
+// The topic view is still here on the switch. It groups by the root Nave's
+// topic, because P4 flagged that Nave's subtopic headings are unusable as
+// labels, some being whole paragraphs. It is secondary because the roots turn
+// out not to be a category system either: an answer about giving to the poor
+// grouped passages under "HAMATH". Jared chose by book on 2026-08-27.
 
 import { useMemo, useState } from "react";
 
@@ -89,18 +95,17 @@ export function PassagePanel({
           </span>
         </h2>
         <div className="row">
-          <span className="faint">Group by</span>
-          <button
-            className={groupBy === "topic" ? "choice on" : "choice"}
-            onClick={() => onGroupByChange("topic")}
-          >
-            Topic
-          </button>
           <button
             className={groupBy === "book" ? "choice on" : "choice"}
             onClick={() => onGroupByChange("book")}
           >
-            Book
+            Group by book
+          </button>
+          <button
+            className={groupBy === "topic" ? "choice on" : "choice"}
+            onClick={() => onGroupByChange("topic")}
+          >
+            Group by topic
           </button>
           <button className="quiet" onClick={() => { setOpenAll(!openAll); setExpanded({}); }}>
             {openAll ? "Collapse all" : "Expand all"}
@@ -109,9 +114,20 @@ export function PassagePanel({
       </div>
 
       {shown.map((g) => {
-        const cited = g.items.filter((p) => p.cited);
-        const rest = g.items.filter((p) => !p.cited);
         const isOpen = openAll || expanded[g.key];
+        const citedHere = g.items.filter((p) => p.cited);
+        const hidden = g.items.length - citedHere.length;
+
+        // Expanded, a book is shown in Bible order from end to end, with the
+        // cited passages marked where they fall rather than lifted to the top:
+        // the whole point of canonical order is that it is canonical order. A
+        // topic has no such order to keep, so it stays cited-first.
+        const shownItems = isOpen
+          ? groupBy === "book"
+            ? g.items
+            : [...citedHere, ...g.items.filter((p) => !p.cited)]
+          : citedHere;
+
         return (
           <div className="group" key={g.key}>
             <h3>
@@ -121,7 +137,7 @@ export function PassagePanel({
               </span>
             </h3>
             {g.sub && <div className="sub">{g.sub}</div>}
-            {cited.map((p) => (
+            {shownItems.map((p) => (
               <Passage
                 key={p.reference}
                 p={p}
@@ -129,23 +145,14 @@ export function PassagePanel({
                 onRead={onRead}
               />
             ))}
-            {rest.length > 0 && !isOpen && (
+            {hidden > 0 && !isOpen && (
               <button
                 className="quiet"
                 onClick={() => setExpanded({ ...expanded, [g.key]: true })}
               >
-                Show {rest.length} more passage{rest.length === 1 ? "" : "s"}
+                Show {hidden} more passage{hidden === 1 ? "" : "s"}
               </button>
             )}
-            {isOpen &&
-              rest.map((p) => (
-                <Passage
-                  key={p.reference}
-                  p={p}
-                  highlight={highlight === p.reference}
-                  onRead={onRead}
-                />
-              ))}
           </div>
         );
       })}

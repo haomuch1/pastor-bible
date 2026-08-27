@@ -210,6 +210,7 @@ Output: index.db with meta.index_version and a checksum. Committed as a release 
 Question box; answer area (themed synopsis); passage panel (verse text, references, origin tags, Deuterocanon tags); history sidebar with search.
 
 The passage panel shows the full retrieved and expanded set, grouped by book.
+(That is again the default; see the 2026-08-27 amendment below.)
 Passages the synopsis cites are marked; the rest are collapsed one click away,
 present rather than discarded. Matched Nave's topics are shown by name with
 their full verse lists. The synopsis is a starting point over the whole set,
@@ -226,6 +227,23 @@ walking parent_topic_id upwards; the root heading is the label and the matched
 subtopic is a trimmed second line beneath it. A switch groups by book instead,
 in canonical order. Cited passages are marked and come first within their
 group; the rest are collapsed behind a count, with expand-all and collapse-all.
+
+*(Amended 2026-08-27, P5.2. This reverses the default set the day before.)*
+**The default grouping is by book**, in canonical order, with passages inside a
+book in chapter and verse order. A cited passage is marked where it falls and is
+not lifted to the top: the whole point of canonical order is that it is
+canonical order, and a reader who knows where Deuteronomy sits can find it. The
+uncited passages of a book stay behind a count, and expanding a book shows it
+from end to end in order.
+
+Grouping by the root Nave's topic remains, as the secondary switch labelled
+"Group by topic", and the reader's choice is remembered in settings. It is
+secondary because the roots turn out not to be a category system either: P4
+flagged that Nave's *subtopics* are unusable as labels, some being whole
+paragraphs, and P5 moved to the roots; but an answer about giving to the poor
+then grouped its passages under "HAMATH" and "TOB-ADONIJAH", which are roots
+that happen to contain a matching verse. A heading that is not about what the
+passages have in common is worse than no heading. Jared chose by book.
 
 The wait is shown, never narrated by the model. Retrieved passages appear as
 soon as retrieval returns, which is under a tenth of a second, so the reader is

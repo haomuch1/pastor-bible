@@ -49,7 +49,13 @@ export const historySearch = (query: string) =>
 export const historyGet = (id: number) => invoke<HistoryDetail | null>("history_get", { id });
 export const historyDelete = (id: number) => invoke<boolean>("history_delete", { id });
 export const historyClear = () => invoke<number>("history_clear");
-export const historyExport = (path: string) => invoke<string>("history_export", { path });
+/// "txt" is the copy a reader prints; "xlsx" is the one they sort and hand on.
+/// Both are written from the same entries and both read their verse text from
+/// index.db.
+export type ExportFormat = "txt" | "xlsx";
+
+export const historyExport = (path: string, format: ExportFormat = "txt") =>
+  invoke<string>("history_export", { path, format });
 
 /// A whole chapter, for the reading view. The verses come from index.db.
 export const chapter = (bookId: number, chapterNumber: number) =>

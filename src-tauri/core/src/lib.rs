@@ -14,6 +14,7 @@ pub mod prompts;
 pub mod retrieve;
 pub mod session;
 pub mod sidecar;
+pub mod spreadsheet;
 pub mod tsk_abbrev;
 pub mod userdb;
 pub mod verifier;

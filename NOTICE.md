@@ -85,6 +85,13 @@ repository's own notice satisfies; end users incur no obligations.
                                                    unmodified as a data file
   ring                            ISC, MIT and OpenSSL     cryptography for TLS
   sha2, digest                    MIT or Apache-2.0   checksum verification
+  rust_xlsxwriter                 MIT or Apache-2.0   writes the spreadsheet
+                                                      export
+  zip, typed-path                 MIT; MIT or Apache-2.0   the container an
+                                                      xlsx file is
+  zopfli                          Apache-2.0       deflate, for the same
+  zlib-rs                         Zlib             a pure-Rust zlib, for the
+                                                   same
   windows-sys                     MIT or Apache-2.0
   libc                            MIT or Apache-2.0
   Tauri, wry, tao                 MIT or Apache-2.0
@@ -201,10 +208,31 @@ Tauri
              registry, and pinned by Cargo.lock and package-lock.json, both of
              which are committed.
 
+## The spreadsheet export
+
+Added 2026-08-27, when Settings gained a choice between a text file and a
+workbook. Pure Rust with no native dependency and no C toolchain, which is the
+condition it was chosen under; every part of it is permissively licensed.
+
+rust_xlsxwriter        0.99.0   MIT or Apache-2.0
+                                https://github.com/jmcnamara/rust_xlsxwriter
+
+It brings four crates with it, all of them pure Rust:
+
+zip                    8.6.0    MIT              the xlsx container format
+typed-path             0.12.3   MIT or Apache-2.0   paths inside that container
+zopfli                 0.8.3    Apache-2.0       deflate compression
+zlib-rs                0.6.7    Zlib             a zlib implementation in Rust
+
+calamine 0.36.1 (MIT) reads xlsx files and is a development dependency only: the
+tests write the workbook with one library and read it back with another, so a
+passing test cannot mean the two agreed on a format neither got right. It is not
+compiled into the shipped program.
+
 ## Frontend dependencies
 
 Declared directly by this project. Not vendored; pinned by package-lock.json.
-Retrieved 2026-08-26.
+Retrieved 2026-08-26, with the test runner added 2026-08-27.
 
 React                  19.2.8   MIT              https://react.dev
 React DOM              19.2.8   MIT              https://react.dev
@@ -212,9 +240,18 @@ Vite                   7.3.6    MIT              https://vite.dev
 @vitejs/plugin-react   4.7.0    MIT              https://github.com/vitejs/vite-plugin-react
 TypeScript             5.8.3    Apache-2.0       https://www.typescriptlang.org
 
+Development only, never shipped: Vitest 3.2.7 (MIT), jsdom 26.1.0 (MIT),
+@testing-library/react 16.3.2 and @testing-library/dom 10.4.1 (both MIT). They
+render the window's components in a test, which is the only kind of test that
+can tell whether a control a reader needs is actually on the screen.
+
 ## Transitive dependencies
 
-The dependency graph as locked today is 429 Rust crates and 132 npm packages.
+The dependency graph as locked today is 472 Rust crates and 216 npm packages,
+counted as the entries in the two lockfiles less this project's own. It was 429
+and 132 on 2026-08-26; the spreadsheet writer added five crates and the frontend
+test runner added most of the rest, and that runner is a development dependency
+that no end user ever receives.
 These are overwhelmingly MIT, Apache-2.0, BSD, or ISC, and none is vendored into
 this repository: each is fetched from its own registry and pinned by the
 committed lockfiles, which are the authoritative record of exactly what is used.

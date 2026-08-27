@@ -156,7 +156,17 @@ setting and every answer is in user.db.
     run_self_test()                three canned questions end to end
     finish_first_run()
     history_list / history_search / history_get / history_delete /
-    history_clear / history_export(path)
+    history_clear
+    history_export(path, format)  format is "txt" for the plain-text copy or
+                                  "xlsx" for the workbook: one sheet listing
+                                  every question, then one per question with
+                                  its answer and every passage it rested on,
+                                  verse text included. Both are written from
+                                  the same reader in user.db and both read
+                                  their verse text from index.db. A question
+                                  whose entry was written against a different
+                                  index version says so and lists references
+                                  without text.
     chapter(book_id, chapter)      the whole chapter a passage came from,
                                    for the reading view: the verses from
                                    index.db, the book named as a reader writes
