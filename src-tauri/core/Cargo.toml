@@ -23,9 +23,12 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 regex = "1"
-# Loopback HTTP only: no TLS feature, because the sidecar is on 127.0.0.1
-# and an offline app should not carry a TLS stack it never uses.
-ureq = { version = "2", default-features = false, features = ["json"] }
+# The sidecar is on 127.0.0.1 and needs no TLS. The model downloader does, and
+# it is the only code here that reaches anything but loopback; see download.rs,
+# which refuses every URL but the pinned model files. rustls with a bundled root
+# store rather than the platform's, so a clean machine needs nothing installed.
+ureq = { version = "2", default-features = false, features = ["json", "tls"] }
+sha2 = "0.10"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_System_SystemInformation", "Win32_System_ProcessStatus"] }

@@ -314,8 +314,10 @@ impl Engine {
         opts
     }
 
+    /// Build the answer the frontend receives. Public because `Session` does
+    /// the same assembly after its own staged run.
     #[allow(clippy::too_many_arguments)]
-    fn assemble(
+    pub fn assemble(
         &self,
         question: &str,
         crisis: bool,

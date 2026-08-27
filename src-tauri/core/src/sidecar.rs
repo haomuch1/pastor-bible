@@ -17,6 +17,10 @@ use std::process::{Child, Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
+/// The error text a cancelled generation returns, so callers can tell a
+/// cancellation from a failure without matching on prose.
+pub const CANCELLED: &str = "cancelled";
+
 /// How many sidecars are alive. A second spawn is refused rather than allowed
 /// to race: two model processes at once is the thing the sequential rule exists
 /// to prevent, and it is refused here rather than left to the caller to
@@ -518,6 +522,119 @@ impl Sidecar {
             prompt_tokens: payload["usage"]["prompt_tokens"].as_u64(),
             completion_tokens: payload["usage"]["completion_tokens"].as_u64(),
         })
+    }
+
+    /// One completion, read as it is produced, so the wait can be counted and
+    /// stopped.
+    ///
+    /// The tokens are not shown to the reader: PLAN 5.6 forbids that, because a
+    /// reference is only safe once the verifier has seen the whole answer. What
+    /// streaming buys is a running token count for the progress indicator, and
+    /// an exit. Dropping the reader closes the connection, and llama-server
+    /// abandons the slot when its client goes away, which is the only way to
+    /// stop a generation that has already started.
+    pub fn complete_streaming(
+        &self,
+        prompt: &str,
+        max_tokens: u32,
+        seed: i64,
+        cancel: &std::sync::atomic::AtomicBool,
+        mut on_token: impl FnMut(u64),
+    ) -> Result<Completion, String> {
+        if self.role != Role::Chat {
+            return Err("this sidecar was not started for chat".to_string());
+        }
+        let t0 = Instant::now();
+        let url = format!("http://127.0.0.1:{}/v1/chat/completions", self.port);
+        let resp = self
+            .agent
+            .post(&url)
+            .set("Content-Type", "application/json")
+            .send_json(serde_json::json!({
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_tokens,
+                "temperature": 0.0,
+                "top_k": 1,
+                "top_p": 1.0,
+                "seed": seed,
+                "stream": true,
+            }))
+            .map_err(|e| format!("generation failed: {}", e))?;
+
+        let mut reader = std::io::BufReader::new(resp.into_reader());
+        let mut line = String::new();
+        let mut text = String::new();
+        let mut tokens: u64 = 0;
+        let mut prompt_tokens: Option<u64> = None;
+        let mut completion_tokens: Option<u64> = None;
+
+        loop {
+            if cancel.load(Ordering::SeqCst) {
+                // Dropping the reader here is the cancellation.
+                drop(reader);
+                return Err(CANCELLED.to_string());
+            }
+            line.clear();
+            let n = std::io::BufRead::read_line(&mut reader, &mut line)
+                .map_err(|e| format!("the generation stream broke off: {}", e))?;
+            if n == 0 {
+                break;
+            }
+            let Some(payload) = line.trim().strip_prefix("data:") else {
+                continue;
+            };
+            let payload = payload.trim();
+            if payload.is_empty() || payload == "[DONE]" {
+                continue;
+            }
+            let Ok(v) = serde_json::from_str::<serde_json::Value>(payload) else {
+                continue;
+            };
+            if let Some(delta) = v["choices"][0]["delta"]["content"].as_str() {
+                if !delta.is_empty() {
+                    text.push_str(delta);
+                    tokens += 1;
+                    on_token(tokens);
+                }
+            }
+            if let Some(u) = v.get("usage") {
+                if u.is_object() {
+                    prompt_tokens = u["prompt_tokens"].as_u64().or(prompt_tokens);
+                    completion_tokens = u["completion_tokens"].as_u64().or(completion_tokens);
+                }
+            }
+        }
+
+        Ok(Completion {
+            text: strip_think(&text).trim().to_string(),
+            raw: text,
+            seconds: t0.elapsed().as_secs_f64(),
+            prompt_tokens,
+            completion_tokens: completion_tokens.or(Some(tokens)),
+        })
+    }
+
+    /// Is the server free to take another request?
+    ///
+    /// Used after a cancellation: if the slot is still busy two seconds later
+    /// the connection did not stop it, and the caller restarts the sidecar
+    /// rather than leaving the next question to queue behind a generation
+    /// nobody is waiting for.
+    pub fn is_idle(&self) -> bool {
+        let url = format!("http://127.0.0.1:{}/slots", self.port);
+        let Ok(r) = self.agent.get(&url).timeout(Duration::from_secs(3)).call() else {
+            return false;
+        };
+        let Ok(v) = r.into_json::<serde_json::Value>() else {
+            return false;
+        };
+        match v.as_array() {
+            // is_processing is what llama-server reports per slot; a build that
+            // stops reporting it is treated as busy, which costs a restart
+            // rather than a wedged server.
+            Some(slots) => slots.iter().all(|s| s["is_processing"] == serde_json::Value::Bool(false)),
+            None => false,
+        }
     }
 
     /// Token count for a string, from the server's own tokenizer, so a length

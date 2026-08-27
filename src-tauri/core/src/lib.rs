@@ -5,11 +5,14 @@
 
 pub mod api;
 pub mod crisis;
+pub mod download;
 pub mod index;
 pub mod paths;
 pub mod pipeline;
 pub mod prompts;
 pub mod retrieve;
+pub mod session;
 pub mod sidecar;
 pub mod tsk_abbrev;
+pub mod userdb;
 pub mod verifier;

@@ -42,23 +42,58 @@ llama.cpp, the local model server
   checksum. The MIT licence text ships beside the binaries in the archive and
   is included in the installer.
 
-Qwen3-8B, the default answering model
+Qwen3-8B, the answering model
   Project:   https://huggingface.co/Qwen/Qwen3-8B-GGUF
   Licence:   Apache-2.0
   File:      Qwen3-8B-Q4_K_M.gguf
+  URL:       https://huggingface.co/Qwen/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf
+  Size:      5,027,783,488 bytes
   sha256     d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785
+  Downloaded once on first run. No account or token is needed.
 
 Qwen3-1.7B, the smaller answering model
   Project:   https://huggingface.co/Qwen/Qwen3-1.7B-GGUF
   Licence:   Apache-2.0
   File:      Qwen3-1.7B-Q8_0.gguf
+  URL:       https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q8_0.gguf
+  Size:      1,834,426,016 bytes
   sha256     061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a
+  Downloaded only if the reader chooses it in Settings.
 
 nomic-embed-text-v1.5, the search model
   Project:   https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF
   Licence:   Apache-2.0
   File:      nomic-embed-text-v1.5.f16.gguf
+  URL:       https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf
+  Size:      274,290,560 bytes
   sha256     f7af6f66802f4df86eda10fe9bbcfc75c39562bed48ef6ace719a251cf1c2fdb
+  Bundled with the installer; never downloaded.
+
+## Rust and JavaScript dependencies with attribution terms
+
+Compiled into the program. Every one is a permissive licence that this
+repository's own notice satisfies; end users incur no obligations.
+
+  rusqlite, libsqlite3-sys        MIT              SQLite access
+  SQLite itself                   public domain    bundled, FTS5 enabled
+  serde, serde_json               MIT or Apache-2.0
+  regex                           MIT or Apache-2.0
+  ureq                            MIT or Apache-2.0   HTTP client
+  rustls, rustls-webpki           Apache-2.0, MIT or ISC   TLS for the one
+                                                    download
+  webpki-roots                    MPL-2.0          Mozilla's root store, used
+                                                   unmodified as a data file
+  ring                            ISC, MIT and OpenSSL     cryptography for TLS
+  sha2, digest                    MIT or Apache-2.0   checksum verification
+  windows-sys                     MIT or Apache-2.0
+  libc                            MIT or Apache-2.0
+  Tauri, wry, tao                 MIT or Apache-2.0
+  React, React DOM                MIT
+  Vite, TypeScript                MIT and Apache-2.0
+
+webpki-roots is MPL-2.0, which is file-level copyleft. It is used unmodified
+and only as a compiled-in data file; no file of it has been changed, so the
+licence's source-availability term is satisfied by the upstream project.
 
 ## Vendored files
 

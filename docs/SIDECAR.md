@@ -102,6 +102,41 @@ a regular expression; the resulting text was identical. The Rust client strips a
 residual think block anyway, because the guarantee should not rest on the
 server's behaviour staying the same across builds.
 
+## The model host
+
+PLAN section 16's "Model download host, size, checksum" VERIFY item, owned by
+P5. Checked on 2026-08-26 against the live host, from Python and again from the
+Rust client that ships.
+
+    host            huggingface.co, redirecting to us.aws.cdn.hf.co
+    URL form        https://huggingface.co/<org>/<repo>/resolve/main/<file>
+    token needed    no. HEAD returns 200 with no WWW-Authenticate, and a
+                    ranged GET returns 206, both unauthenticated.
+    HTTP Range      honoured. A request for bytes 100-199 returns 206 with
+                    Content-Range naming the full size, so resume works and
+                    the size can be learnt without downloading anything.
+    TLS             required. The client is rustls with a bundled root store,
+                    so a clean machine needs nothing installed.
+
+    file                              bytes          sha256
+    Qwen3-8B-Q4_K_M.gguf              5,027,783,488  d98cdcbd...5745785
+    Qwen3-1.7B-Q8_0.gguf              1,834,426,016  061b54da...6590cb1a
+    nomic-embed-text-v1.5.f16.gguf      274,290,560  f7af6f66...cf1c2fdb
+
+Every size above came from the host's own Content-Range and matches the file on
+the build machine byte for byte; every checksum matches the one EVAL.md
+recorded in P3. The full values are in src-tauri/core/src/download.rs, which is
+where the code reads them.
+
+The reader downloads only the answering model. The search model is bundled with
+the installer and the smaller answering model is fetched only if they choose it
+in Settings.
+
+Note on Content-Length: after the redirect to the CDN, a HEAD response does not
+carry a usable Content-Length. The downloader therefore learns the size from
+the GET it is already making, and from Content-Range when resuming, and refuses
+outright if what the host offers is not the size this build expects.
+
 ## Lifecycle
 
 - One process per role. Embedding and chat are never both alive unless
