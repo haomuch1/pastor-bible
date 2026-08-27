@@ -127,6 +127,7 @@ def main():
     ap.add_argument('--query', default='raw')
     ap.add_argument('--ctx', default='8192')
     ap.add_argument('--ids', default='')
+    ap.add_argument('--gpu-layers', dest='gpu_layers', default='0')
     args = ap.parse_args()
 
     sys.stdout.reconfigure(encoding='utf-8')
@@ -151,6 +152,7 @@ def main():
         json_path = os.path.join(raw_dir, '%s.json' % qid)
         cmd = [CLI, 'ask', q['question'], '--canon', args.canon, '--model',
                args.model, '--query', args.query, '--ctx', args.ctx,
+               '--gpu-layers', args.gpu_layers,
                '--json', json_path, '--quiet']
         t0 = time.time()
         proc = subprocess.run(cmd, capture_output=True, text=True,
@@ -198,6 +200,8 @@ def main():
 
     summary = {
         'tag': args.tag, 'model': args.model, 'canon': args.canon,
+        'gpu_layers': int(args.gpu_layers),
+        'llama_server': os.environ.get('TPB_LLAMA_SERVER', '(default cpu build)'),
         'query_mode': rows[0]['query_mode'], 'questions': len(rows),
         'fabrications_reaching_output': sum(r['fabrications_reaching_output'] for r in rows),
         'first_pass_violation_rate': sum(1 for r in rows if r['first_pass_verdict'] != 'ok') / len(rows),

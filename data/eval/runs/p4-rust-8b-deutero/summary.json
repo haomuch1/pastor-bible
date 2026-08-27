@@ -1,0 +1,21 @@
+{
+ "tag": "p4-rust-8b-deutero",
+ "model": "default",
+ "canon": "both",
+ "query_mode": "raw",
+ "questions": 1,
+ "fabrications_reaching_output": 0,
+ "first_pass_violation_rate": 0.0,
+ "retry_rate": 0.0,
+ "fallback_rate": 0.0,
+ "structure_ok_rate": 1.0,
+ "citation_precision": 0.5454545454545454,
+ "citation_coverage": 0.8,
+ "recall25_sent": 0.35714285714285715,
+ "median_wall_s": 126.49,
+ "max_wall_s": 126.49,
+ "peak_ram_mb": 8999.03125,
+ "themes": [
+  5
+ ]
+}

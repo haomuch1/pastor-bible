@@ -14,13 +14,16 @@
 use std::io::Read;
 use std::net::TcpListener;
 use std::process::{Child, Command, Stdio};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
-/// True while a sidecar is alive. A second spawn is refused rather than
-/// allowed to race: two model processes is the one thing the machine cannot
-/// take.
-static RUNNING: AtomicBool = AtomicBool::new(false);
+/// How many sidecars are alive. A second spawn is refused rather than allowed
+/// to race: two model processes at once is the thing the sequential rule exists
+/// to prevent, and it is refused here rather than left to the caller to
+/// remember. `Options::allow_concurrent` lifts the refusal, and the free-RAM
+/// check still has to clear the second model on top of the first, because
+/// `free_ram_gb` reads what is actually free with the first one already loaded.
+static LIVE: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Role {
@@ -53,6 +56,9 @@ pub struct Options {
     /// Free RAM headroom demanded over the model file's own size.
     pub headroom_gb: f64,
     pub ready_timeout: Duration,
+    /// Allow this sidecar to start while another is already running. Off by
+    /// default. The RAM check is not skipped when it is on.
+    pub allow_concurrent: bool,
 }
 
 impl Options {
@@ -74,6 +80,7 @@ impl Options {
             log_dir: None,
             headroom_gb: 2.0,
             ready_timeout: Duration::from_secs(900),
+            allow_concurrent: false,
         }
     }
 }
@@ -86,6 +93,7 @@ pub struct Sidecar {
     pub log_path: Option<String>,
     pub free_ram_before_gb: f64,
     pub ready_seconds: f64,
+    counted_down: bool,
     agent: ureq::Agent,
 }
 
@@ -265,16 +273,20 @@ mod watchdog {
 impl Sidecar {
     /// Spawn a server for one role, wait for it to be ready, and return it.
     pub fn start(opts: &Options) -> Result<Self, String> {
-        if RUNNING.swap(true, Ordering::SeqCst) {
-            return Err("a sidecar is already running; a second one is refused. \
-                        Two model processes on one machine is what the sequential \
-                        rule exists to prevent."
-                .to_string());
+        let live = LIVE.fetch_add(1, Ordering::SeqCst);
+        if live > 0 && !opts.allow_concurrent {
+            LIVE.fetch_sub(1, Ordering::SeqCst);
+            return Err(format!(
+                "a sidecar is already running and this one did not ask to run \
+                 beside it; refused. Two model processes on one machine is what \
+                 the sequential rule exists to prevent. ({} live)",
+                live
+            ));
         }
         match Self::start_inner(opts) {
             Ok(s) => Ok(s),
             Err(e) => {
-                RUNNING.store(false, Ordering::SeqCst);
+                LIVE.fetch_sub(1, Ordering::SeqCst);
                 Err(e)
             }
         }
@@ -388,6 +400,7 @@ impl Sidecar {
             log_path,
             free_ram_before_gb: free,
             ready_seconds: 0.0,
+            counted_down: false,
             agent: ureq::AgentBuilder::new()
                 .timeout_connect(Duration::from_secs(5))
                 .timeout(Duration::from_secs(3600))
@@ -515,11 +528,22 @@ impl Sidecar {
     }
 
     fn finish(&mut self) {
+        // Only the first call counts down; finish() runs from wait_ready's
+        // failure path, from stop(), and from Drop.
+        let had_child = self.child.is_some();
         if let Some(mut child) = self.child.take() {
             let _ = child.kill();
             let _ = child.wait();
         }
-        RUNNING.store(false, Ordering::SeqCst);
+        if had_child && !self.counted_down {
+            self.counted_down = true;
+            LIVE.fetch_sub(1, Ordering::SeqCst);
+        }
+    }
+
+    /// How many sidecars are alive right now.
+    pub fn live_count() -> usize {
+        LIVE.load(Ordering::SeqCst)
     }
 
     pub fn stop(mut self) {

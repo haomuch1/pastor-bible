@@ -791,6 +791,162 @@ the output, citation precision 0.474. The first pass was rejected for writing
 "Psalm 41" and "Job 31" as chapter-only references, and the retry passed. That
 is the verifier doing exactly what it exists for.
 
+## Rust backend (P4)
+
+P4 reimplemented retrieval, the citation verifier and generation in Rust and
+ran the same ten graded questions through a CLI harness that calls the same
+code the app will call. Everything below is recomputed from the stored run
+artefacts by pipeline/report_p4.py, not copied from a summary file.
+
+### Parity with the Python harness
+
+Retrieval was checked against committed fixtures rather than a live Python
+process: pipeline/make_fixtures.py stores the query vector, the whole candidate
+set with scores and origin tags, the passages those candidates group into, the
+cut sent to generation and the matched topics, for fourteen cases, and the Rust
+test reproduces them.
+
+    cases compared            14   10 graded questions in canon 66, and
+                                   g19 and g20 in canon 66 and both
+    candidates compared   12,685   in rank order, with scores and origin tags
+    mismatches after fix       0
+    score tolerance         1e-5   not loosened
+
+One mismatch was found and fixed rather than tolerated. On g08 the Rust
+retriever put Pro 2:5 above Psa 19:9 where the harness has them the other way.
+Their true cosine similarities differ by 1.8e-7: numpy's BLAS sums in blocks
+and lands within 1e-9 of the exact value, while a sequential float32 sum drifts
+2.4e-7 and crosses the gap. Accumulating in f64 is both the more accurate
+answer and the one that reproduces the harness, and that is what the Rust
+retriever now does.
+
+The verifier was checked twice. All 35 contract vectors hold in both
+implementations, with identical violation records and not merely identical
+verdicts. Then every output P3 stored was re-verified: 82 rows, being the first
+pass and the final answer of all 41 P3 generations, compared on verdict, on
+each violation's kind, text, reason and character span, on the stripped text,
+on the retry failure note and on the fallback rendering. Zero differences.
+
+    contract vectors            35 of 35
+    P3 outputs compared         82 rows, from 41 generations
+    violation records compared  14, field by field including spans
+    differences                  0
+
+### Retrieval latency in Rust
+
+Release build, warm index, on the same machine.
+
+    index load, once per process     0.50 s   768-dimensional vectors for
+                                              31,102 verses and their
+                                              pericopes and topics
+    per query, canon 66              0.039 s median, 0.048 s max
+    per query, both-canon            0.078 s to 0.092 s
+    the Python harness, for scale    0.015 s median
+
+Rust is about 2.6 times slower per query than numpy's BLAS, and both are
+irrelevant beside a generation that takes two and a half minutes.
+
+### End to end, ten graded questions, canon 66, Qwen3-8B
+
+    id    first-pass  retry  fabrications  cited  precision  coverage  themes  seconds
+    g01   ok          -      0             11     0.27       0.75      5       134.7
+    g03   ok          -      0             15     0.47       1.00      4       159.7
+    g04   ok          -      0              6     0.00       -         5       154.7
+    g05   ok          -      0              9     0.22       0.50      4       210.1
+    g08   ok          -      0             14     0.00       -         4       112.8
+    g11   ok          -      0             16     0.00       0.00      5       110.8
+    g12   ok          -      0              9     0.00       -         5       180.7
+    g13   ok          -      0             13     0.54       0.83      5       143.3
+    g14   ok          -      0             14     0.21       1.00      5       190.7
+    g18   ok          -      0             19     0.47       1.00      5       173.1
+
+    fabricated references reaching output    0     the hard gate
+    first-pass violation rate             0.00
+    retry rate                            0.00
+    fallback rate                         0.00
+    structure compliance                  1.00     4 or 5 themes every time
+    median end to end                    157.2 s
+    max end to end                       210.1 s
+    peak sidecar RAM                      9001 MB
+
+The fabrication count is checked against the text a reader would actually see
+and not against an intermediate: every [P#] in it must be one that was sent,
+and no written reference of any kind may appear. Zero of both, on all ten.
+
+### Against P3's Python numbers
+
+                                  P4 Rust   P3 Python    delta
+    first-pass violation rate        0.00        0.00    +0.00
+    retry rate                       0.00        0.00    +0.00
+    fallback rate                    0.00        0.00    +0.00
+    citation precision              0.219       0.269   -0.050
+    citation coverage               0.726       0.792   -0.065
+    recall@25 of the sent set       0.362       0.350   +0.013
+    median end to end             157.2 s     156.3 s    +0.9
+    max end to end                210.1 s     234.1 s   -24.0
+    median generation             151.7 s     156.3 s
+    peak sidecar RAM              9001 MB     8998 MB controlled, and
+                                              15068 MB observed over a run
+
+The two runs did not retrieve from the same input. P3 retrieved with the
+model's rewritten queries; P4 retrieves from the raw question, which is the
+decision recorded below. Citation precision and coverage therefore compare two
+different retrieved sets and are not a like-for-like measure of the port. The
+verifier figures, the fabrication count and the latency are like for like, and
+they agree.
+
+The one figure that moved for a reason worth naming is peak memory. P3 observed
+15,068 MB over a ten-question run and 8,998 MB in a single controlled answer;
+P4 measures 9,001 MB on every question. The difference is not the context size:
+P3 kept one llama-server alive for all ten questions and P4 starts a fresh one
+per question, so nothing accumulates across questions. P5 will keep a server
+alive between questions for speed and must measure this again before README's
+floor is trusted.
+
+### Context window
+
+PLAN's assumption was that P3's 15 GB peak came from an oversized context. It
+did not, and the measurement says so plainly.
+
+    prompt tokens over the ten questions   min 2,709  median 3,967  max 5,819
+    output budget                          900
+    max prompt plus output                 6,719
+    plus a 25 per cent margin              8,398
+
+The context in use is 8,192, which is smaller than the derived figure rather
+than larger: on the worst question the prompt and its output fill 82 per cent
+of it. There is no oversized context to trim.
+
+### Query rewriting, decided
+
+P3 measured that model rewrites lowered recall@25 against the hand-written
+keyword lists in questions.json. That is a true finding about a comparison the
+product cannot make, because hand-written keyword lists do not exist at run
+time. P4 measured the rewrite against the reader's own question instead, on the
+same ten questions, configuration F, canon 66, recall@25 against MUST.
+
+    raw       0.3625   the question embedded alone, its content words as the
+                       keyword terms
+    rewrite   0.3500   what P3 ran: question and rewrites embedded together,
+                       the rewrites as the keyword terms
+    fused     0.4000   the same vector, content words and rewrites together
+    hand      0.4875   for scale only; not available at run time
+
+    fused minus raw       +0.0375   95 per cent [-0.0125, +0.0875]
+    fused minus rewrite   +0.0500   95 per cent [-0.0250, +0.1250]
+    rewrite minus raw     -0.0125   95 per cent [-0.1375, +0.1000]
+
+No pair is separable on ten questions. By the standard this project already
+applied to the embedding models, that is a tie, and the tie is broken on cost:
+the rewrite needs a second chat-model load and a generation, measured at 3.7
+seconds and about 6.6 seconds on this machine, for a gain the interval says may
+be zero. The default is the raw question; --query rewrite and --query fused
+remain.
+
+The figure worth keeping is the last one. Hand-written keyword lists still beat
+everything the product can actually do, 0.4875 against 0.3625, and closing that
+gap is a retrieval problem rather than a prompt problem.
+
 ## Results
 
-None yet. Populated in P2 (retrieval) and P3 (full pipeline).
+Populated in P2 (retrieval), P3 (model selection) and P4 (the Rust backend).

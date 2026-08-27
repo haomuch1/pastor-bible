@@ -76,6 +76,11 @@ pub struct Settings {
     pub query_mode: QueryMode,
     pub chat_ctx: u32,
     pub threads: Option<u32>,
+    /// Layers to offload to the GPU. Zero everywhere the app ships today: the
+    /// bundled sidecar is the CPU build and PLAN's hardware floor is a CPU
+    /// floor. P4 measures a Vulkan build through this flag; P6 decides whether
+    /// one is bundled.
+    pub gpu_layers: u32,
     /// Allow the embedding server and the chat server to be alive at once.
     /// Off by default; the RAM check still has to clear their sum.
     pub allow_both_servers: bool,
@@ -123,8 +128,21 @@ impl Engine {
         (blocks.join("\n\n"), sent)
     }
 
-    fn embed_query(&self, texts: &[String]) -> Result<(Vec<Vec<f32>>, f64, f64, Option<f64>), String> {
-        let mut opts = Options::new(&self.settings.llama_server, &self.settings.embed_model, Role::Embedding);
+    /// Embed, and either stop the embedding server or hand it back alive.
+    ///
+    /// Sequential by default: the embedding server is stopped before the chat
+    /// server starts, so one model process exists at a time. With
+    /// `allow_both_servers` the embedding server is kept up and the chat server
+    /// starts beside it, which saves reloading 262 MB per question in an
+    /// interactive session. The free-RAM check is not skipped either way; it
+    /// simply sees the first model already resident when it runs for the
+    /// second.
+    fn embed_query(
+        &self,
+        texts: &[String],
+    ) -> Result<(Vec<Vec<f32>>, f64, f64, Option<Sidecar>), String> {
+        let mut opts =
+            Options::new(&self.settings.llama_server, &self.settings.embed_model, Role::Embedding);
         opts.log_dir = self.settings.log_dir.clone();
         opts.threads = self.settings.threads;
         let t0 = Instant::now();
@@ -133,9 +151,11 @@ impl Engine {
         let t1 = Instant::now();
         let vecs = server.embed(texts);
         let took = t1.elapsed().as_secs_f64();
-        let peak = server.peak_ram_mb();
-        server.stop();
-        Ok((vecs?, up, took, peak))
+        if !self.settings.allow_both_servers {
+            server.stop();
+            return Ok((vecs?, up, took, None));
+        }
+        Ok((vecs?, up, took, Some(server)))
     }
 
     /// The whole pipeline for one question.
@@ -185,10 +205,10 @@ impl Engine {
 
         // ---- embed -------------------------------------------------------
         let prefixed = format!("{}{}", self.retriever.query_prefix, query_text);
-        let (vecs, up, took, embed_peak) = self.embed_query(&[prefixed])?;
+        let (vecs, up, took, kept_embed) = self.embed_query(&[prefixed])?;
         timings.embed_server_seconds = up;
         timings.embed_seconds = took;
-        let _ = embed_peak;
+        let concurrent = kept_embed.is_some();
         let qvec = vecs.into_iter().next().ok_or("the embedding server returned nothing")?;
 
         // ---- retrieve ----------------------------------------------------
@@ -260,6 +280,10 @@ impl Engine {
         }
         peak_ram = max_opt(peak_ram, server.peak_ram_mb());
         server.stop();
+        if let Some(e) = kept_embed {
+            peak_ram = max_opt(peak_ram, e.peak_ram_mb());
+            e.stop();
+        }
 
         let answer = self.assemble(
             question,
@@ -273,6 +297,7 @@ impl Engine {
             fallback_used,
             timings,
             peak_ram,
+            concurrent,
             t_start,
         );
         Ok(answer)
@@ -283,7 +308,9 @@ impl Engine {
             Options::new(&self.settings.llama_server, &self.settings.chat_model, Role::Chat);
         opts.n_ctx = self.settings.chat_ctx;
         opts.threads = self.settings.threads;
+        opts.gpu_layers = self.settings.gpu_layers;
         opts.log_dir = self.settings.log_dir.clone();
+        opts.allow_concurrent = self.settings.allow_both_servers;
         opts
     }
 
@@ -301,6 +328,7 @@ impl Engine {
         fallback_used: bool,
         mut timings: Timings,
         peak_ram: Option<f64>,
+        concurrent: bool,
         t_start: Instant,
     ) -> Answer {
         let token_of: std::collections::HashMap<&str, &str> =
@@ -400,7 +428,8 @@ impl Engine {
             embedding_model_id: EMBED_MODEL_ID.to_string(),
             index_version: self.retriever.index.index_version.clone(),
             prompt_versions: self.prompts.versions(),
-            sidecar_path: if self.settings.allow_both_servers {
+            // What actually happened, not what was asked for.
+            sidecar_path: if concurrent {
                 "concurrent".to_string()
             } else {
                 "sequential".to_string()

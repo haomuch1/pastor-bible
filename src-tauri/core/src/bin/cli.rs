@@ -90,6 +90,10 @@ fn cmd_ask(args: &[String]) -> Result<(), String> {
         query_mode,
         chat_ctx,
         threads,
+        gpu_layers: flag(args, "--gpu-layers")
+            .unwrap_or("0")
+            .parse()
+            .map_err(|_| "--gpu-layers wants a number")?,
         allow_both_servers: args.iter().any(|a| a == "--allow-both-servers"),
     };
 

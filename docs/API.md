@@ -83,6 +83,16 @@ check a field still cannot break the promise:
     peak_ram_mb           number?  peak resident memory of the sidecar
     query_mode            "raw" | "rewrite" | "fused"
 
+## The Deuterocanon tag is the caller's job
+
+PLAN 5.7 requires a visible "Deuterocanon" tag on every deuterocanonical
+passage in the synopsis as well as in the panel. The synopsis prompt asks the
+model to keep the marker it was given, and on 2026-08-26 the 8B cited Tob 4:7
+in a both-canon answer and dropped it. So the tag is rendered by the caller
+from `passages[].canon` when it draws the cited tokens, in exactly the way
+verse text is read from the index rather than from the answer. The prompt still
+asks; nothing rests on the asking.
+
 ## Notes on two fields that are easy to misread
 
 `topics[].verses` is the size of the topic in Nave's, which is usually far

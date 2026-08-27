@@ -1,0 +1,22 @@
+{
+ "tag": "p4-rust-1.7b",
+ "model": "fallback",
+ "canon": "66",
+ "query_mode": "raw",
+ "questions": 2,
+ "fabrications_reaching_output": 0,
+ "first_pass_violation_rate": 0.0,
+ "retry_rate": 0.0,
+ "fallback_rate": 0.0,
+ "structure_ok_rate": 0.0,
+ "citation_precision": 0.28,
+ "citation_coverage": 1.0,
+ "recall25_sent": 0.625,
+ "median_wall_s": 31.685000000000002,
+ "max_wall_s": 33.64,
+ "peak_ram_mb": 2769.02734375,
+ "themes": [
+  1,
+  1
+ ]
+}

@@ -1,0 +1,30 @@
+{
+ "tag": "p4-rust-8b",
+ "model": "default",
+ "canon": "66",
+ "query_mode": "raw",
+ "questions": 10,
+ "fabrications_reaching_output": 0,
+ "first_pass_violation_rate": 0.0,
+ "retry_rate": 0.0,
+ "fallback_rate": 0.0,
+ "structure_ok_rate": 1.0,
+ "citation_precision": 0.21880476248897301,
+ "citation_coverage": 0.7261904761904762,
+ "recall25_sent": 0.3625,
+ "median_wall_s": 157.215,
+ "max_wall_s": 210.14,
+ "peak_ram_mb": 9000.90234375,
+ "themes": [
+  5,
+  4,
+  5,
+  4,
+  4,
+  5,
+  5,
+  5,
+  5,
+  5
+ ]
+}

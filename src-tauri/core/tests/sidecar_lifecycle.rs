@@ -99,6 +99,33 @@ fn a_second_sidecar_is_refused_while_one_is_running() {
 }
 
 #[test]
+fn two_sidecars_are_allowed_only_when_one_asks_to_share() {
+    let _guard = SERIAL.lock().unwrap();
+    let mut opts = embed_options();
+    let first = Sidecar::start(&opts).expect("first sidecar");
+    assert_eq!(Sidecar::live_count(), 1);
+
+    // The refusal is the default, and the flag is what lifts it. Both models
+    // here are 262 MB, so the RAM check clears easily; the point is that the
+    // guard, not the caller's memory, decides.
+    assert!(Sidecar::start(&opts).is_err(), "a second sidecar started without asking");
+    opts.allow_concurrent = true;
+    let second = Sidecar::start(&opts).expect("second sidecar with the flag set");
+    assert_eq!(Sidecar::live_count(), 2);
+    assert_ne!(first.pid(), second.pid());
+
+    let (a, b) = (first.pid().unwrap(), second.pid().unwrap());
+    first.stop();
+    second.stop();
+    assert_eq!(Sidecar::live_count(), 0, "the live count did not come back down");
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while (process_alive(a) || process_alive(b)) && Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    assert!(!process_alive(a) && !process_alive(b), "a shared sidecar outlived stop()");
+}
+
+#[test]
 fn the_sidecar_does_not_survive_a_hard_kill_of_its_parent() {
     let _guard = SERIAL.lock().unwrap();
     require(&paths::llama_server(), "llama-server");
