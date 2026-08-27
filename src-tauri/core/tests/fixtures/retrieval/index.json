@@ -1,0 +1,130 @@
+{
+ "cases": [
+  {
+   "case": "g01-66",
+   "question_id": "g01",
+   "canon": "66",
+   "full_set": 934,
+   "ranges": 442,
+   "cut": 25,
+   "python_seconds": 0.4584
+  },
+  {
+   "case": "g03-66",
+   "question_id": "g03",
+   "canon": "66",
+   "full_set": 1032,
+   "ranges": 451,
+   "cut": 25,
+   "python_seconds": 0.0157
+  },
+  {
+   "case": "g04-66",
+   "question_id": "g04",
+   "canon": "66",
+   "full_set": 925,
+   "ranges": 501,
+   "cut": 25,
+   "python_seconds": 0.0154
+  },
+  {
+   "case": "g05-66",
+   "question_id": "g05",
+   "canon": "66",
+   "full_set": 784,
+   "ranges": 336,
+   "cut": 25,
+   "python_seconds": 0.0141
+  },
+  {
+   "case": "g08-66",
+   "question_id": "g08",
+   "canon": "66",
+   "full_set": 793,
+   "ranges": 403,
+   "cut": 25,
+   "python_seconds": 0.0158
+  },
+  {
+   "case": "g11-66",
+   "question_id": "g11",
+   "canon": "66",
+   "full_set": 864,
+   "ranges": 422,
+   "cut": 25,
+   "python_seconds": 0.014
+  },
+  {
+   "case": "g12-66",
+   "question_id": "g12",
+   "canon": "66",
+   "full_set": 1191,
+   "ranges": 612,
+   "cut": 25,
+   "python_seconds": 0.0177
+  },
+  {
+   "case": "g13-66",
+   "question_id": "g13",
+   "canon": "66",
+   "full_set": 808,
+   "ranges": 355,
+   "cut": 25,
+   "python_seconds": 0.0155
+  },
+  {
+   "case": "g14-66",
+   "question_id": "g14",
+   "canon": "66",
+   "full_set": 971,
+   "ranges": 473,
+   "cut": 25,
+   "python_seconds": 0.0157
+  },
+  {
+   "case": "g18-66",
+   "question_id": "g18",
+   "canon": "66",
+   "full_set": 741,
+   "ranges": 308,
+   "cut": 25,
+   "python_seconds": 0.0135
+  },
+  {
+   "case": "g19-66",
+   "question_id": "g19",
+   "canon": "66",
+   "full_set": 992,
+   "ranges": 421,
+   "cut": 25,
+   "python_seconds": 0.0158
+  },
+  {
+   "case": "g20-66",
+   "question_id": "g20",
+   "canon": "66",
+   "full_set": 821,
+   "ranges": 365,
+   "cut": 25,
+   "python_seconds": 0.0154
+  },
+  {
+   "case": "g19-both",
+   "question_id": "g19",
+   "canon": "both",
+   "full_set": 1000,
+   "ranges": 427,
+   "cut": 31,
+   "python_seconds": 0.0282
+  },
+  {
+   "case": "g20-both",
+   "question_id": "g20",
+   "canon": "both",
+   "full_set": 829,
+   "ranges": 373,
+   "cut": 33,
+   "python_seconds": 0.0261
+  }
+ ]
+}

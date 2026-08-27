@@ -1,0 +1,408 @@
+{
+ "sent": [
+  {
+   "token": "[P1]",
+   "ref": "MAT 6:25-34",
+   "verse_ids": [
+    55006025,
+    55006026,
+    55006027,
+    55006028,
+    55006029,
+    55006030,
+    55006031,
+    55006032,
+    55006033,
+    55006034
+   ]
+  },
+  {
+   "token": "[P2]",
+   "ref": "PHP 4:6-7",
+   "verse_ids": [
+    65004006,
+    65004007
+   ]
+  },
+  {
+   "token": "[P3]",
+   "ref": "PSA 23:1-4",
+   "verse_ids": [
+    19023001,
+    19023002,
+    19023003,
+    19023004
+   ]
+  },
+  {
+   "token": "[P4]",
+   "ref": "1PE 5:6-7",
+   "verse_ids": [
+    75005006,
+    75005007
+   ]
+  }
+ ],
+ "vectors": [
+  {
+   "n": 1,
+   "text": "Jesus tells us not to worry [P1].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 2,
+   "text": "Anxiety is answered by prayer [P1] [P2].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 3,
+   "text": "As Matthew 6:25 says, do not be anxious [P1].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 4,
+   "text": "See Mat 6:26 for the birds [P1].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 5,
+   "text": "The passage Matthew 6:25-34 covers this [P1].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 6,
+   "text": "The passage Matthew 6:25–34 covers this [P1].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 7,
+   "text": "The text speaks plainly about worry and trust.",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 8,
+   "text": "Trust God ([P4]), and be humble.",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 9,
+   "text": "Consider also [P9], which speaks to this.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "token",
+     "text": "[P9]",
+     "reason": "token not in sent set",
+     "span": [
+      14,
+      18
+     ]
+    }
+   ]
+  },
+  {
+   "n": 10,
+   "text": "See [P0] for more.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "token",
+     "text": "[P0]",
+     "reason": "token not in sent set",
+     "span": [
+      4,
+      8
+     ]
+    }
+   ]
+  },
+  {
+   "n": 11,
+   "text": "As John 3:16 tells us, God loved the world.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "John 3:16",
+     "reason": "verses not in sent set",
+     "span": [
+      3,
+      12
+     ]
+    }
+   ]
+  },
+  {
+   "n": 12,
+   "text": "Matthew 5:3 speaks of the poor in spirit.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "Matthew 5:3",
+     "reason": "verses not in sent set",
+     "span": [
+      0,
+      11
+     ]
+    }
+   ]
+  },
+  {
+   "n": 13,
+   "text": "Read Matthew 6:25-40 for the whole argument.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "Matthew 6:25-40",
+     "reason": "verses not in sent set",
+     "span": [
+      5,
+      20
+     ]
+    }
+   ]
+  },
+  {
+   "n": 14,
+   "text": "Psalm 23 is the shepherd psalm.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "Psalm 23",
+     "reason": "whole chapter not in sent set",
+     "span": [
+      0,
+      8
+     ]
+    }
+   ]
+  },
+  {
+   "n": 15,
+   "text": "1 Corinthians 13:4 defines love.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "1 Corinthians 13:4",
+     "reason": "verses not in sent set",
+     "span": [
+      0,
+      18
+     ]
+    }
+   ]
+  },
+  {
+   "n": 16,
+   "text": "First Corinthians 13 defines love.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "First Corinthians 13",
+     "reason": "whole chapter not in sent set",
+     "span": [
+      0,
+      20
+     ]
+    }
+   ]
+  },
+  {
+   "n": 17,
+   "text": "I Corinthians 13 defines love.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "I Corinthians 13",
+     "reason": "whole chapter not in sent set",
+     "span": [
+      0,
+      16
+     ]
+    }
+   ]
+  },
+  {
+   "n": 18,
+   "text": "He rose on the third day, as the passages say [P1].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 19,
+   "text": "Forgive seven times, and then seventy [P1].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 20,
+   "text": "He could quote chapter and verse on it [P2].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 21,
+   "text": "Job suffered greatly, yet he trusted [P3].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 22,
+   "text": "Mark was a companion on the journey [P1].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 23,
+   "text": "He acts 2 ways depending on who is watching [P2].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 24,
+   "text": "Judges 12 times refused to listen to the warning [P1].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 25,
+   "text": "Numbers and Kings and Acts all tell parts of the story [P3].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 26,
+   "text": "Song of Solomon 2:1 speaks of love.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "Song of Solomon 2:1",
+     "reason": "verses not in sent set",
+     "span": [
+      0,
+      19
+     ]
+    }
+   ]
+  },
+  {
+   "n": 27,
+   "text": "Song of Songs 2:1 speaks of love.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "Song of Songs 2:1",
+     "reason": "verses not in sent set",
+     "span": [
+      0,
+      17
+     ]
+    }
+   ]
+  },
+  {
+   "n": 28,
+   "text": "The Acts of the Apostles 2:38 records the sermon.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "The Acts of the Apostles 2:38",
+     "reason": "verses not in sent set",
+     "span": [
+      0,
+      29
+     ]
+    }
+   ]
+  },
+  {
+   "n": 29,
+   "text": "Wisdom of Solomon 3:1 says the souls of the righteous are in God hands.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "Wisdom of Solomon 3:1",
+     "reason": "verses not in sent set",
+     "span": [
+      0,
+      21
+     ]
+    }
+   ]
+  },
+  {
+   "n": 30,
+   "text": "1 Maccabees 2:15 tells of the revolt.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "1 Maccabees 2:15",
+     "reason": "verses not in sent set",
+     "span": [
+      0,
+      16
+     ]
+    }
+   ]
+  },
+  {
+   "n": 31,
+   "text": "Sirach 3:1 counsels children to honour their parents.",
+   "expected": "violation",
+   "violations": [
+    {
+     "kind": "reference",
+     "text": "Sirach 3:1",
+     "reason": "verses not in sent set",
+     "span": [
+      0,
+      10
+     ]
+    }
+   ]
+  },
+  {
+   "n": 32,
+   "text": "The song of songs was sung by the whole congregation [P3].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 33,
+   "text": "The acts of the apostles were many and are still told [P1].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 34,
+   "text": "Wisdom builds her house and calls out to the simple [P2].",
+   "expected": "ok",
+   "violations": []
+  },
+  {
+   "n": 35,
+   "text": "He read the prayer of Manasseh aloud at the vigil [P4].",
+   "expected": "ok",
+   "violations": []
+  }
+ ]
+}

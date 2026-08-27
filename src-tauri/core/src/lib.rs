@@ -1,8 +1,9 @@
-pub fn sqlite_version() -> String {
-    let c = rusqlite::Connection::open_in_memory().unwrap();
-    c.query_row("select sqlite_version()", [], |r| r.get::<_, String>(0)).unwrap()
-}
-pub fn has_fts5() -> bool {
-    let c = rusqlite::Connection::open_in_memory().unwrap();
-    c.execute_batch("create virtual table t using fts5(x)").is_ok()
-}
+//! The Pastor Bible: retrieval, citation verifier and generation.
+//!
+//! No GUI dependency lives here. The Tauri shell is one caller; the CLI harness
+//! is another; the tests are a third.
+
+pub mod index;
+pub mod retrieve;
+pub mod tsk_abbrev;
+pub mod verifier;

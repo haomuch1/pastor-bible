@@ -267,14 +267,25 @@ impl Retriever {
     /// Cosine against a unit-normalised query, brute force. The vectors in the
     /// index are unit-normalised at build time, so the dot product is the
     /// cosine and no division is needed.
-    fn scores_against(mat: &[f32], dim: usize, q: &[f32]) -> Vec<f32> {
+    ///
+    /// The accumulator is f64 even though both operands are f32. The first
+    /// version summed in f32 and put Pro 2:5 above Psa 19:9 for question g08,
+    /// where the Python harness has them the other way round. Their true
+    /// cosines differ by 1.8e-7, so the order is decided entirely by rounding:
+    /// numpy's BLAS sums in blocks and lands within 1e-9 of the exact value,
+    /// while a sequential f32 sum drifts 2.4e-7 and crosses the gap. Summing in
+    /// f64 is both the more accurate answer and the one that reproduces the
+    /// harness. It is not a guarantee for every possible query: two passages
+    /// this close together are a coin toss that no implementation can settle,
+    /// and the parity claim is over the fixtures, which is what was measured.
+    fn scores_against(mat: &[f32], dim: usize, q: &[f32]) -> Vec<f64> {
         let n = mat.len() / dim;
         let mut out = Vec::with_capacity(n);
         for i in 0..n {
             let row = &mat[i * dim..(i + 1) * dim];
-            let mut acc = 0f32;
+            let mut acc = 0f64;
             for k in 0..dim {
-                acc += row[k] * q[k];
+                acc += (row[k] as f64) * (q[k] as f64);
             }
             out.push(acc);
         }
@@ -286,7 +297,7 @@ impl Retriever {
     /// numpy breaks ties by whatever argpartition happened to produce. Ties in
     /// a cosine score are vanishingly rare, and breaking them by index is the
     /// one rule that is both deterministic and reproducible on the Python side.
-    fn top(scores: &[f32], keep: usize) -> Vec<usize> {
+    fn top(scores: &[f64], keep: usize) -> Vec<usize> {
         let keep = keep.min(scores.len());
         if keep == 0 {
             return Vec::new();
@@ -301,7 +312,7 @@ impl Retriever {
         idx
     }
 
-    pub fn vector_verses(&self, q: &[f32], mode: CanonMode, limit: usize) -> Vec<(f32, i64)> {
+    pub fn vector_verses(&self, q: &[f32], mode: CanonMode, limit: usize) -> Vec<(f64, i64)> {
         let scores = Self::scores_against(&self.verse_mat, self.dim, q);
         let mut out = Vec::new();
         for i in Self::top(&scores, limit * 4) {
@@ -322,7 +333,7 @@ impl Retriever {
         q: &[f32],
         mode: CanonMode,
         limit: usize,
-    ) -> Vec<(f32, Vec<i64>)> {
+    ) -> Vec<(f64, Vec<i64>)> {
         let scores = Self::scores_against(&self.peri_mat, self.dim, q);
         let mut st = self
             .index
@@ -350,7 +361,7 @@ impl Retriever {
         out
     }
 
-    pub fn vector_topics(&self, q: &[f32], limit: usize) -> Vec<(f32, i64)> {
+    pub fn vector_topics(&self, q: &[f32], limit: usize) -> Vec<(f64, i64)> {
         let scores = Self::scores_against(&self.topic_mat, self.dim, q);
         Self::top(&scores, limit).into_iter().map(|i| (scores[i], self.topic_keys[i])).collect()
     }
@@ -546,7 +557,7 @@ impl Retriever {
                         topic_id: *tid,
                         heading,
                         verses,
-                        score: round_to(*s as f64, 4),
+                        score: round_to(*s, 4),
                     });
                 }
             }
