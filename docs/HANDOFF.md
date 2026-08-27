@@ -38,7 +38,14 @@ pipeline/rewrite_decision.py measured the query-mode question,
 pipeline/run_p4.py drives the CLI over the graded set, pipeline/report_p4.py
 recomputes every figure from the stored artefacts. tools/fetch_llama.py fetches
 a pinned llama.cpp asset and refuses to unpack a mismatched checksum; it is the
-one file under tools/ that is committed.
+one file under tools/ that is committed. Its --sidecar flag places the build in
+src-tauri/binaries under Tauri's externalBin naming, and that directory is
+gitignored bar its .gitkeep.
+
+Tests: 20 in cargo (sidecar lifecycle including the orphan check, retrieval
+parity, verifier parity, crisis, prompts and output serialization) and 134 in
+pytest, all passing. Everything is pushed; remote HEAD is
+1abcc2f8485127b780f1ed824e7d2ddec4b0d76e.
 
 ## Verified
 
