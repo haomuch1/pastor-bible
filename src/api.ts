@@ -17,6 +17,7 @@ import type {
   Hardware,
   HistoryDetail,
   HistoryRow,
+  Retrieved,
   SelfTestResult,
   Stage,
   StartupState,
@@ -35,6 +36,7 @@ export const cancelDownload = () => invoke<void>("cancel_download");
 
 export const ask = (question: string) => invoke<Answer>("ask", { question });
 export const cancelAsk = () => invoke<void>("cancel_ask");
+export const retrievedPassages = () => invoke<Retrieved | null>("retrieved_passages");
 
 export const runSelfTest = () => invoke<SelfTestResult>("run_self_test");
 export const finishFirstRun = () => invoke<void>("finish_first_run");

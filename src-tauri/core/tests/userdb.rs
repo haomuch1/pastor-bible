@@ -17,6 +17,20 @@ fn temp_dir(name: &str) -> std::path::PathBuf {
     d
 }
 
+fn passage(token: &str, reference: &str, verse_ids: Vec<i64>, cited: bool) -> PassageOut {
+    PassageOut {
+        token: Some(token.to_string()),
+        reference: reference.to_string(),
+        verse_ids,
+        verses: vec![],
+        score: 0.5,
+        origins: vec![],
+        canon: "protestant".to_string(),
+        cited,
+        sent: true,
+    }
+}
+
 fn answer(question: &str, verse_ids: Vec<i64>, synopsis: &str) -> Answer {
     let cited = verse_ids.clone();
     Answer {
@@ -117,9 +131,12 @@ fn an_answer_round_trips_and_its_passages_come_from_the_index_now() {
     assert!(got.index_note.is_none(), "same index version, so no note");
 
     // The passages are rendered now, from the index, with real verse text.
-    assert_eq!(got.passages.len(), 1, "two adjacent verses are one passage");
+    assert_eq!(got.passages.len(), 1, "one sent passage was stored");
     let p = &got.passages[0];
     assert_eq!(p.reference, "Mat 6:25-26");
+    // The tokens are rebuilt, so a reopened answer's [P1] resolves to a chip
+    // rather than being shown to the reader as "[P1]".
+    assert_eq!(p.token.as_deref(), Some("[P1]"), "the [P#] token was not rebuilt");
     assert_eq!(p.verses.len(), 2);
     assert!(p.verses[0].text.len() > 20, "verse text must come from index.db");
     assert!(p.cited);
@@ -240,6 +257,40 @@ fn the_export_holds_what_the_entries_hold() {
     // Plain text: no JSON blobs leaking through.
     assert!(!text.contains("passage_ids"));
     assert!(!text.contains("{\""));
+}
+
+#[test]
+fn every_sent_passage_keeps_its_own_token() {
+    let db_index = common::require_index();
+    let index = Index::open(&db_index).unwrap();
+    let dir = temp_dir("tokens");
+    let db = UserDb::open(&dir.join("user.db").to_string_lossy()).unwrap();
+
+    // Three passages, deliberately not adjacent, cited out of order.
+    let mut a = answer("Which passages?", vec![55006025, 55006026], "## A
+[P1] [P3]");
+    a.passages = vec![
+        passage("[P1]", "Mat 6:25-26", vec![55006025, 55006026], true),
+        passage("[P2]", "Psa 23:1", vec![19023001], false),
+        passage("[P3]", "1Pe 5:7", vec![75005007], true),
+    ];
+    a.sent_count = 3;
+    a.cited_passage_ids = vec![55006025, 55006026, 75005007];
+    let id = db.save_answer(&a).unwrap();
+
+    let got = db.get(id, &index).unwrap().unwrap();
+    let tokens: Vec<&str> = got.passages.iter().filter_map(|p| p.token.as_deref()).collect();
+    assert_eq!(tokens, vec!["[P1]", "[P2]", "[P3]"], "tokens must keep their order");
+    let refs: Vec<&str> = got.passages.iter().map(|p| p.reference.as_str()).collect();
+    assert_eq!(refs, vec!["Mat 6:25-26", "Psa 23:1", "1Pe 5:7"]);
+    assert_eq!(
+        got.passages.iter().map(|p| p.cited).collect::<Vec<_>>(),
+        vec![true, false, true],
+        "the answer cited the first and the third"
+    );
+    for p in &got.passages {
+        assert!(!p.verses.is_empty(), "{} has no text", p.reference);
+    }
 }
 
 #[test]

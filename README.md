@@ -35,7 +35,8 @@ Built and tested on: AMD Ryzen 7 5800X (8 cores), NVIDIA RTX 3080 10 GB, 32 GB
 RAM, Windows 11. Everything below was measured on that machine on 2026-08-26.
 
     disk           about 5.3 GB in all
-    memory in use  about 9 GB while an answer is being written
+    memory in use  about 9 GB for one answer, rising to about 12 GB over a
+                   long session of several questions
     an answer      around 2 to 4 minutes on the processor, 157 seconds typical
 
 The Pastor Bible will run on less than that. It will be slower, and on a

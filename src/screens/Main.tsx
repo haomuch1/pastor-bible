@@ -21,6 +21,7 @@ import type {
   HistoryRow,
   PassageOut,
   Stage,
+  TopicGroup,
 } from "../types";
 
 interface Props {
@@ -79,11 +80,31 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
     };
   }, [running]);
 
-  // The passages go on screen the moment retrieval returns, before the answer
-  // exists. Until then there is nothing to show but the stage line.
+  // The passages go on screen the moment retrieval returns, about forty
+  // milliseconds in, so the reader is in the text for the whole of the two and
+  // a half minutes the answer takes to write.
   const [earlyPassages, setEarlyPassages] = useState<PassageOut[] | null>(null);
+  const [earlyGroups, setEarlyGroups] = useState<TopicGroup[]>([]);
   useEffect(() => {
-    if (stage?.stage === "retrieving") setEarlyPassages(null);
+    if (stage?.stage === "retrieving") {
+      setEarlyPassages(null);
+      setEarlyGroups([]);
+    }
+    if (stage?.stage === "retrieved") {
+      // Fetched rather than pushed: a quarter of a megabyte does not survive
+      // the event channel, and this is the channel the answer itself uses.
+      void api
+        .retrievedPassages()
+        .then((r) => {
+          if (r) {
+            setEarlyPassages(r.passages);
+            setEarlyGroups(r.topic_groups);
+          }
+        })
+        .catch(() => {
+          /* the answer will bring them in a couple of minutes either way */
+        });
+    }
   }, [stage]);
 
   async function onAsk() {
@@ -264,12 +285,22 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
             </div>
           )}
 
+          {running && earlyPassages && earlyPassages.length > 0 && !answer && (
+            <p className="faint">
+              These are the passages the search found. Read them while the answer is written; the
+              answer appears only once every reference in it has been checked.
+            </p>
+          )}
+
           {shownPassages.length > 0 && (
             <PassagePanel
               passages={shownPassages}
-              groups={answer?.topic_groups ?? []}
+              // A reopened answer keeps the passages it rested on but not the
+              // topic grouping, which was never stored; it is grouped by book,
+              // rather than under the topics of whatever was asked last.
+              groups={answer ? answer.topic_groups : past ? [] : earlyGroups}
               groupBy={
-                (answer?.topic_groups?.length ?? 0) > 0
+                (answer ? answer.topic_groups : past ? [] : earlyGroups).length > 0
                   ? (settings.group_by as "topic" | "book")
                   : "book"
               }

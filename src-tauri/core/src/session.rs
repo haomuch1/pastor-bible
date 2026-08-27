@@ -12,12 +12,12 @@
 //! that. The progress that leaves this module is a stage, a count and a clock.
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 
-use crate::api::*;
+use crate::api::{Answer, AttemptOut, PassageOut, Timings, TopicGroup, ViolationOut};
 use crate::pipeline::{with_no_think, Engine, DEUTERO_SLICE, MAX_TOKENS, SEED, TOP_N};
 use crate::prompts::fill;
 use crate::retrieve::Config;
@@ -31,7 +31,16 @@ pub enum Stage {
     /// A model is being loaded. Only on the first question of a session.
     LoadingModel { role: String, model: String },
     Retrieving,
-    /// The passages are on screen from here on; the reader can start reading.
+    /// Retrieval is finished and the passages are ready to be collected.
+    ///
+    /// This is the whole point of the amended PLAN 7.2: retrieval takes about
+    /// forty milliseconds and generation takes two and a half minutes, so the
+    /// reader should be reading scripture for the whole of that wait rather
+    /// than watching a spinner. The passages themselves are not in this event.
+    /// They are a quarter of a megabyte, and a payload that size does not
+    /// survive the event channel, silently: the counts arrive and the list does
+    /// not. The caller fetches them with `take_retrieved` instead, over the
+    /// same channel that already carries the finished answer.
     Retrieved { passages: usize, sent: usize },
     Generating { tokens: u64, attempt: u32 },
     CheckingReferences { attempt: u32 },
@@ -49,7 +58,22 @@ pub struct Session {
     cancel: Arc<AtomicBool>,
     /// The chat model currently loaded, so a change in Settings reloads it.
     loaded_chat_model: Option<String>,
+    /// The passages of the question being answered, ready for the window to
+    /// collect as soon as it hears that retrieval is done.
+    ///
+    /// Behind its own lock rather than inside the session, because `ask` holds
+    /// the session for the two and a half minutes an answer takes and the
+    /// whole point is to hand these over in the first second of that.
+    retrieved: RetrievedSlot,
+    chat_pid: ChatPidSlot,
 }
+
+/// Where the retrieved passages wait for the window to collect them.
+pub type RetrievedSlot = Arc<Mutex<Option<(Vec<PassageOut>, Vec<TopicGroup>)>>>;
+
+/// The answering model's process id, published so that a cancellation can stop
+/// it without waiting for the thread that is reading from it.
+pub type ChatPidSlot = Arc<Mutex<Option<u32>>>;
 
 impl Session {
     pub fn new(engine: Engine) -> Self {
@@ -59,7 +83,36 @@ impl Session {
             chat: None,
             cancel: Arc::new(AtomicBool::new(false)),
             loaded_chat_model: None,
+            retrieved: Arc::new(Mutex::new(None)),
+            chat_pid: Arc::new(Mutex::new(None)),
         }
+    }
+
+    /// A handle on the answering model's process id.
+    ///
+    /// Cancelling closes the connection, and llama-server abandons the slot
+    /// when its client goes away. But the thread doing the reading is blocked
+    /// inside that read, and during prompt processing no data arrives for
+    /// tens of seconds, so the flag is not looked at and the reader waits.
+    /// Measured on 2026-08-26: 16.3 seconds from Stop to the call returning.
+    /// A caller that wants the two-second bound the plan asks for uses this to
+    /// stop the process outright; the session notices and starts it again.
+    pub fn chat_pid_slot(&self) -> ChatPidSlot {
+        self.chat_pid.clone()
+    }
+
+    /// A session that publishes its retrieved passages into a slot the caller
+    /// already holds, so the window can collect them while `ask` is running.
+    pub fn with_slot(engine: Engine, retrieved: RetrievedSlot, chat_pid: ChatPidSlot) -> Self {
+        let mut s = Session::new(engine);
+        s.retrieved = retrieved;
+        s.chat_pid = chat_pid;
+        s
+    }
+
+    /// A handle on the slot the retrieved passages are put in.
+    pub fn retrieved_slot(&self) -> RetrievedSlot {
+        self.retrieved.clone()
     }
 
     pub fn cancel_flag(&self) -> Arc<AtomicBool> {
@@ -120,7 +173,11 @@ impl Session {
                 role: "answering".to_string(),
                 model: file_name(&want),
             });
-            self.chat = Some(Sidecar::start(&self.chat_options())?);
+            let s = Sidecar::start(&self.chat_options())?;
+            if let Ok(mut slot) = self.chat_pid.lock() {
+                *slot = s.pid();
+            }
+            self.chat = Some(s);
             self.loaded_chat_model = Some(want);
         }
         Ok(())
@@ -145,6 +202,26 @@ impl Session {
     /// restarted rather than left to make the next question queue behind an
     /// answer nobody is waiting for.
     fn settle_after_cancel(&mut self) -> Result<bool, String> {
+        // If the process is already gone, there is nothing to wait for.
+        let dead = self
+            .chat
+            .as_ref()
+            .and_then(|c| c.pid())
+            .map(|p| !crate::sidecar::process_alive(p))
+            .unwrap_or(false);
+        if dead {
+            // Put it down and hand control back now. The next question calls
+            // ensure_loaded and pays the four seconds then; a reader who
+            // pressed Stop should not wait for a model they may not want.
+            if let Some(c) = self.chat.take() {
+                c.stop();
+            }
+            self.loaded_chat_model = None;
+            if let Ok(mut slot) = self.chat_pid.lock() {
+                *slot = None;
+            }
+            return Ok(true);
+        }
         let deadline = Instant::now() + Duration::from_secs(2);
         while Instant::now() < deadline {
             if self.chat.as_ref().map(|c| c.is_idle()).unwrap_or(true) {
@@ -156,6 +233,9 @@ impl Session {
             c.stop();
         }
         self.loaded_chat_model = None;
+        if let Ok(mut slot) = self.chat_pid.lock() {
+            *slot = None;
+        }
         let mut ignored = |_: Stage| {};
         self.ensure_loaded(&mut ignored)?;
         Ok(true)
@@ -164,6 +244,9 @@ impl Session {
     /// One question, end to end, reporting each stage as it starts.
     pub fn ask(&mut self, question: &str, on: &mut impl FnMut(Stage)) -> Result<Answer, String> {
         self.cancel.store(false, Ordering::SeqCst);
+        if let Ok(mut slot) = self.retrieved.lock() {
+            *slot = None;
+        }
         let t_start = Instant::now();
         let mut timings =
             Timings { index_load_seconds: self.engine.index_load_seconds, ..Default::default() };
@@ -201,6 +284,9 @@ impl Session {
         let ranges = self.engine.retriever.as_ranges(&full);
         let cut = self.engine.retriever.top_cut(&ranges, canon, TOP_N, DEUTERO_SLICE);
         timings.retrieve_seconds = t.elapsed().as_secs_f64();
+        if let Ok(mut slot) = self.retrieved.lock() {
+            *slot = Some(self.engine.passages_for_display(&ranges, &cut, &topics));
+        }
         on(Stage::Retrieved { passages: ranges.len(), sent: cut.len() });
 
         if self.is_cancelled() {
@@ -290,7 +376,10 @@ impl Session {
         };
         match out {
             Ok(c) => Ok(c),
-            Err(e) if e == CANCELLED => {
+            Err(e) if e == CANCELLED || self.is_cancelled() => {
+                // Either the flag was seen between chunks, or the server was
+                // stopped under the reader to make Stop mean Stop. Both are a
+                // cancellation, and both leave a server to bring back.
                 let restarted = self.settle_after_cancel()?;
                 let _ = restarted;
                 on(Stage::Cancelled);

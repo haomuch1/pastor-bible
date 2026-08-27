@@ -46,7 +46,14 @@ pub struct AppState {
     /// Set while a question is running, so a second Ask is refused rather than
     /// queued behind the first.
     busy: Arc<AtomicBool>,
+    /// True between Stop being pressed and the two-second deadline passing.
+    cancelling: Arc<AtomicBool>,
     download_cancel: Arc<AtomicBool>,
+    /// Written by the session as soon as retrieval is done, read by the window
+    /// while the answer is still being written.
+    retrieved: pastor_bible_core::session::RetrievedSlot,
+    /// The answering model's process id, so Stop can stop it.
+    chat_pid: pastor_bible_core::session::ChatPidSlot,
 }
 
 fn resolve_paths(app: &tauri::AppHandle) -> Result<AppPaths, String> {
@@ -354,12 +361,14 @@ async fn ask(
         read_settings(&d)
     };
     let engine_settings = engine_settings(&paths, &settings)?;
+    let slot = state.retrieved.clone();
+    let pid_slot = state.chat_pid.clone();
 
     let out = tauri::async_runtime::spawn_blocking(move || {
         let result = (|| -> Result<Answer, String> {
             let mut guard = session.lock().map_err(|_| "the session is unavailable".to_string())?;
             if guard.is_none() {
-                *guard = Some(Session::new(Engine::open(engine_settings)?));
+                *guard = Some(Session::with_slot(Engine::open(engine_settings)?, slot, pid_slot));
             }
             let s = guard.as_mut().unwrap();
             let app2 = app.clone();
@@ -379,12 +388,64 @@ async fn ask(
     out
 }
 
+/// The passages for the question being answered, as soon as they exist.
+///
+/// The window calls this the moment it hears that retrieval is done, which is
+/// about forty milliseconds in, and puts them on screen while the answer is
+/// still being written. Two and a half minutes of waiting becomes two and a
+/// half minutes of reading.
+#[derive(Clone, Debug, Serialize)]
+pub struct Retrieved {
+    pub passages: Vec<pastor_bible_core::api::PassageOut>,
+    pub topic_groups: Vec<pastor_bible_core::api::TopicGroup>,
+}
+
+#[tauri::command]
+fn retrieved_passages(state: State<'_, AppState>) -> Result<Option<Retrieved>, String> {
+    // Deliberately does not touch state.session: `ask` holds that for the whole
+    // of a generation, and this has to answer during one.
+    let mut slot = state.retrieved.lock().map_err(lock)?;
+    Ok(slot.take().map(|(passages, topic_groups)| Retrieved { passages, topic_groups }))
+}
+
+/// Stop the answer that is being written.
+///
+/// Asking politely is the first move: the flag is set, and the thread reading
+/// the answer sees it between chunks and closes the connection, which is what
+/// makes llama-server abandon the slot. During prompt processing, though, no
+/// chunk arrives for tens of seconds and the reader is blocked inside a read
+/// that will not look at the flag. Measured on 2026-08-26, that was 16.3
+/// seconds from Stop to the call returning, which is not what Stop means to
+/// the person who pressed it. So two seconds later, if the answer is still
+/// running, the answering model is stopped outright and the session starts it
+/// again. The cost is one model load, about four seconds, on a path the reader
+/// chose to abandon anyway.
 #[tauri::command]
 fn cancel_ask(state: State<'_, AppState>) -> Result<(), String> {
-    let guard = state.session.lock().map_err(lock)?;
-    if let Some(s) = guard.as_ref() {
-        s.request_cancel();
+    {
+        // Not the session lock: `ask` holds that for the whole generation.
+        // Setting the flag needs nothing but the flag.
+        let guard = state.session.try_lock();
+        if let Ok(g) = guard {
+            if let Some(s) = g.as_ref() {
+                s.request_cancel();
+            }
+        }
     }
+    state.cancelling.store(true, Ordering::SeqCst);
+    let busy = state.busy.clone();
+    let cancelling = state.cancelling.clone();
+    let pid_slot = state.chat_pid.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        if busy.load(Ordering::SeqCst) {
+            let pid = pid_slot.lock().ok().and_then(|p| *p);
+            if let Some(pid) = pid {
+                pastor_bible_core::sidecar::terminate(pid);
+            }
+        }
+        cancelling.store(false, Ordering::SeqCst);
+    });
     Ok(())
 }
 
@@ -402,10 +463,12 @@ async fn run_self_test(
         read_settings(&d)
     };
     let es = engine_settings(&paths, &settings)?;
+    let slot = state.retrieved.clone();
+    let pid_slot = state.chat_pid.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let mut guard = session.lock().map_err(|_| "the session is unavailable".to_string())?;
         if guard.is_none() {
-            *guard = Some(Session::new(Engine::open(es)?));
+            *guard = Some(Session::with_slot(Engine::open(es)?, slot, pid_slot));
         }
         let s = guard.as_mut().unwrap();
         let app2 = app.clone();
@@ -545,7 +608,10 @@ pub fn run() {
                 session: Arc::new(Mutex::new(None)),
                 db: Arc::new(Mutex::new(db)),
                 busy: Arc::new(AtomicBool::new(false)),
+                cancelling: Arc::new(AtomicBool::new(false)),
                 download_cancel: Arc::new(AtomicBool::new(false)),
+                retrieved: Arc::new(Mutex::new(None)),
+                chat_pid: Arc::new(Mutex::new(None)),
             });
             Ok(())
         })
@@ -577,6 +643,7 @@ pub fn run() {
             download_model,
             cancel_download,
             ask,
+            retrieved_passages,
             cancel_ask,
             run_self_test,
             finish_first_run,

@@ -239,14 +239,23 @@ fn cmd_session(args: &[String]) -> Result<(), String> {
         let t0 = std::time::Instant::now();
         let mut last = String::new();
         let flag_cancel = session.cancel_flag();
+        let pid_slot = session.chat_pid_slot();
         let deadline = cancel_after;
         // A cancel is asked for from another thread, exactly as the window does
-        // it: the Stop button calls a command while `ask` is still running.
+        // it: Stop sets the flag, and two seconds later, if the answer is still
+        // running, the answering model is stopped outright. Without that second
+        // step a cancellation during prompt processing waits for the first
+        // token, which was measured at 16.3 seconds.
         let watcher = deadline.map(|secs| {
             std::thread::spawn(move || {
                 std::thread::sleep(std::time::Duration::from_secs_f64(secs));
                 flag_cancel.store(true, std::sync::atomic::Ordering::SeqCst);
-                std::time::Instant::now()
+                let pressed = std::time::Instant::now();
+                std::thread::sleep(std::time::Duration::from_secs(2));
+                if let Some(pid) = pid_slot.lock().ok().and_then(|p| *p) {
+                    pastor_bible_core::sidecar::terminate(pid);
+                }
+                pressed
             })
         });
 
@@ -254,7 +263,7 @@ fn cmd_session(args: &[String]) -> Result<(), String> {
             let text = match &s {
                 Stage::LoadingModel { role, .. } => format!("loading the {} model", role),
                 Stage::Retrieving => "searching".to_string(),
-                Stage::Retrieved { passages, sent } => {
+                Stage::Retrieved { passages, sent, .. } => {
                     format!("found {} passages, sending {}", passages, sent)
                 }
                 Stage::Generating { tokens, attempt } => {
@@ -294,9 +303,17 @@ fn cmd_session(args: &[String]) -> Result<(), String> {
             Err(e) if e == pastor_bible_core::sidecar::CANCELLED => {
                 let asked = asked_for_cancel_at.flatten();
                 let stop_to_return = asked.map(|t| t.elapsed().as_secs_f64()).unwrap_or(0.0);
+                // Was the sidecar restarted, or did closing the connection
+                // stop it? A second cancel on an idle server answers that.
+                let t = std::time::Instant::now();
+                let restarted = session.cancel_and_settle().unwrap_or(true);
                 println!(
-                    "   cancelled after {:.1}s; the call returned {:.2}s after Stop was pressed",
-                    seconds, stop_to_return
+                    "   cancelled after {:.1}s; the call returned {:.2}s after Stop was pressed; \
+                     the server was {} ({:.2}s to settle)",
+                    seconds,
+                    stop_to_return,
+                    if restarted { "RESTARTED" } else { "still usable" },
+                    t.elapsed().as_secs_f64()
                 );
                 rows.push((id.clone(), format!("cancelled/{:.2}", stop_to_return), seconds, embed_peak, chat_peak));
             }

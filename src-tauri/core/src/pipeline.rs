@@ -314,6 +314,61 @@ impl Engine {
         opts
     }
 
+    /// The passages as the panel shows them, before any answer exists.
+    ///
+    /// Nothing is cited yet, so `cited` is false everywhere and the tokens are
+    /// the ones the passages were sent under. The verse text is read from
+    /// index.db here exactly as it is in `assemble`.
+    pub fn passages_for_display(
+        &self,
+        ranges: &[Passage],
+        cut: &[Passage],
+        topics: &[crate::retrieve::MatchedTopic],
+    ) -> (Vec<PassageOut>, Vec<TopicGroup>) {
+        let token_of: std::collections::HashMap<&str, String> = cut
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (p.reference.as_str(), format!("[P{}]", i + 1)))
+            .collect();
+        let list = ranges
+            .iter()
+            .map(|p| {
+                let token = token_of.get(p.reference.as_str()).cloned();
+                PassageOut {
+                    cited: false,
+                    sent: token.is_some(),
+                    token,
+                    reference: p.reference.clone(),
+                    verse_ids: p.verse_ids.clone(),
+                    verses: self.verses_of(&p.verse_ids),
+                    score: p.score,
+                    origins: p.origins.clone(),
+                    canon: p.canon.clone(),
+                }
+            })
+            .collect();
+        let (_, groups) = self.group_by_topic(ranges, topics);
+        (list, groups)
+    }
+
+    fn verses_of(&self, ids: &[i64]) -> Vec<VerseOut> {
+        self.retriever
+            .index
+            .text_of(ids)
+            .into_iter()
+            .map(|(vid, text)| VerseOut {
+                verse_id: vid,
+                reference: format!(
+                    "{} {}:{}",
+                    self.retriever.index.abbrev(verse_book(vid)),
+                    crate::index::verse_chapter(vid),
+                    crate::index::verse_num(vid)
+                ),
+                text,
+            })
+            .collect()
+    }
+
     /// Build the answer the frontend receives. Public because `Session` does
     /// the same assembly after its own staged run.
     #[allow(clippy::too_many_arguments)]
@@ -441,6 +496,38 @@ impl Engine {
         }
     }
 
+    /// The root of a Nave's topic, and the path down to the matched subtopic.
+    ///
+    /// Nave's is a tree, and what retrieval matches is usually a leaf: not
+    /// "PRIDE" but "INSTANCES OF Ahithophel Naaman, refusing to wash in the
+    /// Jordan River...". A leaf like that is unreadable as a group label and a
+    /// root like "PRIDE" is exactly what a reader recognises, so the group is
+    /// the root and the leaf becomes a second line beneath it.
+    fn topic_root(&self, topic_id: i64) -> (i64, String) {
+        let mut id = topic_id;
+        let mut heading = String::new();
+        // Nave's is shallow, but a cycle in the data would hang the window, so
+        // the walk is bounded rather than trusting the shape of the table.
+        for _ in 0..16 {
+            let row: rusqlite::Result<(String, Option<i64>)> = self.retriever.index.con.query_row(
+                "SELECT heading, parent_topic_id FROM nave_topics WHERE topic_id = ?",
+                [id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            );
+            match row {
+                Ok((h, parent)) => {
+                    heading = h;
+                    match parent {
+                        Some(p) if p != id => id = p,
+                        _ => break,
+                    }
+                }
+                Err(_) => break,
+            }
+        }
+        (id, heading)
+    }
+
     /// PLAN 5.6 as amended: the retrieved set under the matched topic headings.
     ///
     /// A passage may belong to more than one topic; it is listed under the
@@ -471,6 +558,7 @@ impl Engine {
                 ranges.iter().filter(|p| p.verse_ids.iter().any(|v| verses.contains(v))).collect();
             all_refs.sort_by_key(|p| p.verse_ids.first().copied().unwrap_or(0));
 
+            let (root_id, root_heading) = self.topic_root(t.topic_id);
             topics_out.push(TopicOut {
                 topic_id: t.topic_id,
                 heading_display: short_heading(&t.heading),
@@ -486,14 +574,41 @@ impl Engine {
                 .map(|p| p.reference.clone())
                 .collect();
             if !mine.is_empty() {
+                // The group is named for the root; the matched subtopic goes
+                // underneath, trimmed, so the reader can see why these
+                // passages are together without reading a paragraph.
+                let sub = if root_id == t.topic_id { String::new() } else { short_heading(&t.heading) };
                 groups.push(TopicGroup {
-                    heading_display: short_heading(&t.heading),
-                    heading: t.heading.clone(),
-                    topic_id: Some(t.topic_id),
+                    heading_display: if root_heading.is_empty() {
+                        short_heading(&t.heading)
+                    } else {
+                        root_heading.clone()
+                    },
+                    heading: sub,
+                    topic_id: Some(root_id),
                     passage_refs: mine,
                 });
             }
         }
+
+        // Two matched subtopics under one root become one group.
+        let mut merged: Vec<TopicGroup> = Vec::new();
+        for g in groups.into_iter() {
+            match merged.iter_mut().find(|m| m.topic_id == g.topic_id) {
+                Some(m) => {
+                    if !g.heading.is_empty() && !m.heading.contains(&g.heading) {
+                        if m.heading.is_empty() {
+                            m.heading = g.heading.clone();
+                        } else {
+                            m.heading = format!("{}; {}", m.heading, g.heading);
+                        }
+                    }
+                    m.passage_refs.extend(g.passage_refs);
+                }
+                None => merged.push(g),
+            }
+        }
+        let mut groups = merged;
 
         let mut rest: Vec<&Passage> =
             ranges.iter().filter(|p| !claimed.contains(p.reference.as_str())).collect();
@@ -513,6 +628,11 @@ impl Engine {
 /// A Nave's heading trimmed to a label: up to the first sentence break, then
 /// hard-capped, on a word boundary where there is one.
 pub fn short_heading(heading: &str) -> String {
+    short_heading_to(heading, 60)
+}
+
+/// A Nave's heading trimmed to a label of at most `max` characters.
+pub fn short_heading_to(heading: &str, max: usize) -> String {
     let mut text = heading.trim();
     for stop in ['.', ';', ','] {
         if let Some(i) = text.find(stop) {
@@ -523,10 +643,10 @@ pub fn short_heading(heading: &str) -> String {
         }
     }
     let text = text.trim();
-    if text.chars().count() <= 60 {
+    if text.chars().count() <= max {
         return text.to_string();
     }
-    let cut: String = text.chars().take(60).collect();
+    let cut: String = text.chars().take(max).collect();
     let cut = match cut.rfind(' ') {
         Some(i) if i >= 30 => cut[..i].to_string(),
         _ => cut,

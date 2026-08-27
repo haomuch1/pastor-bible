@@ -141,6 +141,33 @@ pub fn free_ram_gb() -> f64 {
     }
 }
 
+/// Stop a process by id.
+///
+/// Used only to make Stop mean Stop: a llama-server that is deep in prompt
+/// processing sends nothing for tens of seconds, and the thread reading its
+/// answer cannot notice a cancellation until it does. Killing it unblocks that
+/// read at once, and the session starts a new one.
+pub fn terminate(pid: u32) {
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::Foundation::CloseHandle;
+        use windows_sys::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
+        unsafe {
+            let h = OpenProcess(PROCESS_TERMINATE, 0, pid);
+            if !h.is_null() {
+                TerminateProcess(h, 1);
+                CloseHandle(h);
+            }
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        unsafe {
+            libc::kill(pid as i32, libc::SIGKILL);
+        }
+    }
+}
+
 /// Is a process with this id still running?
 ///
 /// Used by the orphan test to prove the child died with its parent. Process ids

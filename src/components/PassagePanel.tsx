@@ -61,10 +61,8 @@ export function PassagePanel({ passages, groups, groupBy, onGroupByChange, highl
     return groups.map((g) => ({
       key: `topic:${g.topic_id ?? "other"}`,
       heading: g.heading_display || "Other passages",
-      sub:
-        g.heading && g.heading !== g.heading_display && g.topic_id !== null
-          ? g.heading
-          : null,
+      // Nave's topic that matched, beneath the root the group is named for.
+      sub: g.heading ? `matched under ${g.heading}` : null,
       items: g.passage_refs.map((r) => byRef.get(r)).filter(Boolean) as PassageOut[],
     }));
   }, [groupBy, groups, passages, byRef]);

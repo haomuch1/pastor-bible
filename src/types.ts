@@ -227,6 +227,11 @@ export interface HistoryRow {
   cited_count: number;
 }
 
+export interface Retrieved {
+  passages: PassageOut[];
+  topic_groups: TopicGroup[];
+}
+
 export interface HistoryDetail {
   row: HistoryRow;
   answer_md: string;

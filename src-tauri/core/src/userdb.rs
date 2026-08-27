@@ -33,7 +33,9 @@ CREATE TABLE IF NOT EXISTS history (
     question      TEXT    NOT NULL,
     canon_mode    TEXT    NOT NULL,
     answer_md     TEXT    NOT NULL,   -- the verified synopsis, or the fallback
-    passage_ids   TEXT    NOT NULL,   -- JSON: the verse ids that were sent
+    passage_ids   TEXT    NOT NULL,   -- JSON: one array of verse ids per sent
+                                     -- passage, in the order they were sent,
+                                     -- so [P1]..[Pn] can be rebuilt exactly
     cited_ids     TEXT    NOT NULL,   -- JSON: the verse ids the answer cited
     model_id      TEXT    NOT NULL,
     index_version TEXT    NOT NULL,
@@ -215,8 +217,11 @@ impl UserDb {
     // ---- history ---------------------------------------------------------
 
     pub fn save_answer(&self, a: &Answer) -> Result<i64, String> {
-        let sent_ids: Vec<i64> =
-            a.passages.iter().filter(|p| p.sent).flat_map(|p| p.verse_ids.clone()).collect();
+        // One entry per sent passage, in token order. A flat list of verse ids
+        // would lose which verses were [P1] and which were [P2], and a reopened
+        // answer would show the reader a bare "[P19]" it could not resolve.
+        let sent: Vec<Vec<i64>> =
+            a.passages.iter().filter(|p| p.sent).map(|p| p.verse_ids.clone()).collect();
         let answer_md = a
             .synopsis_markdown
             .clone()
@@ -232,7 +237,7 @@ impl UserDb {
                     a.question,
                     a.canon_mode,
                     answer_md,
-                    serde_json::to_string(&sent_ids).unwrap_or_else(|_| "[]".into()),
+                    serde_json::to_string(&sent).unwrap_or_else(|_| "[]".into()),
                     serde_json::to_string(&a.cited_passage_ids).unwrap_or_else(|_| "[]".into()),
                     a.model_id,
                     a.index_version,
@@ -323,7 +328,7 @@ impl UserDb {
             return Ok(None);
         };
 
-        let sent: Vec<i64> = serde_json::from_str(&sent_json).unwrap_or_default();
+        let sent: Vec<Vec<i64>> = parse_sent(&sent_json);
         let cited: std::collections::HashSet<i64> =
             serde_json::from_str::<Vec<i64>>(&cited_json).unwrap_or_default().into_iter().collect();
 
@@ -389,7 +394,6 @@ impl UserDb {
         for row in rows {
             let (row, answer_md, sent_json) = row.map_err(|e| e.to_string())?;
             n += 1;
-            let sent: Vec<i64> = serde_json::from_str(&sent_json).unwrap_or_default();
             out.push_str("\n");
             out.push_str(&"-".repeat(72));
             out.push_str(&format!("\n{}  ({})\n\n", row.asked_at, row.canon_mode_label()));
@@ -407,7 +411,7 @@ impl UserDb {
                 "\n  model {}, Bible index {}, {} passages found\n",
                 row.model_id,
                 row.index_version,
-                sent.len()
+                parse_sent(&sent_json).len()
             ));
         }
         if n == 0 {
@@ -445,17 +449,18 @@ fn preview_of(answer: &str) -> String {
     s
 }
 
-/// Group a flat verse-id list back into the ranges it came from and read the
-/// text for each, from the index installed now.
-fn render_passages(
-    index: &Index,
-    sent: &[i64],
-    cited: &std::collections::HashSet<i64>,
-) -> Vec<PassageOut> {
-    let mut ids: Vec<i64> = sent.to_vec();
+/// The sent passages, however they were stored.
+///
+/// The current form is one array of verse ids per passage. Entries written by
+/// the very first build of this file hold a flat list; those are regrouped by
+/// adjacency, which recovers the passages but not their original numbering.
+fn parse_sent(json: &str) -> Vec<Vec<i64>> {
+    if let Ok(v) = serde_json::from_str::<Vec<Vec<i64>>>(json) {
+        return v;
+    }
+    let mut ids: Vec<i64> = serde_json::from_str::<Vec<i64>>(json).unwrap_or_default();
     ids.sort();
     ids.dedup();
-
     let mut groups: Vec<Vec<i64>> = Vec::new();
     for id in ids {
         let extend = groups.last().map(|g: &Vec<i64>| {
@@ -469,10 +474,21 @@ fn render_passages(
             _ => groups.push(vec![id]),
         }
     }
-
     groups
-        .into_iter()
-        .map(|g| {
+}
+
+/// The sent passages, with their text read from the index installed now and
+/// their [P#] tokens rebuilt so that a reopened answer reads like a new one.
+fn render_passages(
+    index: &Index,
+    sent: &[Vec<i64>],
+    cited: &std::collections::HashSet<i64>,
+) -> Vec<PassageOut> {
+    sent.iter()
+        .enumerate()
+        .filter(|(_, g)| !g.is_empty())
+        .map(|(i, g)| {
+            let g = g.clone();
             let (b, c) = (verse_book(g[0]), verse_chapter(g[0]));
             let (first, last) = (verse_num(g[0]), verse_num(*g.last().unwrap()));
             let reference = if first == last {
@@ -497,7 +513,7 @@ fn render_passages(
             PassageOut {
                 cited: g.iter().any(|v| cited.contains(v)),
                 sent: true,
-                token: None,
+                token: Some(format!("[P{}]", i + 1)),
                 reference,
                 canon: index.canon_of_verse(g[0]).to_string(),
                 verse_ids: g,

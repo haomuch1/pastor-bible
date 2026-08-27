@@ -106,6 +106,58 @@ this and decided not to re-derive them. `heading` is the source text;
 `heading_display` is a label that fits above a list. P5 should use the second
 and can offer the first.
 
+## The commands the window may call
+
+Every one is a Tauri command; the frontend has no other way to reach anything,
+and it keeps nothing of its own. There is no browser storage in this app: every
+setting and every answer is in user.db.
+
+    app_info()                     version, index version, the disclaimer and
+                                   crisis note read from their source files,
+                                   credits, licences, paths
+    hardware_check()               this machine beside the reference machine
+    startup_state()                first run or not, model files present,
+                                   settings, the last self-test, history count
+    get_settings() / set_setting(key, value)
+    download_model(id)             emits "download-progress"
+    cancel_download()
+    ask(question)                  emits "ask-stage"; returns the Answer above
+                                   and saves it to history
+    retrieved_passages()           the passages for the question being
+                                   answered, collected once, as soon as the
+                                   "retrieved" stage arrives
+    cancel_ask()
+    run_self_test()                three canned questions end to end
+    finish_first_run()
+    history_list / history_search / history_get / history_delete /
+    history_clear / history_export(path)
+    crisis_note()
+    shutdown_models()
+
+### Two events
+
+`ask-stage` carries what the reader is waiting for: `loading_model`,
+`retrieving`, `retrieved`, `generating` with a running token count,
+`checking_references`, `retrying`, `done`, `cancelled`, `failed`. It never
+carries the text being generated. PLAN 5.6 forbids showing an unverified
+reference, and a token stream is exactly that.
+
+`download-progress` carries `checking`, `downloading` with bytes, rate and an
+estimate, `verifying`, `done`, `failed`.
+
+### Why the passages are fetched and not pushed
+
+The `retrieved` stage says only how many passages there are. The passages
+themselves are about a quarter of a megabyte and are collected with
+`retrieved_passages()`. A payload that size does not survive the event channel:
+measured on 2026-08-26, the counts arrived and the list did not, silently, while
+the same data returns without trouble from a command. So the event is the
+signal and the command is the delivery.
+
+`retrieved_passages()` deliberately does not touch the session lock, because
+`ask` holds that for the whole two and a half minutes of an answer and this has
+to be answered during one.
+
 ## Stability
 
 This is not a public API. It changes when the product changes, and P5 is free
