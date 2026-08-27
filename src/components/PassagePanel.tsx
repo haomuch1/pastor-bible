@@ -10,21 +10,25 @@
 // a cited passage is marked where it falls rather than lifted to the top: the
 // point of Bible order is that it is Bible order.
 //
-// The topic view is still here on the switch. It groups by the root Nave's
-// topic, because P4 flagged that Nave's subtopic headings are unusable as
-// labels, some being whole paragraphs. It is secondary because the roots turn
-// out not to be a category system either: an answer about giving to the poor
-// grouped passages under "HAMATH". Jared chose by book on 2026-08-27.
+// There is no other grouping. P4 found Nave's subtopics unusable as labels,
+// some being whole paragraphs; P5 grouped by the root topic instead, which was
+// a real improvement; P5.2 made book the default because the roots are not a
+// category system either — an answer about giving to the poor was grouped under
+// "HAMATH" and "TOB-ADONIJAH", roots that merely happen to contain a matching
+// verse. P6 removes the switch: a heading that is not about what the passages
+// have in common is worse than no heading, and keeping it as a second-best
+// option only asks every reader to discover that for themselves.
+//
+// The matched topics are still in the answer (`Answer.topics` and
+// `Answer.topic_groups`) and are still tested. Nothing about the data changed;
+// this screen stopped offering it.
 
 import { useMemo, useState } from "react";
 
-import type { PassageOut, TopicGroup } from "../types";
+import type { PassageOut } from "../types";
 
 interface Props {
   passages: PassageOut[];
-  groups: TopicGroup[];
-  groupBy: "topic" | "book";
-  onGroupByChange: (v: "topic" | "book") => void;
   highlight?: string | null;
   /// Open this passage's chapter in the reading view. A passage is a run of
   /// verses and a run of verses is not always enough to judge what it says.
@@ -33,55 +37,30 @@ interface Props {
 
 const BOOK_OF = (p: PassageOut) => p.reference.replace(/\s+\d+:.*$/, "");
 
-export function PassagePanel({
-  passages,
-  groups,
-  groupBy,
-  onGroupByChange,
-  highlight,
-  onRead,
-}: Props) {
+export function PassagePanel({ passages, highlight, onRead }: Props) {
   const [openAll, setOpenAll] = useState(false);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
-  const byRef = useMemo(() => {
-    const m = new Map<string, PassageOut>();
-    for (const p of passages) m.set(p.reference, p);
-    return m;
-  }, [passages]);
+  const [toggled, setToggled] = useState<Record<string, boolean>>({});
 
   const shown = useMemo(() => {
-    if (groupBy === "book") {
-      const order: string[] = [];
-      const map = new Map<string, PassageOut[]>();
-      // Canonical order, which is the order the answer already carries: verse
-      // ids ascend with the canon.
-      const sorted = [...passages].sort(
-        (a, b) => (a.verse_ids[0] ?? 0) - (b.verse_ids[0] ?? 0),
-      );
-      for (const p of sorted) {
-        const book = BOOK_OF(p);
-        if (!map.has(book)) {
-          map.set(book, []);
-          order.push(book);
-        }
-        map.get(book)!.push(p);
+    const order: string[] = [];
+    const map = new Map<string, PassageOut[]>();
+    // Canonical order, which is the order the answer already carries: verse
+    // ids ascend with the canon.
+    const sorted = [...passages].sort((a, b) => (a.verse_ids[0] ?? 0) - (b.verse_ids[0] ?? 0));
+    for (const p of sorted) {
+      const book = BOOK_OF(p);
+      if (!map.has(book)) {
+        map.set(book, []);
+        order.push(book);
       }
-      return order.map((book) => ({
-        key: `book:${book}`,
-        heading: book,
-        sub: null as string | null,
-        items: map.get(book)!,
-      }));
+      map.get(book)!.push(p);
     }
-    return groups.map((g) => ({
-      key: `topic:${g.topic_id ?? "other"}`,
-      heading: g.heading_display || "Other passages",
-      // Nave's topic that matched, beneath the root the group is named for.
-      sub: g.heading ? `matched under ${g.heading}` : null,
-      items: g.passage_refs.map((r) => byRef.get(r)).filter(Boolean) as PassageOut[],
+    return order.map((book) => ({
+      key: `book:${book}`,
+      heading: book,
+      items: map.get(book)!,
     }));
-  }, [groupBy, groups, passages, byRef]);
+  }, [passages]);
 
   const citedCount = passages.filter((p) => p.cited).length;
 
@@ -95,38 +74,27 @@ export function PassagePanel({
           </span>
         </h2>
         <div className="row">
-          <button
-            className={groupBy === "book" ? "choice on" : "choice"}
-            onClick={() => onGroupByChange("book")}
-          >
-            Group by book
-          </button>
-          <button
-            className={groupBy === "topic" ? "choice on" : "choice"}
-            onClick={() => onGroupByChange("topic")}
-          >
-            Group by topic
-          </button>
-          <button className="quiet" onClick={() => { setOpenAll(!openAll); setExpanded({}); }}>
+          <button className="quiet" onClick={() => { setOpenAll(!openAll); setToggled({}); }}>
             {openAll ? "Collapse all" : "Expand all"}
           </button>
         </div>
       </div>
 
       {shown.map((g) => {
-        const isOpen = openAll || expanded[g.key];
         const citedHere = g.items.filter((p) => p.cited);
         const hidden = g.items.length - citedHere.length;
 
-        // Expanded, a book is shown in Bible order from end to end, with the
-        // cited passages marked where they fall rather than lifted to the top:
-        // the whole point of canonical order is that it is canonical order. A
-        // topic has no such order to keep, so it stays cited-first.
-        const shownItems = isOpen
-          ? groupBy === "book"
-            ? g.items
-            : [...citedHere, ...g.items.filter((p) => !p.cited)]
-          : citedHere;
+        // A book the answer drew on opens; a book it did not stays shut. The
+        // reader came for the passages behind the answer, and those are worth
+        // scrolling past nothing to reach; the rest of the retrieved set is
+        // there to be opened, not to be waded through.
+        const openByDefault = citedHere.length > 0;
+        const isOpen = openAll || (toggled[g.key] ?? openByDefault);
+
+        // In Bible order from end to end, with the cited passages marked where
+        // they fall rather than lifted to the top: the whole point of canonical
+        // order is that it is canonical order.
+        const shownItems = isOpen ? g.items : citedHere;
 
         return (
           <div className="group" key={g.key}>
@@ -136,7 +104,6 @@ export function PassagePanel({
                 {g.items.length}
               </span>
             </h3>
-            {g.sub && <div className="sub">{g.sub}</div>}
             {shownItems.map((p) => (
               <Passage
                 key={p.reference}
@@ -146,10 +113,7 @@ export function PassagePanel({
               />
             ))}
             {hidden > 0 && !isOpen && (
-              <button
-                className="quiet"
-                onClick={() => setExpanded({ ...expanded, [g.key]: true })}
-              >
+              <button className="quiet" onClick={() => setToggled({ ...toggled, [g.key]: true })}>
                 Show {hidden} more passage{hidden === 1 ? "" : "s"}
               </button>
             )}

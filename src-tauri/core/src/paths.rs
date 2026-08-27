@@ -51,6 +51,14 @@ pub fn embed_model() -> String {
 
 pub fn llama_server() -> String {
     let name = if cfg!(windows) { "llama-server.exe" } else { "llama-server" };
+    // The assembled bundle first: it is what the installer ships and the only
+    // copy with the Vulkan backend beside it. tools/llama is what
+    // fetch_llama.py unpacks and is the fallback for a checkout that has not
+    // run `--bundle` yet.
+    let bundled = repo_root().join("src-tauri").join("resources").join("llama").join(name);
+    if std::env::var("TPB_LLAMA_SERVER").is_err() && bundled.exists() {
+        return bundled.to_string_lossy().into_owned();
+    }
     from_env_or("TPB_LLAMA_SERVER", repo_root().join("tools").join("llama").join(name))
 }
 

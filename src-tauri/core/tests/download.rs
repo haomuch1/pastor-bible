@@ -129,6 +129,7 @@ fn spec_for(url: &'static str, sha: &'static str, bytes: u64) -> ModelSpec {
         label: "Test model",
         note: "",
         bundled: false,
+        vram_mib: 0,
     }
 }
 

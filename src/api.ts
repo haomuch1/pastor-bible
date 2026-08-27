@@ -14,6 +14,7 @@ import type {
   AppInfo,
   AppSettings,
   ChapterOut,
+  ComputeChoice,
   DownloadProgress,
   Hardware,
   HistoryDetail,
@@ -29,6 +30,9 @@ export const hardwareCheck = () => invoke<Hardware>("hardware_check");
 export const startupState = () => invoke<StartupState>("startup_state");
 
 export const getSettings = () => invoke<AppSettings>("get_settings");
+
+/// Which processor will answer, decided by probing the graphics card once.
+export const computeStatus = () => invoke<ComputeChoice>("compute_status");
 export const setSetting = (key: string, value: string) =>
   invoke<AppSettings>("set_setting", { key, value });
 

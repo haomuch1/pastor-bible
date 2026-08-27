@@ -25,7 +25,9 @@
     "active": true,
     "targets": "all",
     "resources": [
-      "resources/nomic-embed-text-v1.5-f16.gguf"
+      "resources/index.db",
+      "resources/nomic-embed-text-v1.5-f16.gguf",
+      "resources/llama/*"
     ],
     "icon": [
       "icons/32x32.png",
@@ -36,8 +38,26 @@
     ],
     "windows": {
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "displayLanguageSelector": false
+      },
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
       }
-    }
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libgtk-3-0"
+        ]
+      }
+    },
+    "category": "Education",
+    "shortDescription": "Search the Bible and read what it says, with citations.",
+    "longDescription": "The Pastor Bible searches the whole text of the World English Bible, shows every passage it found, and writes a short synopsis of what those passages say. It cites only passages that were actually retrieved. Everything runs on your own computer.",
+    "licenseFile": "../LICENSE",
+    "publisher": "Jared"
   }
 }

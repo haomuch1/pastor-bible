@@ -9,7 +9,13 @@ import { save } from "@tauri-apps/plugin-dialog";
 
 import * as api from "../api";
 import { Progress } from "./FirstRun";
-import type { AppInfo, AppSettings, DownloadProgress, ModelStatus } from "../types";
+import type {
+  AppInfo,
+  AppSettings,
+  ComputeChoice,
+  DownloadProgress,
+  ModelStatus,
+} from "../types";
 
 interface Props {
   info: AppInfo;
@@ -36,6 +42,15 @@ export function SettingsScreen({
   const [confirmClear, setConfirmClear] = useState(false);
   // The reader has pressed Export and is choosing between the two files.
   const [choosingExport, setChoosingExport] = useState(false);
+  // Which processor the backend decided on, re-asked whenever the setting or
+  // the model changes, because either can change the answer.
+  const [compute, setCompute] = useState<ComputeChoice | null>(null);
+  useEffect(() => {
+    api
+      .computeStatus()
+      .then(setCompute)
+      .catch(() => setCompute(null));
+  }, [settings.compute, settings.model]);
   const [progress, setProgress] = useState<DownloadProgress | null>(null);
 
   useEffect(() => {
@@ -176,8 +191,9 @@ export function SettingsScreen({
         <div className="field">
           <label>Compute</label>
           <div className="faint">
-            The Pastor Bible answers on the processor today. Using the graphics card is much
-            faster and arrives in a later release.
+            A graphics card answers in well under a minute where the processor takes a few.
+            Auto uses the card when it has room for the model and the processor when it does
+            not.
           </div>
           <div className="choices">
             <button
@@ -192,10 +208,29 @@ export function SettingsScreen({
             >
               Processor
             </button>
-            <button className="choice" disabled title="available in a later release">
-              Graphics card · available in a later release
+            <button
+              className={settings.compute === "gpu" ? "choice on" : "choice"}
+              onClick={() => set("compute", "gpu")}
+            >
+              Graphics card
             </button>
           </div>
+          {/* What was actually decided, and why, in the words the backend
+              chose. The reader should never have to guess which one ran. */}
+          {compute && (
+            <div className="notice" style={{ marginTop: 10 }}>
+              <strong>
+                {compute.using === "gpu" ? "Using the graphics card" : "Using the processor"}
+              </strong>
+              <p style={{ margin: "6px 0 0" }}>{compute.reason}</p>
+              {compute.device && (
+                <p className="faint" style={{ margin: "6px 0 0" }}>
+                  {compute.device.name} · {compute.device.free_mib} MB free of{" "}
+                  {compute.device.total_mib} MB · this model needs {compute.needs_mib} MB
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="field">

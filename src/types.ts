@@ -174,7 +174,23 @@ export interface AppSettings {
   canon: string;
   model: string;
   compute: string;
-  group_by: string;
+}
+
+// Which processor will answer, and why. `mode` is what Settings asks for;
+// `using` is what will actually run.
+export interface GpuDevice {
+  id: string;
+  name: string;
+  total_mib: number;
+  free_mib: number;
+}
+
+export interface ComputeChoice {
+  mode: string;
+  using: "cpu" | "gpu";
+  device: GpuDevice | null;
+  needs_mib: number;
+  reason: string;
 }
 
 export interface SelfTestQuestion {

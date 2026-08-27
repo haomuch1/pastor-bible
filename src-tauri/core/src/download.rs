@@ -40,6 +40,16 @@ pub struct ModelSpec {
     pub file: &'static str,
     pub url: &'static str,
     pub sha256: &'static str,
+    /// Free graphics memory this model needs to run wholly on the card, in
+    /// MiB, at the app's 8192-token context.
+    ///
+    /// Measured on 2026-08-27 on an RTX 3080 as the rise in whole-GPU used
+    /// memory from just before llama-server started to its peak while it was
+    /// loaded and answering a 1,097-token prompt, plus a tenth. Per-process
+    /// graphics memory is not reportable under Windows' display driver model,
+    /// so a delta against the desktop's own usage is the honest figure. Zero
+    /// for a model that never runs on the card.
+    pub vram_mib: u64,
     pub bytes: u64,
     /// Shown to the reader when they choose between models.
     pub label: &'static str,
@@ -57,6 +67,8 @@ pub const MODELS: &[ModelSpec] = &[
         file: "Qwen3-8B-Q4_K_M.gguf",
         url: "https://huggingface.co/Qwen/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf",
         sha256: "d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785",
+        // measured 5,750 MiB
+        vram_mib: 6325,
         bytes: 5_027_783_488,
         label: "Standard model",
         note: "The model The Pastor Bible is built and tested on.",
@@ -67,6 +79,8 @@ pub const MODELS: &[ModelSpec] = &[
         file: "Qwen3-1.7B-Q8_0.gguf",
         url: "https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q8_0.gguf",
         sha256: "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+        // measured 2,722 MiB
+        vram_mib: 2994,
         bytes: 1_834_426_016,
         label: "Smaller model",
         note: "Faster, needs less memory, gives list-style answers.",
@@ -77,6 +91,10 @@ pub const MODELS: &[ModelSpec] = &[
         file: "nomic-embed-text-v1.5-f16.gguf",
         url: "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.f16.gguf",
         sha256: "f7af6f66802f4df86eda10fe9bbcfc75c39562bed48ef6ace719a251cf1c2fdb",
+        // The search model always runs on the processor: it takes about a
+        // second there, and every megabyte of the card is worth more to the
+        // model that takes minutes.
+        vram_mib: 0,
         bytes: 274_290_560,
         label: "Search model",
         note: "Bundled with the installer; never downloaded.",

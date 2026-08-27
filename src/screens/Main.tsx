@@ -22,7 +22,6 @@ import type {
   HistoryRow,
   PassageOut,
   Stage,
-  TopicGroup,
 } from "../types";
 
 interface Props {
@@ -64,6 +63,16 @@ export function Main({
   const [activeId, setActiveId] = useState<number | null>(null);
   // The entry whose delete has been pressed once. Null when none is asking.
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+
+  // Which processor will answer. Probed once by the backend and read here so
+  // the reader is told what they are waiting for before they commit to it.
+  const [compute, setCompute] = useState<string | null>(null);
+  useEffect(() => {
+    api
+      .computeStatus()
+      .then((c) => setCompute(c.using))
+      .catch(() => setCompute(null));
+  }, [settings.compute, settings.model]);
 
   // The chapter a passage came from, when the reader has asked to read one.
   // The answer underneath is never unmounted, so closing this puts them back
@@ -113,11 +122,9 @@ export function Main({
   // milliseconds in, so the reader is in the text for the whole of the two and
   // a half minutes the answer takes to write.
   const [earlyPassages, setEarlyPassages] = useState<PassageOut[] | null>(null);
-  const [earlyGroups, setEarlyGroups] = useState<TopicGroup[]>([]);
   useEffect(() => {
     if (stage?.stage === "retrieving") {
       setEarlyPassages(null);
-      setEarlyGroups([]);
     }
     if (stage?.stage === "retrieved") {
       // Fetched rather than pushed: a quarter of a megabyte does not survive
@@ -127,7 +134,6 @@ export function Main({
         .then((r) => {
           if (r) {
             setEarlyPassages(r.passages);
-            setEarlyGroups(r.topic_groups);
           }
         })
         .catch(() => {
@@ -146,7 +152,6 @@ export function Main({
     setPast(null);
     setActiveId(null);
     setEarlyPassages(null);
-    setEarlyGroups([]);
     setCrisisNote(null);
     setError(null);
     setStage(null);
@@ -347,7 +352,10 @@ export function Main({
                 </button>
               </div>
             </div>
-            <div className="faint">Ctrl+Enter asks. Answers take a few minutes on this machine.</div>
+            {/* What the reader is about to wait for, from the path that will
+                actually run rather than from what Settings asks for: Auto
+                resolves to one or the other at the moment a model is loaded. */}
+            <div className="faint">Ctrl+Enter asks. {answerTimeHint(compute)}</div>
           </div>
 
           {running && <StageLine stage={stage} elapsed={elapsed} />}
@@ -421,23 +429,7 @@ export function Main({
           )}
 
           {shownPassages.length > 0 && (
-            <PassagePanel
-              passages={shownPassages}
-              // A reopened answer keeps the passages it rested on but not the
-              // topic grouping, which was never stored; it is grouped by book,
-              // rather than under the topics of whatever was asked last. By
-              // book is also the default for a fresh answer, so the switch is
-              // only ever a choice the reader made and it is remembered.
-              groups={answer ? answer.topic_groups : past ? [] : earlyGroups}
-              groupBy={
-                (answer ? answer.topic_groups : past ? [] : earlyGroups).length > 0
-                  ? (settings.group_by as "topic" | "book")
-                  : "book"
-              }
-              onGroupByChange={(v) => api.setSetting("group_by", v).then(onSettingsChange)}
-              highlight={highlight}
-              onRead={readPassage}
-            />
+            <PassagePanel passages={shownPassages} highlight={highlight} onRead={readPassage} />
           )}
 
           {!shownMarkdown && !running && shownPassages.length === 0 && (
@@ -489,6 +481,17 @@ function TrashIcon() {
       <path d="M6.6 6.8v4.6M9.4 6.8v4.6" />
     </svg>
   );
+}
+
+/// How long an answer takes, said before the reader commits to waiting.
+///
+/// P4 measured the same question at 12 seconds on the GPU sidecar and 178 on
+/// the CPU one. That is not a detail to leave the reader to discover.
+export function answerTimeHint(compute: string | null | undefined): string {
+  if (compute === "gpu") return "Answers usually take under a minute on this machine.";
+  if (compute === "cpu") return "Answers take a few minutes on this machine.";
+  // Auto has not resolved yet: no model has been loaded this session.
+  return "Answers take a few minutes on this machine.";
 }
 
 export { stageText };

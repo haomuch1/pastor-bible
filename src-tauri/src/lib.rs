@@ -18,6 +18,7 @@ use serde::Serialize;
 use tauri::{Emitter, Manager, State};
 
 use pastor_bible_core::api::Answer;
+use pastor_bible_core::compute::{self, ComputeChoice};
 use pastor_bible_core::download::{self, ModelStatus, Progress};
 use pastor_bible_core::hardware::{self, Hardware};
 use pastor_bible_core::pipeline::{Engine, QueryMode, Settings, DEFAULT_CHAT_GGUF, EMBED_GGUF};
@@ -63,6 +64,9 @@ pub struct AppState {
     /// background at startup. `None` while that is still running; `Some(Err)`
     /// carries a message the reader can act on.
     embed_checksum: Arc<Mutex<Option<Result<(), String>>>>,
+    /// The last graphics-card decision, so the probe runs once rather than
+    /// before every question. Cleared when the setting or the model changes.
+    compute: Arc<Mutex<Option<ComputeChoice>>>,
 }
 
 fn resolve_paths(app: &tauri::AppHandle) -> Result<AppPaths, String> {
@@ -85,16 +89,18 @@ fn resolve_paths(app: &tauri::AppHandle) -> Result<AppPaths, String> {
     ])
     .ok_or("index.db was not found. It ships with the installer.")?;
 
+    // One server, in one directory, with its libraries beside it — the Vulkan
+    // backend among them, which is the whole difference between llama.cpp's
+    // "CPU build" and its "Vulkan build". See core/src/compute.rs. The
+    // directory matters: Windows resolves a DLL from the executable's own
+    // folder first, so the server and its libraries cannot be separated.
     let server_name = if cfg!(windows) { "llama-server.exe" } else { "llama-server" };
-    let triple_name = format!(
-        "llama-server-{}{}",
-        current_triple(),
-        if cfg!(windows) { ".exe" } else { "" }
-    );
     let llama_server = first_existing(&[
         std::env::var("TPB_LLAMA_SERVER").ok(),
-        resource.as_ref().map(|r| r.join(&triple_name).to_string_lossy().into_owned()),
-        resource.as_ref().map(|r| r.join(server_name).to_string_lossy().into_owned()),
+        resource
+            .as_ref()
+            .map(|r| r.join("resources").join("llama").join(server_name).to_string_lossy().into_owned()),
+        resource.as_ref().map(|r| r.join("llama").join(server_name).to_string_lossy().into_owned()),
         Some(paths::llama_server()),
     ])
     .ok_or("the model server was not found. It ships with the installer.")?;
@@ -145,16 +151,6 @@ fn resolve_paths(app: &tauri::AppHandle) -> Result<AppPaths, String> {
         llama_server,
         logs,
     })
-}
-
-fn current_triple() -> &'static str {
-    if cfg!(all(windows, target_arch = "x86_64")) {
-        "x86_64-pc-windows-msvc"
-    } else if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-        "x86_64-unknown-linux-gnu"
-    } else {
-        "unknown"
-    }
 }
 
 fn first_existing(candidates: &[Option<String>]) -> Option<String> {
@@ -286,7 +282,6 @@ pub struct AppSettings {
     pub canon: String,
     pub model: String,
     pub compute: String,
-    pub group_by: String,
 }
 
 fn read_settings(db: &UserDb) -> AppSettings {
@@ -294,14 +289,14 @@ fn read_settings(db: &UserDb) -> AppSettings {
         canon: db.get_setting("canon").unwrap_or_else(|| "66".into()),
         model: db.get_setting("model").unwrap_or_else(|| "standard".into()),
         compute: db.get_setting("compute").unwrap_or_else(|| "auto".into()),
-        // By book, in canonical order. Nave's roots are not a category system:
-        // see DECISIONS 2026-08-27. The reader's own choice is remembered and
-        // wins over this.
-        group_by: db.get_setting("group_by").unwrap_or_else(|| "book".into()),
     }
 }
 
-fn engine_settings(paths: &AppPaths, s: &AppSettings) -> Result<Settings, String> {
+fn engine_settings(
+    paths: &AppPaths,
+    s: &AppSettings,
+    compute: &ComputeChoice,
+) -> Result<Settings, String> {
     let spec = download::model(&s.model).ok_or_else(|| format!("unknown model {:?}", s.model))?;
     Ok(Settings {
         index_db: paths.index_db.clone(),
@@ -316,11 +311,46 @@ fn engine_settings(paths: &AppPaths, s: &AppSettings) -> Result<Settings, String
         query_mode: QueryMode::Raw,
         chat_ctx: 8192,
         threads: None,
-        // P5 ships the CPU path only. "auto" and "gpu" are recorded and shown;
-        // P6 makes them mean something.
-        gpu_layers: 0,
+        // The measured difference is 12 seconds against 178, so this is the
+        // single largest thing the app can do for the reader's wait. The
+        // decision is `compute::decide`'s; this only carries it.
+        gpu_layers: compute.gpu_layers(),
         allow_both_servers: true,
     })
+}
+
+// ------------------------------------------------------------------ compute
+
+/// Which processor will answer, decided once and remembered.
+///
+/// The probe runs `llama-server --list-devices`, which loads no model and takes
+/// about a second. Nothing about a machine's graphics card changes between two
+/// questions, so it runs when the answer is first wanted and again only when
+/// the reader changes the compute setting or the model.
+fn compute_choice(state: &AppState, settings: &AppSettings) -> Result<ComputeChoice, String> {
+    {
+        let cached = state.compute.lock().map_err(lock)?;
+        if let Some(c) = cached.as_ref() {
+            if c.mode == settings.compute {
+                return Ok(c.clone());
+            }
+        }
+    }
+    let needs = download::model(&settings.model).map(|m| m.vram_mib).unwrap_or(u64::MAX);
+    let choice = compute::decide(&settings.compute, &state.paths.llama_server, needs);
+    *state.compute.lock().map_err(lock)? = Some(choice.clone());
+    Ok(choice)
+}
+
+/// What Settings shows: the mode asked for, the processor that will run, the
+/// device found, and one sentence saying why.
+#[tauri::command]
+fn compute_status(state: State<'_, AppState>) -> Result<ComputeChoice, String> {
+    let settings = {
+        let db = state.db.lock().map_err(lock)?;
+        read_settings(&db)
+    };
+    compute_choice(&state, &settings)
 }
 
 // ---------------------------------------------------------------- commands
@@ -450,7 +480,7 @@ fn set_setting(
     key: String,
     value: String,
 ) -> Result<AppSettings, String> {
-    const ALLOWED: &[&str] = &["canon", "model", "compute", "group_by", "first_run_done"];
+    const ALLOWED: &[&str] = &["canon", "model", "compute", "first_run_done"];
     if !ALLOWED.contains(&key.as_str()) {
         return Err(format!("unknown setting {:?}", key));
     }
@@ -458,15 +488,23 @@ fn set_setting(
         let db = state.db.lock().map_err(lock)?;
         db.set_setting(&key, &value)?;
     }
+    // A changed model may not fit the card the last one fitted, and a changed
+    // compute setting is a direct instruction; either way the decision is made
+    // again rather than carried over.
+    if key == "model" || key == "compute" {
+        *state.compute.lock().map_err(lock)? = None;
+    }
     // Canon and model change how the next question is answered, so the open
     // session is rebuilt rather than left holding the old ones.
-    if key == "canon" || key == "model" {
-        let db = state.db.lock().map_err(lock)?;
-        let s = read_settings(&db);
-        drop(db);
+    if key == "canon" || key == "model" || key == "compute" {
+        let s = {
+            let db = state.db.lock().map_err(lock)?;
+            read_settings(&db)
+        };
+        let choice = compute_choice(&state, &s)?;
         let mut sess = state.session.lock().map_err(lock)?;
         if let Some(existing) = sess.as_mut() {
-            existing.engine.settings = engine_settings(&state.paths, &s)?;
+            existing.engine.settings = engine_settings(&state.paths, &s, &choice)?;
         }
     }
     let db = state.db.lock().map_err(lock)?;
@@ -530,7 +568,8 @@ async fn ask(
         let d = db.lock().map_err(lock)?;
         read_settings(&d)
     };
-    let engine_settings = engine_settings(&paths, &settings)?;
+    let choice = compute_choice(&state, &settings)?;
+    let engine_settings = engine_settings(&paths, &settings, &choice)?;
     let slot = state.retrieved.clone();
     let pid_slot = state.chat_pid.clone();
 
@@ -632,7 +671,8 @@ async fn run_self_test(
         let d = db.lock().map_err(lock)?;
         read_settings(&d)
     };
-    let es = engine_settings(&paths, &settings)?;
+    let choice = compute_choice(&state, &settings)?;
+    let es = engine_settings(&paths, &settings, &choice)?;
     let slot = state.retrieved.clone();
     let pid_slot = state.chat_pid.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -837,6 +877,7 @@ pub fn run() {
                 download_cancel: Arc::new(AtomicBool::new(false)),
                 retrieved: Arc::new(Mutex::new(None)),
                 chat_pid: Arc::new(Mutex::new(None)),
+                compute: Arc::new(Mutex::new(None)),
             });
             Ok(())
         })
@@ -879,6 +920,7 @@ pub fn run() {
             history_clear,
             history_export,
             chapter,
+            compute_status,
             crisis_note,
             cited_tokens,
             shutdown_models,

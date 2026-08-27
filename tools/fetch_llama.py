@@ -1,20 +1,48 @@
-"""Fetch a pinned llama.cpp release asset, verify it, and unpack it.
+"""Fetch pinned llama.cpp release assets, verify them, and assemble the sidecar.
 
 The tag, the asset names and their sha256 checksums are pinned here and in
 docs/SIDECAR.md. Nothing is unpacked before its checksum matches: an unverified
 binary is the one dependency this project cannot take on trust, because it is
 the process that reads the model and answers on the user's machine.
 
+  python tools/fetch_llama.py --bundle
+      the one this build needs. Fetches the CPU archive and the Vulkan archive
+      for the host platform, checks both, and assembles the trimmed payload the
+      installer ships into src-tauri/resources/llama/.
+
   python tools/fetch_llama.py win-cpu-x64          -> tools/llama/
   python tools/fetch_llama.py win-vulkan-x64       -> tools/llama-vulkan/
   python tools/fetch_llama.py win-cpu-x64 --check  verify what is already here
-  python tools/fetch_llama.py win-cpu-x64 --sidecar
-      also place the build in src-tauri/binaries, with the server binary named
-      for its target triple as Tauri's externalBin convention requires. The
-      directory is gitignored; nothing binary is ever committed. P6 confirms
-      the layout against a built installer.
 
-Run by hand. Nothing in the app or the build calls it.
+## There is one build, not two
+
+Measured on 2026-08-27, on both platforms: every file in the Vulkan archive is
+byte-identical to the file of the same name in the CPU archive, and the Vulkan
+archive contains exactly one file the CPU archive does not — ggml-vulkan.dll on
+Windows, libggml-vulkan.so on Linux. ggml loads its backends as dynamic
+libraries at run time, so dropping that one file beside the CPU build turns
+
+    Available devices:
+      (none)
+
+into
+
+    Available devices:
+      Vulkan0: NVIDIA GeForce RTX 3080 (10267 MiB, 9495 MiB free)
+
+from the same llama-server.exe. So the installer ships one server and one set of
+libraries with the Vulkan backend among them, and `-ngl` decides at launch which
+one answers. Two full copies would have cost 99 MB for nothing.
+
+## What is trimmed
+
+The release archive carries every llama.cpp tool: llama-cli, llama-bench,
+llama-perplexity, llama-quantize and their implementation libraries. This app
+runs one of them. Only llama-server and the libraries it loads are bundled,
+which was established by removing files until it stopped starting: dropping
+mtmd (multimodal) makes it exit 0xC0000135, DLL not found, so mtmd stays.
+
+Run by hand, and by the release workflow. The app never calls it.
 """
 
 import argparse
@@ -47,6 +75,12 @@ ASSETS = {
         'sha256': '3fb85c859f2cf90b9626a66e9742baed416c1ceda767d5c906520547b36425ad',
         'size': 34422749,
         'dest': 'llama-vulkan',
+    },
+    'ubuntu-vulkan-x64': {
+        'file': 'llama-b10639-bin-ubuntu-vulkan-x64.tar.gz',
+        'sha256': '6168bd9affe15b5cdbf553d70d2f162df5268c50da038000dcd3f0dc537ec7ca',
+        'size': 32936221,
+        'dest': 'llama-linux-vulkan',
     },
     'ubuntu-x64': {
         'file': 'llama-b10639-bin-ubuntu-x64.tar.gz',
@@ -178,5 +212,103 @@ def place_sidecar(src, spec):
           % (n, stem, triple, ext))
 
 
+# --------------------------------------------------------------- the bundle
+
+# The libraries llama-server itself loads. Everything else in the archive
+# belongs to a tool this app does not run.
+DENY = {
+    'ggml-rpc.dll', 'ggml-rpc-server.exe',
+    'llama-batched-bench-impl.dll', 'llama-bench-impl.dll', 'llama-cli-impl.dll',
+    'llama-completion-impl.dll', 'llama-fit-params-impl.dll',
+    'llama-perplexity-impl.dll', 'llama-quantize-impl.dll',
+    'libggml-rpc.so', 'ggml-rpc-server',
+    'libllama-batched-bench-impl.so', 'libllama-bench-impl.so',
+    'libllama-cli-impl.so', 'libllama-completion-impl.so',
+    'libllama-fit-params-impl.so', 'libllama-perplexity-impl.so',
+    'libllama-quantize-impl.so',
+}
+
+PLATFORMS = {
+    'win32': {
+        'cpu': 'win-cpu-x64',
+        'vulkan': 'win-vulkan-x64',
+        'server': 'llama-server.exe',
+        'backend': 'ggml-vulkan.dll',
+        'lib': lambda n: n.endswith('.dll'),
+    },
+    'linux': {
+        'cpu': 'ubuntu-x64',
+        'vulkan': 'ubuntu-vulkan-x64',
+        'server': 'llama-server',
+        'backend': 'libggml-vulkan.so',
+        'lib': lambda n: '.so' in n,
+    },
+}
+
+BUNDLE_DIR = os.path.join(ROOT, 'src-tauri', 'resources', 'llama')
+
+
+def ensure(key):
+    """Fetch and unpack one asset, returning the directory it is in."""
+    spec = ASSETS[key]
+    dest = os.path.join(HERE, spec['dest'])
+    if not os.path.isdir(dest):
+        rc = main_one(key)
+        if rc:
+            raise SystemExit(rc)
+    return dest, spec
+
+
+def bundle():
+    """Assemble the payload the installer ships, for the host platform."""
+    key = 'win32' if sys.platform.startswith('win') else 'linux'
+    if key == 'linux' and not sys.platform.startswith('linux'):
+        raise SystemExit('no sidecar layout recorded for %s' % sys.platform)
+    plat = PLATFORMS[key]
+
+    cpu_dir, _ = ensure(plat['cpu'])
+    vk_dir, _ = ensure(plat['vulkan'])
+
+    if os.path.isdir(BUNDLE_DIR):
+        shutil.rmtree(BUNDLE_DIR)
+    os.makedirs(BUNDLE_DIR)
+
+    kept, total = 0, 0
+    for name in sorted(os.listdir(cpu_dir)):
+        src = os.path.join(cpu_dir, name)
+        if not os.path.isfile(src) or name in DENY:
+            continue
+        if name != plat['server'] and not plat['lib'](name):
+            continue
+        shutil.copy2(src, os.path.join(BUNDLE_DIR, name))
+        kept += 1
+        total += os.path.getsize(src)
+
+    # The one file that is the whole difference between the two archives.
+    backend = os.path.join(vk_dir, plat['backend'])
+    if not os.path.exists(backend):
+        raise SystemExit('%s is not in %s' % (plat['backend'], vk_dir))
+    shutil.copy2(backend, os.path.join(BUNDLE_DIR, plat['backend']))
+    kept += 1
+    total += os.path.getsize(backend)
+
+    print('assembled %d files, %.1f MB, in %s' % (kept, total / float(1 << 20), BUNDLE_DIR))
+    print('  server  %s' % plat['server'])
+    print('  backend %s (the Vulkan build\'s only extra file)' % plat['backend'])
+    return 0
+
+
+def main_one(asset):
+    """The single-asset path, callable from bundle()."""
+    saved = sys.argv
+    sys.argv = [saved[0], asset]
+    try:
+        return main()
+    finally:
+        sys.argv = saved
+
+
 if __name__ == '__main__':
+    if '--bundle' in sys.argv:
+        sys.exit(bundle())
     sys.exit(main())

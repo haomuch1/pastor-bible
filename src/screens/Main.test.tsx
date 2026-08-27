@@ -47,7 +47,6 @@ const settings: AppSettings = {
   canon: "66",
   model: "standard",
   compute: "auto",
-  group_by: "book",
 };
 
 const info = {
@@ -80,6 +79,13 @@ describe("the history sidebar", () => {
   beforeEach(() => {
     live = [...rows];
     vi.spyOn(api, "onStage").mockResolvedValue(() => {});
+    vi.spyOn(api, "computeStatus").mockResolvedValue({
+      mode: "auto",
+      using: "cpu",
+      device: null,
+      needs_mib: 6325,
+      reason: "Set to use the processor.",
+    });
     vi.spyOn(api, "historyList").mockImplementation(async () => live);
     vi.spyOn(api, "historySearch").mockImplementation(async () => live);
     vi.spyOn(api, "historyGet").mockResolvedValue(null);
