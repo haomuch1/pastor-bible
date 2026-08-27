@@ -159,16 +159,15 @@ Output: index.db with meta.index_version and a checksum. Committed as a release 
 - The model returns a themed synopsis: theme headings, each with a short synthesis and the IDs it draws on.
 - Verifier: every [P#] must exist in the sent set; every free-text reference pattern (e.g. "John 3:16") in the prose must resolve to a verse inside the sent set. Any failure -> the offending token is stripped and generation retried once with the failure named. A second failure -> the app shows the retrieved passages grouped by book with a one-line note that a synthesis could not be produced. The user never sees an unverified reference.
 - The passage panel renders verse text from index.db, never from the model output.
-- Two answer modes. The default is a themed synopsis over the top ~25 passages.
-  On demand, through an explicit "Summarize all N passages" button with a
-  progress indicator, the app produces a themed summary covering the entire
-  retrieved set, each theme listing every passage it draws on, so the reader
-  gets a streamlined view of the whole set without reading hundreds of verses.
-  Large sets are summarized in batches grouped by book or theme and then
-  merged. The mechanical citation guarantee above applies unchanged to every
-  stage, the merge included: opaque IDs only, verifier on each stage. The
-  full-set summary is never the default. P3 measures its latency and quality on
-  the largest eval sets before P4 builds it. Both results are stored in history.
+- One answer mode, and one grouping. The answer is a themed synopsis over the
+  top ~25 passages. The rest of the retrieved set is not summarized by a model
+  at all: the full passage set is grouped under the matched Nave's topic
+  headings, topics ordered by match strength, passages within a topic in
+  canonical order, and passages matching no topic under "Other passages". The
+  grouping is expandable and costs no model call, so it is instant and cannot
+  fabricate anything. P3 measured the model-written full-set summary at 33
+  minutes, 16.9 GB, and half its citations lost at the merge; it is removed
+  from v1 and is a post-v1 candidate on GPU hardware.
 
 **5.7 Deuterocanon labeling.** Any passage with canon=deutero is rendered with a visible "Deuterocanon" tag in both the synopsis and the panel, and the answer carries a one-line footer noting Deuterocanon passages were included.
 
@@ -217,8 +216,10 @@ their full verse lists. The synopsis is a starting point over the whole set,
 never the only thing shown: the reader chooses what to read, and the text comes
 first.
 
-Alongside the default synopsis, a "Summarize all N passages" button produces a
-themed summary of the entire retrieved set, per 5.6.
+The full set is grouped under the matched Nave's topic headings, per 5.6:
+topics ordered by match strength, passages within a topic in canonical order,
+and anything matching no topic under "Other passages". No model call is
+involved, so the grouping appears with the passages themselves.
 
 ### 7.3 Settings
 
