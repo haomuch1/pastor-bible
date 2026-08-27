@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import * as api from "../api";
 import { PassagePanel } from "../components/PassagePanel";
+import { Reader } from "../components/Reader";
 import { Synopsis } from "../components/Synopsis";
 import { StageLine, stageText } from "./FirstRun";
 import type {
@@ -30,9 +31,22 @@ interface Props {
   onSettingsChange: (s: AppSettings) => void;
   onOpenSettings: () => void;
   onOpenAbout: () => void;
+  /// A model file that is missing or is not the one we pinned, said plainly.
+  /// Shown here rather than only at the moment a question fails, so the reader
+  /// learns about it before the wait rather than after it.
+  modelProblem?: string | null;
+  onHistoryCleared?: () => void;
 }
 
-export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenAbout }: Props) {
+export function Main({
+  info,
+  settings,
+  onSettingsChange,
+  onOpenSettings,
+  onOpenAbout,
+  modelProblem,
+  onHistoryCleared,
+}: Props) {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [past, setPast] = useState<HistoryDetail | null>(null);
@@ -46,6 +60,18 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [search, setSearch] = useState("");
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+
+  // The chapter a passage came from, when the reader has asked to read one.
+  // The answer underneath is never unmounted, so closing this puts them back
+  // exactly where they were.
+  const [reading, setReading] = useState<{
+    bookId: number;
+    chapter: number;
+    highlight: number[];
+  } | null>(null);
+
+  const box = useRef<HTMLTextAreaElement | null>(null);
 
   const unlisten = useRef<null | (() => void)>(null);
   const timer = useRef<number | null>(null);
@@ -107,6 +133,48 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
     }
   }, [stage]);
 
+  /// Back to the empty screen, with the question box ready.
+  ///
+  /// Always reachable, from the top of the main area and from the sidebar, so
+  /// that opening a past answer is never a door that closes behind the reader.
+  function newQuestion() {
+    setQuestion("");
+    setAnswer(null);
+    setPast(null);
+    setActiveId(null);
+    setEarlyPassages(null);
+    setEarlyGroups([]);
+    setCrisisNote(null);
+    setError(null);
+    setStage(null);
+    setHighlight(null);
+    setReading(null);
+    window.setTimeout(() => box.current?.focus(), 0);
+  }
+
+  /// Open a passage in its chapter. The verse ids are what gets marked.
+  function readPassage(p: PassageOut) {
+    const first = p.verse_ids[0];
+    if (first == null) return;
+    setReading({
+      bookId: Math.floor(first / 1_000_000),
+      chapter: Math.floor((first % 1_000_000) / 1000),
+      highlight: p.verse_ids,
+    });
+  }
+
+  async function clearHistory() {
+    try {
+      await api.historyClear();
+      setConfirmClear(false);
+      if (activeId != null) newQuestion();
+      void refreshHistory();
+      onHistoryCleared?.();
+    } catch (e) {
+      setError(String(e));
+    }
+  }
+
   async function onAsk() {
     const q = question.trim();
     if (!q || running) return;
@@ -163,6 +231,9 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
       <aside className="sidebar">
         <header className="stack" style={{ ["--gap" as string]: "10px" }}>
           <div className="title">The Pastor Bible</div>
+          <button className="quiet wide" onClick={newQuestion} disabled={running}>
+            New question
+          </button>
           <input
             type="search"
             placeholder="Search past questions"
@@ -191,20 +262,50 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
             </button>
           ))}
         </div>
-        <footer className="row between">
-          <button className="quiet" onClick={onOpenSettings}>
-            Settings
-          </button>
-          <button className="quiet" onClick={onOpenAbout}>
-            About
-          </button>
+        <footer className="stack" style={{ ["--gap" as string]: "8px" }}>
+          {history.length > 0 &&
+            (confirmClear ? (
+              <div className="stack" style={{ ["--gap" as string]: "6px" }}>
+                <span className="faint">
+                  Delete every question and answer? This cannot be undone.
+                </span>
+                <div className="row">
+                  <button onClick={clearHistory}>Delete all history</button>
+                  <button className="quiet" onClick={() => setConfirmClear(false)}>
+                    Keep it
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button className="quiet" onClick={() => setConfirmClear(true)}>
+                Clear history
+              </button>
+            ))}
+          <div className="row between">
+            <button className="quiet" onClick={onOpenSettings}>
+              Settings
+            </button>
+            <button className="quiet" onClick={onOpenAbout}>
+              About
+            </button>
+          </div>
         </footer>
       </aside>
 
       <main className="main">
         <div className="inner stack">
+          <div className="row between">
+            <button className="quiet" onClick={newQuestion} disabled={running}>
+              New question
+            </button>
+            {past && <span className="faint">A past answer, reopened</span>}
+          </div>
+
+          {modelProblem && <div className="err prose">{modelProblem}</div>}
+
           <div className="asker stack" style={{ ["--gap" as string]: "10px" }}>
             <textarea
+              ref={box}
               placeholder="What does the Bible say about…"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
@@ -243,7 +344,9 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
           {!running && stage?.stage === "cancelled" && !answer && (
             <div className="notice">Stopped. Nothing was saved.</div>
           )}
-          {error && <div className="err">{error}</div>}
+          {/* A refusal that is a paragraph keeps its paragraphs: the message
+              naming a missing model file is the same message either way. */}
+          {error && <div className="err prose">{error}</div>}
 
           {crisisNote && (
             <div className="notice crisis">
@@ -321,6 +424,7 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
               }
               onGroupByChange={(v) => api.setSetting("group_by", v).then(onSettingsChange)}
               highlight={highlight}
+              onRead={readPassage}
             />
           )}
 
@@ -338,6 +442,15 @@ export function Main({ info, settings, onSettingsChange, onOpenSettings, onOpenA
           )}
         </div>
       </main>
+
+      {reading && (
+        <Reader
+          bookId={reading.bookId}
+          chapter={reading.chapter}
+          highlight={reading.highlight}
+          onClose={() => setReading(null)}
+        />
+      )}
     </div>
   );
 }

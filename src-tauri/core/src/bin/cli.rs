@@ -17,7 +17,7 @@ use std::process::ExitCode;
 use pastor_bible_core::api::Answer;
 use pastor_bible_core::paths;
 use pastor_bible_core::pipeline::{
-    Engine, QueryMode, Settings, DEFAULT_CHAT_GGUF, EMBED_GGUF, FALLBACK_CHAT_GGUF,
+    Engine, QueryMode, Settings, DEFAULT_CHAT_GGUF, FALLBACK_CHAT_GGUF,
 };
 use pastor_bible_core::retrieve::CanonMode;
 use pastor_bible_core::sidecar::{free_ram_gb, Options, Role, Sidecar};
@@ -86,7 +86,7 @@ fn cmd_ask(args: &[String]) -> Result<(), String> {
         index_db: paths::index_db(),
         llama_server: paths::llama_server(),
         chat_model,
-        embed_model: paths::model(EMBED_GGUF),
+        embed_model: paths::embed_model(),
         prompts_dir: paths::prompts_dir(),
         crisis_terms: paths::crisis_terms(),
         crisis_note: paths::crisis_note(),
@@ -216,7 +216,7 @@ fn cmd_session(args: &[String]) -> Result<(), String> {
         index_db: paths::index_db(),
         llama_server: paths::llama_server(),
         chat_model,
-        embed_model: paths::model(EMBED_GGUF),
+        embed_model: paths::embed_model(),
         prompts_dir: paths::prompts_dir(),
         crisis_terms: paths::crisis_terms(),
         crisis_note: paths::crisis_note(),
@@ -358,7 +358,7 @@ fn session_questions(n: usize) -> Result<Vec<(String, String)>, String> {
 /// the lifecycle without loading a chat model.
 fn cmd_selftest() -> Result<(), String> {
     let server_bin = paths::llama_server();
-    let model = paths::model(EMBED_GGUF);
+    let model = paths::embed_model();
     for p in [&server_bin, &model] {
         if !std::path::Path::new(p).exists() {
             return Err(format!("not found: {}", p));
@@ -390,7 +390,7 @@ fn cmd_selftest() -> Result<(), String> {
 fn cmd_spawn_and_hang(args: &[String]) -> Result<(), String> {
     let model = flag(args, "--model")
         .map(|m| m.to_string())
-        .unwrap_or_else(|| paths::model(EMBED_GGUF));
+        .unwrap_or_else(|| paths::embed_model());
     let mut opts = Options::new(&paths::llama_server(), &model, Role::Embedding);
     opts.log_dir = Some(paths::log_dir());
     let s = Sidecar::start(&opts)?;

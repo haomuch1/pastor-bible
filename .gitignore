@@ -12,7 +12,9 @@ src-tauri/resources/index.db-journal
 src-tauri/resources/index.db-wal
 src-tauri/resources/index.db-shm
 
-# Model files: downloaded at first run, never committed
+# Model files: never committed. The chat model is downloaded on first run into
+# the application data directory; the embedding model is a bundled resource,
+# placed in src-tauri/resources/ by tools/fetch_model.py.
 *.gguf
 
 # Environment
@@ -52,6 +54,7 @@ src-tauri/binaries/*
 # the llama.cpp release and refuses to unpack an archive whose checksum is wrong.
 tools/*
 !tools/fetch_llama.py
+!tools/fetch_model.py
 !tools/shot.ps1
 models/
 

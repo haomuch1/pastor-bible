@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use crate::api::{Answer, PassageOut, VerseOut};
 use crate::index::{verse_book, verse_chapter, verse_num, Index};
 
-pub const SCHEMA_VERSION: i64 = 1;
+pub const SCHEMA_VERSION: i64 = 2;
 
 const SCHEMA: &str = r#"
 CREATE TABLE IF NOT EXISTS meta (
@@ -374,7 +374,13 @@ impl UserDb {
 
     /// Every entry as one plain-text file. No JSON, no markup a reader has to
     /// decode: this is what someone keeps or prints.
-    pub fn export_text(&self) -> Result<String, String> {
+    ///
+    /// The index is needed because a stored answer cites `[P3]`, which means
+    /// nothing on paper. Each marker is replaced by the reference it stood for,
+    /// spelled the way a reader writes it, and the passages are listed
+    /// underneath; the references are read from the index installed now,
+    /// exactly as they are on screen.
+    pub fn export_text(&self, index: &Index) -> Result<String, String> {
         let mut st = self
             .con
             .prepare("SELECT * FROM history ORDER BY id ASC")
@@ -406,17 +412,26 @@ impl UserDb {
             if row.crisis_flag {
                 out.push_str("  [a crisis note was shown above this answer]\n\n");
             }
+            let (sent, tokens_resolvable) = parse_sent(&sent_json);
+            let refs: Vec<String> = sent.iter().map(|g| index.reference_of(g)).collect();
+
             out.push_str("ANSWER\n");
-            for line in answer_md.lines() {
+            for line in resolve_tokens(&answer_md, &refs, tokens_resolvable).lines() {
                 out.push_str("  ");
                 out.push_str(line);
                 out.push('\n');
+            }
+            if !refs.is_empty() {
+                out.push_str("\nPASSAGES\n");
+                for r in &refs {
+                    out.push_str(&format!("  {}\n", r));
+                }
             }
             out.push_str(&format!(
                 "\n  model {}, Bible index {}, {} passages found\n",
                 row.model_id,
                 row.index_version,
-                parse_sent(&sent_json).0.len()
+                refs.len()
             ));
         }
         if n == 0 {
@@ -464,6 +479,25 @@ fn preview_of(answer: &str) -> String {
 /// them anyway would put a reference in front of a reader that the answer never
 /// made, which is the one thing this program must not do, so such an entry
 /// reports false and its tokens are left unresolved.
+/// `[P3]` on paper means nothing, so it is replaced by what it stood for.
+///
+/// An entry whose passage numbering was not stored cannot resolve its markers,
+/// and they are removed rather than pointed at the wrong passages, which is what
+/// the window does with the same entry on screen.
+fn resolve_tokens(answer: &str, refs: &[String], resolvable: bool) -> String {
+    let re = regex::Regex::new(r"\s*\[P(\d+)\]").expect("token pattern");
+    re.replace_all(answer, |c: &regex::Captures| {
+        if !resolvable {
+            return String::new();
+        }
+        match c[1].parse::<usize>().ok().and_then(|n| refs.get(n.wrapping_sub(1))) {
+            Some(r) => format!(" ({})", r),
+            None => c[0].to_string(),
+        }
+    })
+    .into_owned()
+}
+
 fn parse_sent(json: &str) -> (Vec<Vec<i64>>, bool) {
     if let Ok(v) = serde_json::from_str::<Vec<Vec<i64>>>(json) {
         return (v, true);
@@ -500,26 +534,11 @@ fn render_passages(
         .filter(|(_, g)| !g.is_empty())
         .map(|(i, g)| {
             let g = g.clone();
-            let (b, c) = (verse_book(g[0]), verse_chapter(g[0]));
-            let (first, last) = (verse_num(g[0]), verse_num(*g.last().unwrap()));
-            let reference = if first == last {
-                format!("{} {}:{}", index.abbrev(b), c, first)
-            } else {
-                format!("{} {}:{}-{}", index.abbrev(b), c, first, last)
-            };
+            let reference = index.reference_of(&g);
             let verses: Vec<VerseOut> = index
                 .text_of(&g)
                 .into_iter()
-                .map(|(vid, text)| VerseOut {
-                    verse_id: vid,
-                    reference: format!(
-                        "{} {}:{}",
-                        index.abbrev(verse_book(vid)),
-                        verse_chapter(vid),
-                        verse_num(vid)
-                    ),
-                    text,
-                })
+                .map(|(vid, text)| VerseOut { verse_id: vid, reference: index.verse_reference(vid), text })
                 .collect();
             PassageOut {
                 cited: g.iter().any(|v| cited.contains(v)),
@@ -537,10 +556,6 @@ fn render_passages(
 }
 
 /// Bring an older user.db up to the current schema.
-///
-/// There is one version so far and nothing to do. The hook exists now rather
-/// than later because the first upgrade that needs it is the one that will not
-/// have time to design it.
 fn migrate(con: &Connection, have: i64) -> Result<(), String> {
     if have == SCHEMA_VERSION {
         return Ok(());
@@ -552,6 +567,9 @@ fn migrate(con: &Connection, have: i64) -> Result<(), String> {
             have, SCHEMA_VERSION
         ));
     }
+    if have < 2 {
+        drop_unnumbered_entries(con)?;
+    }
     // Future migrations run here, in order, each bumping the recorded version.
     con.execute(
         "INSERT INTO meta (key, value) VALUES ('schema_version', ?) \
@@ -560,4 +578,37 @@ fn migrate(con: &Connection, have: i64) -> Result<(), String> {
     )
     .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/// Schema 2: delete history entries whose passage numbering was never stored.
+///
+/// `passage_ids` holds one array of verse ids per sent passage. A short-lived
+/// build stored a flat list of verse ids instead, which loses which verses were
+/// [P1] and which were [P2], so a reopened answer could only show its citation
+/// markers with the numbers stripped out and a notice explaining why. No
+/// released version ever wrote that form: the only entries in it are the test
+/// questions asked while P5 was being built, on the machine it was built on.
+/// They are deleted rather than carried forward, because an answer that cannot
+/// show what it rests on is not worth keeping and the notice would outlive its
+/// cause. The delete goes through the table so the FTS index follows it.
+fn drop_unnumbered_entries(con: &Connection) -> Result<usize, String> {
+    let mut doomed: Vec<i64> = Vec::new();
+    {
+        let mut st = con
+            .prepare("SELECT id, passage_ids FROM history")
+            .map_err(|e| e.to_string())?;
+        let rows = st
+            .query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?)))
+            .map_err(|e| e.to_string())?;
+        for row in rows {
+            let (id, json) = row.map_err(|e| e.to_string())?;
+            if !parse_sent(&json).1 {
+                doomed.push(id);
+            }
+        }
+    }
+    for id in &doomed {
+        con.execute("DELETE FROM history WHERE id = ?", [id]).map_err(|e| e.to_string())?;
+    }
+    Ok(doomed.len())
 }

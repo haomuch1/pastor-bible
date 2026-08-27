@@ -20,11 +20,21 @@ interface Props {
   groupBy: "topic" | "book";
   onGroupByChange: (v: "topic" | "book") => void;
   highlight?: string | null;
+  /// Open this passage's chapter in the reading view. A passage is a run of
+  /// verses and a run of verses is not always enough to judge what it says.
+  onRead?: (p: PassageOut) => void;
 }
 
 const BOOK_OF = (p: PassageOut) => p.reference.replace(/\s+\d+:.*$/, "");
 
-export function PassagePanel({ passages, groups, groupBy, onGroupByChange, highlight }: Props) {
+export function PassagePanel({
+  passages,
+  groups,
+  groupBy,
+  onGroupByChange,
+  highlight,
+  onRead,
+}: Props) {
   const [openAll, setOpenAll] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -112,7 +122,12 @@ export function PassagePanel({ passages, groups, groupBy, onGroupByChange, highl
             </h3>
             {g.sub && <div className="sub">{g.sub}</div>}
             {cited.map((p) => (
-              <Passage key={p.reference} p={p} highlight={highlight === p.reference} />
+              <Passage
+                key={p.reference}
+                p={p}
+                highlight={highlight === p.reference}
+                onRead={onRead}
+              />
             ))}
             {rest.length > 0 && !isOpen && (
               <button
@@ -124,7 +139,12 @@ export function PassagePanel({ passages, groups, groupBy, onGroupByChange, highl
             )}
             {isOpen &&
               rest.map((p) => (
-                <Passage key={p.reference} p={p} highlight={highlight === p.reference} />
+                <Passage
+                  key={p.reference}
+                  p={p}
+                  highlight={highlight === p.reference}
+                  onRead={onRead}
+                />
               ))}
           </div>
         );
@@ -133,7 +153,15 @@ export function PassagePanel({ passages, groups, groupBy, onGroupByChange, highl
   );
 }
 
-function Passage({ p, highlight }: { p: PassageOut; highlight: boolean }) {
+function Passage({
+  p,
+  highlight,
+  onRead,
+}: {
+  p: PassageOut;
+  highlight: boolean;
+  onRead?: (p: PassageOut) => void;
+}) {
   return (
     <div
       className={p.cited ? "passage is-cited" : "passage"}
@@ -145,6 +173,11 @@ function Passage({ p, highlight }: { p: PassageOut; highlight: boolean }) {
         <span className="row">
           {p.cited && <span className="tag cited">In the answer</span>}
           {p.canon === "deutero" && <span className="tag deutero">Deuterocanon</span>}
+          {onRead && (
+            <button className="quiet" onClick={() => onRead(p)}>
+              Read chapter
+            </button>
+          )}
         </span>
       </div>
       <div className="verses">

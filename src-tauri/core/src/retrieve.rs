@@ -54,7 +54,13 @@ pub struct Candidate {
 
 #[derive(Clone, Debug)]
 pub struct Passage {
+    /// The compact form, "1Ki 3:9". This is what the retrieval parity fixtures
+    /// hold and what the prompt sends to the model, and it is never shown to a
+    /// reader; `display_reference` is.
     pub reference: String,
+    /// The same passage as a reader writes it: "1 Kings 3:9". Everything the
+    /// window draws and everything an exported file contains uses this.
+    pub display_reference: String,
     pub verse_ids: Vec<i64>,
     pub score: f64,
     pub origins: Vec<String>,
@@ -664,14 +670,25 @@ impl Retriever {
             .into_iter()
             .map(|k| {
                 let a = self.index.abbrev(k.b);
-                let reference = if k.first == k.last {
-                    format!("{} {}:{}", a, k.c, k.first)
+                let n = self.index.name(k.b);
+                let (reference, display_reference) = if k.first == k.last {
+                    (format!("{} {}:{}", a, k.c, k.first), format!("{} {}:{}", n, k.c, k.first))
                 } else {
-                    format!("{} {}:{}-{}", a, k.c, k.first, k.last)
+                    (
+                        format!("{} {}:{}-{}", a, k.c, k.first, k.last),
+                        format!("{} {}:{}-{}", n, k.c, k.first, k.last),
+                    )
                 };
                 let mut origins: Vec<String> = k.origins.into_iter().collect();
                 origins.sort();
-                Passage { reference, verse_ids: k.ids, score: k.score, origins, canon: k.canon }
+                Passage {
+                    reference,
+                    display_reference,
+                    verse_ids: k.ids,
+                    score: k.score,
+                    origins,
+                    canon: k.canon,
+                }
             })
             .collect();
         // Python's list.sort is stable, so equal scores keep verse order.

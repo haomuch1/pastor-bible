@@ -11,7 +11,6 @@ use std::time::Instant;
 
 use crate::api::*;
 use crate::crisis::CrisisMatcher;
-use crate::index::verse_book;
 use crate::prompts::{fill, Prompts};
 use crate::retrieve::{CanonMode, Config, Passage, Retriever};
 use crate::sidecar::{peak_working_set_mb, Options, Role, Sidecar};
@@ -119,9 +118,13 @@ impl Engine {
                 self.retriever.index.text_of(&p.verse_ids).into_iter().map(|(_, t)| t).collect();
             let marker = if p.canon == "deutero" { " (Deuterocanon)" } else { "" };
             blocks.push(format!("{} {}{}\n{}", token, p.reference, marker, texts.join(" ")));
+            // The prompt block above keeps the compact reference, which is what
+            // P3 and P4 measured and what the parity fixtures hold. The record
+            // kept beside it carries the form a reader is shown, because the
+            // fallback is read by the reader and the prompt never is.
             sent.push(Sent {
                 token,
-                reference: p.reference.clone(),
+                reference: p.display_reference.clone(),
                 verse_ids: p.verse_ids.clone(),
             });
         }
@@ -338,7 +341,7 @@ impl Engine {
                     cited: false,
                     sent: token.is_some(),
                     token,
-                    reference: p.reference.clone(),
+                    reference: p.display_reference.clone(),
                     verse_ids: p.verse_ids.clone(),
                     verses: self.verses_of(&p.verse_ids),
                     score: p.score,
@@ -358,12 +361,7 @@ impl Engine {
             .into_iter()
             .map(|(vid, text)| VerseOut {
                 verse_id: vid,
-                reference: format!(
-                    "{} {}:{}",
-                    self.retriever.index.abbrev(verse_book(vid)),
-                    crate::index::verse_chapter(vid),
-                    crate::index::verse_num(vid)
-                ),
+                reference: self.retriever.index.verse_reference(vid),
                 text,
             })
             .collect()
@@ -420,12 +418,7 @@ impl Engine {
                     .into_iter()
                     .map(|(vid, text)| VerseOut {
                         verse_id: vid,
-                        reference: format!(
-                            "{} {}:{}",
-                            self.retriever.index.abbrev(verse_book(vid)),
-                            crate::index::verse_chapter(vid),
-                            crate::index::verse_num(vid)
-                        ),
+                        reference: self.retriever.index.verse_reference(vid),
                         text,
                     })
                     .collect();
@@ -433,7 +426,7 @@ impl Engine {
                     cited: token.as_deref().map(|t| cited_set.contains(t)).unwrap_or(false),
                     sent: token.is_some(),
                     token,
-                    reference: p.reference.clone(),
+                    reference: p.display_reference.clone(),
                     verse_ids: p.verse_ids.clone(),
                     verses,
                     score: p.score,
@@ -565,13 +558,13 @@ impl Engine {
                 heading: t.heading.clone(),
                 verses: t.verses,
                 score: t.score,
-                passage_refs: all_refs.iter().map(|p| p.reference.clone()).collect(),
+                passage_refs: all_refs.iter().map(|p| p.display_reference.clone()).collect(),
             });
 
             let mine: Vec<String> = all_refs
                 .iter()
-                .filter(|p| claimed.insert(p.reference.as_str()))
-                .map(|p| p.reference.clone())
+                .filter(|p| claimed.insert(p.display_reference.as_str()))
+                .map(|p| p.display_reference.clone())
                 .collect();
             if !mine.is_empty() {
                 // The group is named for the root; the matched subtopic goes
@@ -611,14 +604,14 @@ impl Engine {
         let mut groups = merged;
 
         let mut rest: Vec<&Passage> =
-            ranges.iter().filter(|p| !claimed.contains(p.reference.as_str())).collect();
+            ranges.iter().filter(|p| !claimed.contains(p.display_reference.as_str())).collect();
         rest.sort_by_key(|p| p.verse_ids.first().copied().unwrap_or(0));
         if !rest.is_empty() {
             groups.push(TopicGroup {
                 heading: "Other passages".to_string(),
                 heading_display: "Other passages".to_string(),
                 topic_id: None,
-                passage_refs: rest.iter().map(|p| p.reference.clone()).collect(),
+                passage_refs: rest.iter().map(|p| p.display_reference.clone()).collect(),
             });
         }
         (topics_out, groups)

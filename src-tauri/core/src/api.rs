@@ -32,6 +32,37 @@ pub struct PassageOut {
     pub sent: bool,
 }
 
+/// A whole chapter, for reading a cited passage in its place.
+///
+/// PLAN 5.6 shows the reader the passages an answer rested on; a passage is a
+/// run of verses inside a chapter, and a run of verses is not always enough to
+/// judge what it says. This is the rest of it. Like everything else here the
+/// text is read from index.db, and the deuterocanonical tag is carried from the
+/// index rather than from anything a model wrote.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ChapterOut {
+    pub book_id: i64,
+    /// "1 Kings", as a reader writes it.
+    pub book_name: String,
+    pub chapter: i64,
+    /// "1 Kings 3", the heading of the reading view.
+    pub reference: String,
+    pub canon: String,
+    pub verses: Vec<VerseOut>,
+    /// The chapter before this one and the one after, across book boundaries
+    /// and within the canon the reader is reading. None at either end.
+    pub previous: Option<ChapterRef>,
+    pub next: Option<ChapterRef>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ChapterRef {
+    pub book_id: i64,
+    pub chapter: i64,
+    /// "1 Kings 4", for the button.
+    pub reference: String,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TopicOut {
     pub topic_id: i64,

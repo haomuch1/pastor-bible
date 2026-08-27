@@ -13,6 +13,7 @@ import type {
   Answer,
   AppInfo,
   AppSettings,
+  ChapterOut,
   DownloadProgress,
   Hardware,
   HistoryDetail,
@@ -49,6 +50,10 @@ export const historyGet = (id: number) => invoke<HistoryDetail | null>("history_
 export const historyDelete = (id: number) => invoke<boolean>("history_delete", { id });
 export const historyClear = () => invoke<number>("history_clear");
 export const historyExport = (path: string) => invoke<string>("history_export", { path });
+
+/// A whole chapter, for the reading view. The verses come from index.db.
+export const chapter = (bookId: number, chapterNumber: number) =>
+  invoke<ChapterOut | null>("chapter", { bookId, chapter: chapterNumber });
 
 export const shutdownModels = () => invoke<void>("shutdown_models");
 

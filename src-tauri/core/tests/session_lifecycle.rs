@@ -19,7 +19,7 @@ use std::time::{Duration, Instant};
 static SERIAL: Mutex<()> = Mutex::new(());
 
 use pastor_bible_core::pipeline::{
-    Engine, QueryMode, Settings, EMBED_GGUF, FALLBACK_CHAT_GGUF,
+    Engine, QueryMode, Settings, FALLBACK_CHAT_GGUF,
 };
 use pastor_bible_core::retrieve::CanonMode;
 use pastor_bible_core::session::{Session, Stage};
@@ -40,7 +40,7 @@ fn settings() -> Settings {
         index_db: common::require_index(),
         llama_server: require(&paths::llama_server(), "llama-server"),
         chat_model: require(&paths::model(FALLBACK_CHAT_GGUF), "the smaller answering model"),
-        embed_model: require(&paths::model(EMBED_GGUF), "the search model"),
+        embed_model: require(&paths::embed_model(), "the search model"),
         prompts_dir: paths::prompts_dir(),
         crisis_terms: paths::crisis_terms(),
         crisis_note: paths::crisis_note(),

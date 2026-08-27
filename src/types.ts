@@ -9,6 +9,7 @@ export interface VerseOut {
 
 export interface PassageOut {
   token: string | null;
+  /// The reference as a reader writes it: "1 Kings 3:9", never "1Ki 3:9".
   reference: string;
   verse_ids: number[];
   verses: VerseOut[];
@@ -17,6 +18,25 @@ export interface PassageOut {
   canon: "protestant" | "deutero";
   cited: boolean;
   sent: boolean;
+}
+
+// A whole chapter, for reading a cited passage in its place. The verse text
+// comes from index.db exactly as the answer's does.
+export interface ChapterRef {
+  book_id: number;
+  chapter: number;
+  reference: string;
+}
+
+export interface ChapterOut {
+  book_id: number;
+  book_name: string;
+  chapter: number;
+  reference: string;
+  canon: "protestant" | "deutero";
+  verses: VerseOut[];
+  previous: ChapterRef | null;
+  next: ChapterRef | null;
 }
 
 export interface TopicOut {
@@ -179,6 +199,8 @@ export interface SelfTestResult {
 
 export interface StartupState {
   first_run: boolean;
+  /// A plain sentence naming a model file that is missing or wrong, or null.
+  model_problem: string | null;
   models: ModelStatus[];
   chat_model_present: boolean;
   embedding_model_present: boolean;

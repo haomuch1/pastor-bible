@@ -142,6 +142,9 @@ impl Verdict {
 #[derive(Clone, Debug)]
 pub struct Sent {
     pub token: String,
+    /// The reader's form, "1 Kings 3:9". The fallback below is shown to the
+    /// reader, so this is the spelling it carries; the prompt's own compact
+    /// form never leaves `Engine::pack`.
     pub reference: String,
     pub verse_ids: Vec<i64>,
 }
@@ -448,7 +451,7 @@ impl Verifier {
         ];
         for bid in order {
             lines.push(String::new());
-            lines.push(index.abbrev(bid).to_string());
+            lines.push(index.name(bid).to_string());
             let mut ps = by_book.remove(&bid).unwrap();
             ps.sort_by_key(|p| p.verse_ids.first().copied().unwrap_or(0));
             for p in ps {

@@ -133,7 +133,9 @@ fn an_answer_round_trips_and_its_passages_come_from_the_index_now() {
     // The passages are rendered now, from the index, with real verse text.
     assert_eq!(got.passages.len(), 1, "one sent passage was stored");
     let p = &got.passages[0];
-    assert_eq!(p.reference, "Mat 6:25-26");
+    // The reference is rebuilt in the form a reader writes, not the compact
+    // form the prompt uses.
+    assert_eq!(p.reference, "Matthew 6:25-26");
     // The tokens are rebuilt, so a reopened answer's [P1] resolves to a chip
     // rather than being shown to the reader as "[P1]".
     assert_eq!(p.token.as_deref(), Some("[P1]"), "the [P#] token was not rebuilt");
@@ -234,9 +236,11 @@ fn clearing_removes_everything_and_starts_again_at_one() {
 
 #[test]
 fn the_export_holds_what_the_entries_hold() {
+    let db_index = common::require_index();
+    let index = Index::open(&db_index).unwrap();
     let dir = temp_dir("export");
     let db = UserDb::open(&dir.join("user.db").to_string_lossy()).unwrap();
-    let empty = db.export_text().unwrap();
+    let empty = db.export_text(&index).unwrap();
     assert!(empty.contains("No questions have been asked yet"));
 
     let mut crisis = answer("I want to give up", vec![55006025], "## Hope\n[P1]");
@@ -245,11 +249,20 @@ fn the_export_holds_what_the_entries_hold() {
     db.save_answer(&answer("What does the Bible say about anxiety?", vec![55006025],
                            "## Trust\nDo not be anxious [P1].")).unwrap();
 
-    let text = db.export_text().unwrap();
+    let text = db.export_text(&index).unwrap();
     assert!(text.contains("THE PASTOR BIBLE"));
     assert!(text.contains("I want to give up"));
     assert!(text.contains("What does the Bible say about anxiety?"));
-    assert!(text.contains("Do not be anxious [P1]."));
+    // On paper "[P1]" means nothing, so it is replaced by what it stood for,
+    // spelled the way a reader writes it.
+    assert!(
+        text.contains("Do not be anxious (Matthew 6:25)."),
+        "the export must resolve its markers into references:\n{}",
+        text
+    );
+    assert!(!text.contains("[P1]"), "no unresolved marker survives an export");
+    assert!(text.contains("PASSAGES"), "the passages an answer rested on are listed");
+    assert!(!text.contains("Mat 6:25"), "an export never shows an abbreviation");
     assert!(text.contains("a crisis note was shown"), "a crisis entry says so");
     assert!(text.contains("Qwen3-8B-Q4_K_M"));
     assert!(text.contains("66 books"));
@@ -282,7 +295,7 @@ fn every_sent_passage_keeps_its_own_token() {
     let tokens: Vec<&str> = got.passages.iter().filter_map(|p| p.token.as_deref()).collect();
     assert_eq!(tokens, vec!["[P1]", "[P2]", "[P3]"], "tokens must keep their order");
     let refs: Vec<&str> = got.passages.iter().map(|p| p.reference.as_str()).collect();
-    assert_eq!(refs, vec!["Mat 6:25-26", "Psa 23:1", "1Pe 5:7"]);
+    assert_eq!(refs, vec!["Matthew 6:25-26", "Psalms 23:1", "1 Peter 5:7"]);
     assert_eq!(
         got.passages.iter().map(|p| p.cited).collect::<Vec<_>>(),
         vec![true, false, true],
@@ -290,6 +303,77 @@ fn every_sent_passage_keeps_its_own_token() {
     );
     for p in &got.passages {
         assert!(!p.verses.is_empty(), "{} has no text", p.reference);
+    }
+}
+
+/// A reopened answer's citation chips still work.
+///
+/// The window turns every `[P#]` in an answer into a chip by looking the token
+/// up among the passages beside it. For a fresh answer those come from the
+/// pipeline; for a reopened one they are rebuilt here, and if the rebuild ever
+/// stopped agreeing with the markers in the stored text the reader would be
+/// shown a bare "[P7]" instead of a reference. So every marker in the stored
+/// answer is resolved the way the window resolves it, and the reference it
+/// lands on is the one a reader writes.
+#[test]
+fn every_marker_in_a_reopened_answer_resolves_to_a_passage() {
+    let db_index = common::require_index();
+    let index = Index::open(&db_index).unwrap();
+    let dir = temp_dir("chips");
+    let db = UserDb::open(&dir.join("user.db").to_string_lossy()).unwrap();
+
+    let mut a = answer(
+        "What does the Bible say about worry?",
+        vec![55006025, 55006026],
+        "## Trust\nDo not be anxious [P1], and cast your care [P3]; the shepherd \
+         provides [P2].",
+    );
+    a.passages = vec![
+        passage("[P1]", "Matthew 6:25-26", vec![55006025, 55006026], true),
+        passage("[P2]", "Psalms 23:1", vec![19023001], true),
+        passage("[P3]", "1 Peter 5:7", vec![75005007], true),
+    ];
+    a.sent_count = 3;
+    a.cited_tokens = vec!["[P1]".into(), "[P2]".into(), "[P3]".into()];
+    a.cited_passage_ids = vec![55006025, 55006026, 19023001, 75005007];
+    let id = db.save_answer(&a).unwrap();
+
+    let got = db.get(id, &index).unwrap().unwrap();
+    assert!(got.tokens_resolvable, "a stored answer keeps its numbering");
+
+    // Exactly what Synopsis.tsx does: token -> passage.
+    let by_token: std::collections::HashMap<&str, &PassageOut> =
+        got.passages.iter().filter_map(|p| p.token.as_deref().map(|t| (t, p))).collect();
+
+    let markers: Vec<&str> = got
+        .answer_md
+        .match_indices("[P")
+        .map(|(i, _)| {
+            let rest = &got.answer_md[i..];
+            &rest[..rest.find(']').expect("a closed marker") + 1]
+        })
+        .collect();
+    assert_eq!(markers, vec!["[P1]", "[P3]", "[P2]"], "the markers as the answer wrote them");
+
+    for m in &markers {
+        let p = by_token
+            .get(m)
+            .unwrap_or_else(|| panic!("{} has no passage, so the chip would not render", m));
+        assert!(!p.reference.is_empty());
+        assert!(!p.verses.is_empty(), "{} has no verse text to scroll to", m);
+    }
+    assert_eq!(by_token["[P1]"].reference, "Matthew 6:25-26");
+    assert_eq!(by_token["[P2]"].reference, "Psalms 23:1");
+    assert_eq!(by_token["[P3]"].reference, "1 Peter 5:7");
+
+    // And the scroll target the chip uses is the passage's own reference, which
+    // is the id the panel gives it. Same string, both sides.
+    for p in &got.passages {
+        assert_eq!(
+            p.reference,
+            index.reference_of(&p.verse_ids),
+            "the chip's label and the panel's heading must be the same string"
+        );
     }
 }
 
@@ -320,6 +404,65 @@ It says so [P1] [P7].");
     // The passages themselves are still recovered and still have their text.
     assert_eq!(got.passages.len(), 2, "two runs of adjacent verses");
     assert!(got.passages.iter().all(|p| !p.verses.is_empty()));
+}
+
+/// Schema 2 removes the entries whose passage numbering was never stored.
+///
+/// Those entries were written only by a build that never shipped, and each one
+/// could show its answer only with the citation markers stripped out and a
+/// notice explaining why. A user.db carrying them is opened, cleaned and
+/// stamped; the entries beside them are untouched, and the FTS index follows
+/// the delete rather than keeping a ghost that search would still find.
+#[test]
+fn opening_an_older_user_db_removes_the_entries_that_lost_their_numbering() {
+    let db_index = common::require_index();
+    let index = Index::open(&db_index).unwrap();
+    let dir = temp_dir("migrate-v2");
+    let path = dir.join("user.db").to_string_lossy().into_owned();
+
+    let (stale, good) = {
+        let db = UserDb::open(&path).unwrap();
+        let stale = db
+            .save_answer(&answer("An entry from the build that lost its numbering",
+                                 vec![55006025], "## A
+So it says [P1]."))
+            .unwrap();
+        let good = db
+            .save_answer(&answer("An entry with its numbering kept", vec![19023001],
+                                 "## B
+So it says [P1]."))
+            .unwrap();
+        db.con
+            .execute(
+                "UPDATE history SET passage_ids = ? WHERE id = ?",
+                rusqlite::params!["[55006025,55006026]", stale],
+            )
+            .unwrap();
+        // Stamp it back to the schema this machine would have been on.
+        db.con
+            .execute("UPDATE meta SET value = '1' WHERE key = 'schema_version'", [])
+            .unwrap();
+        (stale, good)
+    };
+
+    let db = UserDb::open(&path).unwrap();
+    assert_eq!(db.count(), 1, "the unnumbered entry is gone and the other is not");
+    assert!(db.get(stale, &index).unwrap().is_none(), "the unnumbered entry was removed");
+    assert!(db.get(good, &index).unwrap().is_some(), "the good entry survived");
+    assert!(
+        db.search("numbering", 10).unwrap().iter().all(|r| r.id == good),
+        "search must not still find a deleted entry"
+    );
+    let v: String = db
+        .con
+        .query_row("SELECT value FROM meta WHERE key = 'schema_version'", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(v, SCHEMA_VERSION.to_string(), "the version is stamped after the migration");
+
+    // Opening it again is a no-op rather than a second pass.
+    drop(db);
+    let db = UserDb::open(&path).unwrap();
+    assert_eq!(db.count(), 1);
 }
 
 #[test]

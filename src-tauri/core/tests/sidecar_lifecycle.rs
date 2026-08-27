@@ -19,7 +19,6 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use pastor_bible_core::paths;
-use pastor_bible_core::pipeline::EMBED_GGUF;
 use pastor_bible_core::sidecar::{free_ram_gb, process_alive, Options, Role, Sidecar};
 
 /// Only one sidecar may be alive at a time, which is the point; the tests in
@@ -39,7 +38,7 @@ fn require(path: &str, what: &str) -> String {
 
 fn embed_options() -> Options {
     let server = require(&paths::llama_server(), "llama-server");
-    let model = require(&paths::model(EMBED_GGUF), "the embedding model");
+    let model = require(&paths::embed_model(), "the embedding model");
     let mut o = Options::new(&server, &model, Role::Embedding);
     o.log_dir = Some(paths::log_dir());
     o.ready_timeout = Duration::from_secs(180);
@@ -129,7 +128,7 @@ fn two_sidecars_are_allowed_only_when_one_asks_to_share() {
 fn the_sidecar_does_not_survive_a_hard_kill_of_its_parent() {
     let _guard = SERIAL.lock().unwrap();
     require(&paths::llama_server(), "llama-server");
-    require(&paths::model(EMBED_GGUF), "the embedding model");
+    require(&paths::embed_model(), "the embedding model");
 
     let mut parent = Command::new(env!("CARGO_BIN_EXE_pastor-bible-cli"))
         .arg("spawn-and-hang")

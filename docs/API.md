@@ -11,6 +11,11 @@ check a field still cannot break the promise:
 - **Verse text always comes from index.db.** `passages[].verses[].text` is read
   from the database at assembly time. Nothing a model wrote reaches it, at any
   stage, the fallback included.
+- **Every reference a reader sees is spelled the way a reader writes it.**
+  `passages[].reference`, `verses[].reference`, `topics[].passage_refs` and
+  `topic_groups[].passage_refs` are all "1 Kings 3:9", never "1Ki 3:9". The
+  compact form exists in one place only, the prompt sent to the model, and it
+  never leaves `Engine::pack`. See "Two spellings of a book" below.
 - **`synopsis_markdown` is populated only when the verifier passed.** When it
   did not, that field is `null` and `fallback_markdown` carries the grouped
   passages instead. There is no field that holds an unverified synopsis.
@@ -45,7 +50,7 @@ check a field still cannot break the promise:
     passages              array    EVERY passage retrieved, in rank order:
                                      token          the [P#] it was sent as,
                                                     null if it was not sent
-                                     reference      "Mat 6:24-34"
+                                     reference      "Matthew 6:24-34"
                                      verse_ids      [int]
                                      verses         [{verse_id, reference, text}]
                                      score          fused retrieval score
@@ -83,6 +88,23 @@ check a field still cannot break the promise:
     peak_ram_mb           number?  peak resident memory of the sidecar
     query_mode            "raw" | "rewrite" | "fused"
 
+## Two spellings of a book
+
+index.db's `books` table carries two, and neither is what belongs on a citation
+chip. `abbrev` is "1Ki", which is the compact form the Treasury of Scripture
+Knowledge speaks and which the committed retrieval fixtures hold. `name` is the
+World English Bible's own running title, which for the same book is "The First
+Book of Kings" and for one deuterocanonical book runs to sixteen words.
+
+So there is a third, `index::DISPLAY_NAMES`, keyed on USFM code: "1 Kings". It
+is the only book data in this program that is not read from the index, and
+`src-tauri/core/tests/book_names.rs` asserts that every book index.db holds has
+an entry in it and that no abbreviation reaches any screen or any exported file.
+
+The compact form is deliberately still what the prompt sends, because that is
+what P3 and P4 measured and what the fixtures pin. The same test asserts that
+too, so the split cannot close in either direction by accident.
+
 ## The Deuterocanon tag is the caller's job
 
 PLAN 5.7 requires a visible "Deuterocanon" tag on every deuterocanonical
@@ -117,7 +139,11 @@ setting and every answer is in user.db.
                                    credits, licences, paths
     hardware_check()               this machine beside the reference machine
     startup_state()                first run or not, model files present,
-                                   settings, the last self-test, history count
+                                   settings, the last self-test, history count,
+                                   and `model_problem`: a plain sentence naming
+                                   a model file that is missing or is not the
+                                   file we pinned, or null. `ask` returns the
+                                   same sentence rather than running.
     get_settings() / set_setting(key, value)
     download_model(id)             emits "download-progress"
     cancel_download()
@@ -131,6 +157,14 @@ setting and every answer is in user.db.
     finish_first_run()
     history_list / history_search / history_get / history_delete /
     history_clear / history_export(path)
+    chapter(book_id, chapter)      the whole chapter a passage came from,
+                                   for the reading view: the verses from
+                                   index.db, the book named as a reader writes
+                                   it, the canon tag, and the chapters either
+                                   side. Previous and next follow the reader's
+                                   canon setting; the chapter asked for always
+                                   opens, whatever the setting, because a
+                                   citation being followed must resolve.
     crisis_note()
     shutdown_models()
 

@@ -20,7 +20,7 @@ use tauri::{Emitter, Manager, State};
 use pastor_bible_core::api::Answer;
 use pastor_bible_core::download::{self, ModelStatus, Progress};
 use pastor_bible_core::hardware::{self, Hardware};
-use pastor_bible_core::pipeline::{Engine, QueryMode, Settings, EMBED_GGUF};
+use pastor_bible_core::pipeline::{Engine, QueryMode, Settings, DEFAULT_CHAT_GGUF, EMBED_GGUF};
 use pastor_bible_core::retrieve::CanonMode;
 use pastor_bible_core::session::{SelfTestResult, Session, Stage, SELF_TEST_IDS};
 use pastor_bible_core::userdb::{HistoryDetail, HistoryRow, UserDb};
@@ -33,7 +33,12 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub struct AppPaths {
     pub app_data: String,
     pub user_db: String,
+    /// Where the chat model is downloaded to and looked for. Application data,
+    /// because it is the one file the reader chooses and may replace.
     pub models: String,
+    /// The embedding model, resolved as a resource of the application rather
+    /// than as something in `models`. See `resolve_paths`.
+    pub embed_model: String,
     pub index_db: String,
     pub llama_server: String,
     pub logs: String,
@@ -54,6 +59,10 @@ pub struct AppState {
     retrieved: pastor_bible_core::session::RetrievedSlot,
     /// The answering model's process id, so Stop can stop it.
     chat_pid: pastor_bible_core::session::ChatPidSlot,
+    /// The bundled search model, checked against its pinned sha256 in the
+    /// background at startup. `None` while that is still running; `Some(Err)`
+    /// carries a message the reader can act on.
+    embed_checksum: Arc<Mutex<Option<Result<(), String>>>>,
 }
 
 fn resolve_paths(app: &tauri::AppHandle) -> Result<AppPaths, String> {
@@ -90,14 +99,48 @@ fn resolve_paths(app: &tauri::AppHandle) -> Result<AppPaths, String> {
     ])
     .ok_or("the model server was not found. It ships with the installer.")?;
 
-    let models = std::env::var("TPB_MODEL_DIR")
-        .unwrap_or_else(|_| app_data.join("models").to_string_lossy().into_owned());
+    // The chat model is the one file the reader chooses, so it lives in
+    // application data where the downloader puts it. In a development build the
+    // repository's own models/ directory is accepted as well, because that is
+    // where five gigabytes already sit on a machine that builds this app and
+    // nobody should have to copy them to run `tauri dev`. A release build never
+    // looks there: the reader's copy is the reader's copy.
+    let app_models = app_data.join("models");
+    let models = match std::env::var("TPB_MODEL_DIR") {
+        Ok(dir) => dir,
+        Err(_) => {
+            let repo = std::path::PathBuf::from(paths::model_dir());
+            if cfg!(debug_assertions) && !app_models.join(DEFAULT_CHAT_GGUF).exists() && repo.join(DEFAULT_CHAT_GGUF).exists() {
+                repo.to_string_lossy().into_owned()
+            } else {
+                app_models.to_string_lossy().into_owned()
+            }
+        }
+    };
+
+    // The embedding model is a bundled resource, not a download. It is read on
+    // every question, it is 262 MB, and DECISIONS records it as shipping with
+    // the installer; looking for it in application data is what produced the
+    // defect P5.1 opened with, because nothing ever puts it there. The last
+    // candidate is returned even when it does not exist, so that the check at
+    // startup can name the file the reader is missing rather than fail here and
+    // leave the window unable to open at all.
+    let embed_model = first_existing(&[
+        std::env::var("TPB_EMBED_MODEL").ok(),
+        resource.as_ref().map(|r| r.join("resources").join(EMBED_GGUF).to_string_lossy().into_owned()),
+        resource.as_ref().map(|r| r.join(EMBED_GGUF).to_string_lossy().into_owned()),
+        Some(paths::resource_file(EMBED_GGUF)),
+        Some(std::path::Path::new(&models).join(EMBED_GGUF).to_string_lossy().into_owned()),
+    ])
+    .unwrap_or_else(|| paths::resource_file(EMBED_GGUF));
+
     let logs = app_data.join("logs").to_string_lossy().into_owned();
 
     Ok(AppPaths {
         user_db: app_data.join("user.db").to_string_lossy().into_owned(),
         app_data: app_data.to_string_lossy().into_owned(),
         models,
+        embed_model,
         index_db,
         llama_server,
         logs,
@@ -120,6 +163,117 @@ fn first_existing(candidates: &[Option<String>]) -> Option<String> {
         .flatten()
         .find(|p| std::path::Path::new(p).exists())
         .cloned()
+}
+
+// ------------------------------------------------------------ model files
+
+/// Is every model file this app needs where it is expected to be?
+///
+/// The defect this replaced showed the reader `The system cannot find the path
+/// specified (os error 3)` with a path in it, two and a half minutes after they
+/// asked a question. A missing file is not an unexpected condition and it does
+/// not deserve an error code: it deserves a sentence naming the file and saying
+/// what puts it back. Checked at startup and again before a question runs, so
+/// the message arrives before the wait rather than after it.
+fn model_problem(
+    paths: &AppPaths,
+    settings: &AppSettings,
+    checksum: &Option<Result<(), String>>,
+) -> Option<String> {
+    let embed = download::model("embedding").expect("the embedding model is pinned");
+    let path = std::path::Path::new(&paths.embed_model);
+    if !path.exists() {
+        return Some(format!(
+            "The search model is missing, so nothing can be looked up.\n\n\
+             The file is {}, and The Pastor Bible expected it here:\n\
+             {}\n\n\
+             It ships with the application and is never downloaded. \
+             Reinstalling puts it back.",
+            embed.file,
+            tidy(&paths.embed_model)
+        ));
+    }
+    if let Some(Err(why)) = checksum {
+        return Some(why.clone());
+    }
+
+    let spec = download::model(&settings.model)?;
+    let chat = std::path::Path::new(&paths.models).join(spec.file);
+    if !chat.exists() {
+        return Some(format!(
+            "The answering model has not been downloaded yet.\n\n\
+             The file is {} ({}), and The Pastor Bible expected it here:\n\
+             {}\n\n\
+             Open Settings to download it. Nothing else is needed.",
+            spec.file,
+            human_bytes(spec.bytes),
+            tidy(&chat.to_string_lossy())
+        ));
+    }
+    None
+}
+
+/// A path a reader can read.
+///
+/// The development fallbacks are built by joining `..` onto a manifest
+/// directory, which is correct and unreadable: the message that names a missing
+/// file should not also make the reader parse `core\..\..\src-tauri`. The
+/// components are resolved textually, because the file being named is the one
+/// that is not there and cannot be canonicalised.
+fn tidy(path: &str) -> String {
+    let p = std::path::Path::new(path);
+    let mut out = std::path::PathBuf::new();
+    for c in p.components() {
+        match c {
+            std::path::Component::ParentDir => {
+                out.pop();
+            }
+            std::path::Component::CurDir => {}
+            other => out.push(other.as_os_str()),
+        }
+    }
+    out.to_string_lossy().into_owned()
+}
+
+fn human_bytes(n: u64) -> String {
+    if n >= 1 << 30 {
+        format!("{:.1} GB", n as f64 / (1u64 << 30) as f64)
+    } else {
+        format!("{:.0} MB", n as f64 / (1u64 << 20) as f64)
+    }
+}
+
+/// Check the bundled search model against the sha256 pinned in download.rs.
+///
+/// Off the startup path in a thread of its own: the file is 262 MB and the
+/// window opens in under a second, which is worth keeping. A file that is
+/// present but is not the file we pinned is the one case a size check would
+/// pass and a reader would never find out about, so it is worth the read.
+fn verify_embed_model(path: String, slot: Arc<Mutex<Option<Result<(), String>>>>) {
+    let spec = download::model("embedding").expect("the embedding model is pinned");
+    let result = (|| -> Result<(), String> {
+        let p = std::path::Path::new(&path);
+        if !p.exists() {
+            return Ok(()); // `model_problem` already says so, more usefully.
+        }
+        let got = download::sha256_file(p, |_, _| {})?;
+        if got == spec.sha256 {
+            Ok(())
+        } else {
+            Err(format!(
+                "The search model on this computer is not the file The Pastor Bible \
+                 was built with, so it is not being used.\n\n\
+                 The file is {}, and it is here:\n\
+                 {}\n\n\
+                 Reinstalling replaces it.",
+                spec.file,
+                tidy(&path)
+            ))
+        }
+    })();
+    if let Ok(mut g) = slot.lock() {
+        *g = Some(result);
+    }
 }
 
 // ---------------------------------------------------------------- settings
@@ -150,10 +304,7 @@ fn engine_settings(paths: &AppPaths, s: &AppSettings) -> Result<Settings, String
         index_db: paths.index_db.clone(),
         llama_server: paths.llama_server.clone(),
         chat_model: std::path::Path::new(&paths.models).join(spec.file).to_string_lossy().into_owned(),
-        embed_model: std::path::Path::new(&paths.models)
-            .join(EMBED_GGUF)
-            .to_string_lossy()
-            .into_owned(),
+        embed_model: paths.embed_model.clone(),
         prompts_dir: paths::prompts_dir(),
         crisis_terms: paths::crisis_terms(),
         crisis_note: paths::crisis_note(),
@@ -254,6 +405,9 @@ pub struct StartupState {
     pub settings: AppSettings,
     pub self_test: Option<SelfTestResult>,
     pub history_count: i64,
+    /// A plain sentence naming a model file that is missing or wrong, or
+    /// `None` when everything the app needs is where it should be.
+    pub model_problem: Option<String>,
 }
 
 #[tauri::command]
@@ -267,7 +421,10 @@ fn startup_state(state: State<'_, AppState>) -> Result<StartupState, String> {
     let embed_present = models.iter().find(|m| m.id == "embedding").map(|m| m.present).unwrap_or(false);
     let self_test: Option<SelfTestResult> =
         db.get_setting("self_test").and_then(|s| serde_json::from_str(&s).ok());
+    let checksum = state.embed_checksum.lock().map_err(lock)?.clone();
+    let model_problem = model_problem(&state.paths, &settings, &checksum);
     Ok(StartupState {
+        model_problem,
         first_run: db.get_setting("first_run_done").is_none(),
         chat_model_present: chat_present,
         embedding_model_present: embed_present,
@@ -348,6 +505,16 @@ async fn ask(
     let question = question.trim().to_string();
     if question.is_empty() {
         return Err("Type a question first.".to_string());
+    }
+    {
+        let settings = {
+            let d = state.db.lock().map_err(lock)?;
+            read_settings(&d)
+        };
+        let checksum = state.embed_checksum.lock().map_err(lock)?.clone();
+        if let Some(why) = model_problem(&state.paths, &settings, &checksum) {
+            return Err(why);
+        }
     }
     if state.busy.swap(true, Ordering::SeqCst) {
         return Err("An answer is already being written. Wait for it, or cancel it.".to_string());
@@ -560,10 +727,38 @@ fn history_clear(state: State<'_, AppState>) -> Result<usize, String> {
 #[tauri::command]
 fn history_export(state: State<'_, AppState>, path: String) -> Result<String, String> {
     let db = state.db.lock().map_err(lock)?;
-    let text = db.export_text()?;
+    let session = state.session.lock().map_err(lock)?;
+    let text = match session.as_ref() {
+        Some(s) => db.export_text(&s.engine.retriever.index)?,
+        None => db.export_text(&pastor_bible_core::index::Index::open(&state.paths.index_db)?)?,
+    };
     std::fs::write(&path, text.as_bytes())
         .map_err(|e| format!("cannot write {}: {}", path, e))?;
     Ok(path)
+}
+
+/// A whole chapter, for reading a cited passage in its place.
+///
+/// The verse text comes from index.db, which is the same rule the answer
+/// itself is built under: nothing a model wrote reaches it. The canon setting
+/// decides only where Previous and Next may go, never whether the chapter the
+/// reader asked for is returned; a citation they are following always opens.
+#[tauri::command]
+fn chapter(
+    state: State<'_, AppState>,
+    book_id: i64,
+    chapter: i64,
+) -> Result<Option<pastor_bible_core::api::ChapterOut>, String> {
+    let canon = {
+        let db = state.db.lock().map_err(lock)?;
+        read_settings(&db).canon
+    };
+    let session = state.session.lock().map_err(lock)?;
+    Ok(match session.as_ref() {
+        Some(s) => s.engine.retriever.index.chapter(book_id, chapter, &canon),
+        None => pastor_bible_core::index::Index::open(&state.paths.index_db)?
+            .chapter(book_id, chapter, &canon),
+    })
 }
 
 /// The crisis note, for the panel above an answer. Loaded from the same file
@@ -603,7 +798,13 @@ pub fn run() {
         .setup(|app| {
             let paths = resolve_paths(&app.handle())?;
             let db = UserDb::open(&paths.user_db)?;
+            let embed_checksum: Arc<Mutex<Option<Result<(), String>>>> = Arc::new(Mutex::new(None));
+            {
+                let (p, slot) = (paths.embed_model.clone(), embed_checksum.clone());
+                std::thread::spawn(move || verify_embed_model(p, slot));
+            }
             app.manage(AppState {
+                embed_checksum,
                 paths,
                 session: Arc::new(Mutex::new(None)),
                 db: Arc::new(Mutex::new(db)),
@@ -653,6 +854,7 @@ pub fn run() {
             history_delete,
             history_clear,
             history_export,
+            chapter,
             crisis_note,
             cited_tokens,
             shutdown_models,
