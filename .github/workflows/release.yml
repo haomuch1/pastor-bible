@@ -1,0 +1,356 @@
+# Build the installers, gate them, and publish a release.
+#
+# Never on push. The repository is private until v1.0.0 and Actions minutes on a
+# private repository are metered, so this runs on a version tag or when someone
+# asks for it by hand. PLAN section 11.
+#
+# Everything large is fetched by pinned checksum rather than committed: the
+# sidecar from llama.cpp's release b10639, the embedding model from the model's
+# own host, and index.db from this repository's index-0.2.0 prerelease, which
+# exists because the index is 366.8 MB and git cannot carry it.
+
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Check the plumbing without bundling installers"
+        type: boolean
+        default: false
+      publish:
+        description: "Publish a GitHub release from the artifacts"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+env:
+  # Pinned in tools/fetch_llama.py, docs/SIDECAR.md and NOTICE.md as well.
+  INDEX_TAG: index-0.2.0
+  INDEX_SHA256: d3b0579281b6a5044b6f59a0e50ec3424ef3fc25dac43042d5c8168cb29bec58
+  INDEX_BYTES: "384614400"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # --------------------------------------------------------------- version
+  # A release must move forward. The version lives in src-tauri/Cargo.toml and
+  # nowhere else: tauri.conf.json has no version key, so Tauri falls back to the
+  # Cargo one and the installer and the About screen cannot disagree, which they
+  # did until 2026-08-27.
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - id: read
+        shell: bash
+        run: |
+          v=$(grep -m1 '^version = ' src-tauri/Cargo.toml | cut -d'"' -f2)
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "version in src-tauri/Cargo.toml: $v"
+
+      - name: the version must be greater than the latest release tag
+        shell: bash
+        run: |
+          v="${{ steps.read.outputs.version }}"
+          # Only product tags count. index-* is a build input, not a release.
+          latest=$(git tag -l 'v*' | sed 's/^v//' | sort -V | tail -1)
+          if [ -z "$latest" ]; then
+            echo "no previous v* tag; $v is the first"
+            exit 0
+          fi
+          echo "latest released: $latest, this build: $v"
+          if [ "$v" = "$latest" ]; then
+            echo "::error::version $v is already released"
+            exit 1
+          fi
+          top=$(printf '%s\n%s\n' "$v" "$latest" | sort -V | tail -1)
+          if [ "$top" != "$v" ]; then
+            echo "::error::version $v is lower than the released $latest"
+            exit 1
+          fi
+
+      - name: a pushed tag must match the version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          v="${{ steps.read.outputs.version }}"
+          # A -ci suffix marks a test tag; the numbers still have to match.
+          if [ "${tag%%-*}" != "$v" ]; then
+            echo "::error::tag v$tag does not match version $v"
+            exit 1
+          fi
+
+  # ----------------------------------------------------------- offline gate
+  # The promise is that the app never reaches the network once its models are
+  # in place. This runs the query suite with the network taken away, and proves
+  # the network really is gone by asserting the downloader fails.
+  offline:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: fetch index.db by pinned checksum
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$INDEX_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern index.db --dir src-tauri/resources
+          echo "$INDEX_SHA256  src-tauri/resources/index.db" | sha256sum -c -
+
+      - name: fetch the embedding model by pinned checksum
+        run: python3 tools/fetch_model.py
+
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: "src-tauri/core" }
+
+      - name: build the tests while the network is still here
+        run: cargo test --manifest-path src-tauri/core/Cargo.toml --no-run --locked
+
+      - name: run the suite with no network
+        shell: bash
+        run: |
+          sudo apt-get install -y -qq bubblewrap >/dev/null 2>&1 || true
+          # unshare gives the step a network namespace with only loopback, which
+          # is what the sidecar and the tests' own HTTP server need and all they
+          # need. Anything reaching outward fails to resolve.
+          sudo unshare --net -- bash -c '
+            ip link set lo up
+            su - "$USER" -c "cd $PWD && cargo test --manifest-path src-tauri/core/Cargo.toml --locked" ' ||
+          sudo unshare --net --map-root-user -- bash -c '
+            ip link set lo up
+            cargo test --manifest-path src-tauri/core/Cargo.toml --locked '
+
+      - name: prove the network really was gone
+        shell: bash
+        run: |
+          set +e
+          sudo unshare --net --map-root-user -- bash -c 'ip link set lo up; curl -sS --max-time 10 https://huggingface.co > /dev/null'
+          rc=$?
+          set -e
+          if [ $rc -eq 0 ]; then
+            echo "::error::the offline job reached the internet, so it proves nothing"
+            exit 1
+          fi
+          echo "the downloader's host was unreachable inside the namespace, as it must be"
+
+  # --------------------------------------------------------------- installers
+  build:
+    needs: [version, offline]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            bundles: nsis
+            artifact: windows-installer
+          - os: ubuntu-22.04
+            bundles: deb,appimage
+            artifact: linux-installers
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf libgtk-3-dev
+
+      - name: fetch index.db by pinned checksum
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$INDEX_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern index.db --dir src-tauri/resources
+          echo "$INDEX_SHA256  src-tauri/resources/index.db" | sha256sum -c -
+          test "$(wc -c < src-tauri/resources/index.db)" = "$INDEX_BYTES"
+
+      - name: fetch the embedding model by pinned checksum
+        shell: bash
+        run: python3 tools/fetch_model.py || python tools/fetch_model.py
+
+      - name: fetch and assemble the sidecar by pinned checksum
+        shell: bash
+        run: python3 tools/fetch_llama.py --bundle || python tools/fetch_llama.py --bundle
+
+      - run: npm ci
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: "src-tauri" }
+
+      - name: check the frontend
+        run: npm run build && npx vitest run
+
+      - name: build the installers
+        if: ${{ !inputs.dry_run }}
+        run: npx tauri build --bundles ${{ matrix.bundles }}
+
+      - name: checksum what was produced
+        if: ${{ !inputs.dry_run }}
+        shell: bash
+        run: |
+          mkdir -p out
+          find src-tauri/target/release/bundle -type f \
+            \( -name '*.exe' -o -name '*.deb' -o -name '*.AppImage' \) -print0 |
+            xargs -0 -I{} cp {} out/
+          cd out && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.dry_run }}
+        with:
+          name: ${{ matrix.artifact }}
+          path: out/*
+          retention-days: 7
+
+  # -------------------------------------------------------------- upgrade gate
+  # PLAN 11: install the previous release, then this candidate, and assert one
+  # install, history preserved, and no model re-download.
+  upgrade:
+    needs: [version, build]
+    if: ${{ !inputs.dry_run }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: windows-installer, path: candidate }
+
+      - name: fetch the previous release, if there is one
+        id: prev
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts \
+                  --json tagName --jq '[.[] | select(.tagName | startswith("v"))][0].tagName // ""')
+          if [ -z "$tag" ]; then
+            echo "have_prev=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No previous release exists. The gate runs the candidate twice \
+                  instead, which tests reinstall-over-itself but not a version change."
+          else
+            echo "have_prev=true" >> "$GITHUB_OUTPUT"
+            mkdir -p previous
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern '*setup.exe' --dir previous
+          fi
+
+      - name: install the earlier build, then the candidate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function ARP { @(Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue | Where-Object DisplayName -like "*Pastor*") }
+          $first = if ("${{ steps.prev.outputs.have_prev }}" -eq "true") {
+            (Get-ChildItem previous -Filter *setup.exe | Select-Object -First 1).FullName
+          } else {
+            (Get-ChildItem candidate -Filter *setup.exe | Select-Object -First 1).FullName
+          }
+          $cand = (Get-ChildItem candidate -Filter *setup.exe | Select-Object -First 1).FullName
+
+          Start-Process $first -ArgumentList '/S' -Wait
+          Start-Sleep 5
+          if ((ARP).Count -ne 1) { throw "expected one Add/Remove entry after the first install, found $((ARP).Count)" }
+          $before = (ARP).DisplayVersion
+          Write-Host "installed $before"
+
+          # Something the reader would lose: a history file and a stand-in model.
+          $data = "$env:APPDATA\io.github.haomuch1.pastorbible"
+          New-Item -ItemType Directory -Force "$data\models" | Out-Null
+          Set-Content "$data\user.db" "not a real database, but it is the reader's"
+          Set-Content "$data\models\Qwen3-8B-Q4_K_M.gguf" "stand-in for five gigabytes"
+          $modelStamp = (Get-Item "$data\models\Qwen3-8B-Q4_K_M.gguf").LastWriteTimeUtc
+          Start-Sleep 2
+
+          Start-Process $cand -ArgumentList '/S' -Wait
+          Start-Sleep 5
+
+          if ((ARP).Count -ne 1) { throw "expected ONE Add/Remove entry after the upgrade, found $((ARP).Count)" }
+          Write-Host "one Add/Remove entry, now $((ARP).DisplayVersion)"
+
+          if (-not (Test-Path "$data\user.db")) { throw "the upgrade deleted the reader's history" }
+          if ((Get-Content "$data\user.db" -Raw) -notmatch "the reader's") { throw "the upgrade overwrote the reader's history" }
+          Write-Host "history survived the upgrade"
+
+          $after = (Get-Item "$data\models\Qwen3-8B-Q4_K_M.gguf").LastWriteTimeUtc
+          if ($after -ne $modelStamp) { throw "the model was rewritten: $modelStamp -> $after" }
+          Write-Host "the model was not re-downloaded"
+
+          $dir = "$env:LOCALAPPDATA\The Pastor Bible"
+          Write-Host "install directory holds $((Get-ChildItem $dir -Recurse -File).Count) files"
+
+      - name: a downgrade is refused
+        if: ${{ steps.prev.outputs.have_prev == 'true' }}
+        shell: pwsh
+        run: |
+          $prev = (Get-ChildItem previous -Filter *setup.exe | Select-Object -First 1).FullName
+          $v = (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" |
+                Where-Object DisplayName -like "*Pastor*").DisplayVersion
+          $p = Start-Process $prev -ArgumentList '/S' -Wait -PassThru
+          $now = (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" |
+                  Where-Object DisplayName -like "*Pastor*").DisplayVersion
+          if ($now -ne $v) { throw "the older installer replaced $v with $now" }
+          Write-Host "downgrade refused with exit code $($p.ExitCode); still $now"
+
+  # ------------------------------------------------------------------- signing
+  # PLAN 11: present, off, and waiting for SignPath. It is written here so that
+  # turning it on is a flag rather than a change to the release process.
+  sign:
+    needs: build
+    if: ${{ vars.SIGNING_ENABLED == 'true' && !inputs.dry_run }}
+    runs-on: windows-latest
+    steps:
+      - run: |
+          echo "SignPath's trusted-build integration goes here."
+          echo "Until the application is granted, this job does not run."
+
+  # ------------------------------------------------------------------- publish
+  publish:
+    needs: [version, build, upgrade]
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.publish }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: dist }
+      - shell: bash
+        run: |
+          mkdir -p release && find dist -type f -exec cp {} release/ \;
+          cd release && sha256sum * > SHA256SUMS.txt
+          ls -la
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: The Pastor Bible ${{ needs.version.outputs.version }}
+          draft: true
+          body: |
+            The Pastor Bible ${{ needs.version.outputs.version }}, unsigned.
+
+            Windows will show "Windows protected your PC" when you run the
+            installer, because this project has no paid signing certificate yet.
+            Click "More info", then "Run anyway". The README's install section
+            has the screenshots.
+
+            **Bible index**
+
+                index_version 0.2.0
+                sha256        ${{ env.INDEX_SHA256 }}
+                bytes         ${{ env.INDEX_BYTES }}
+
+            Installer checksums are in `SHA256SUMS.txt` beside the files.
+
+            The answering model is not a release asset: it is about 5 GB and the
+            app downloads it once, on first run, from the model's own host, with
+            its checksum pinned in the program.
+          files: release/*
