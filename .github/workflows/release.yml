@@ -60,8 +60,11 @@ jobs:
         shell: bash
         run: |
           v="${{ steps.read.outputs.version }}"
-          # Only product tags count. index-* is a build input, not a release.
-          latest=$(git tag -l 'v*' | sed 's/^v//' | sort -V | tail -1)
+          # Only a plain vX.Y.Z is a release. index-* is a build input, and a
+          # suffixed tag like v0.9.1-ci is a test of this workflow; neither is
+          # something a version has to be greater than. Without this the gate
+          # compares a tagged build against its own tag and always refuses.
+          latest=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | sort -V | tail -1)
           if [ -z "$latest" ]; then
             echo "no previous v* tag; $v is the first"
             exit 0
