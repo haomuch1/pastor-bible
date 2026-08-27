@@ -1,254 +1,327 @@
 # HANDOFF
 
-Session: P7-prep, then P7-publish
+Session: P7-fix-1, the installed app could not find its own text
 Date: 2026-08-27
-Status: The repository is public and v1.0.0 is published as a pre-release.
-What remains is P7 itself, which only Jared can do: install on a clean machine
-and follow the README.
+Status: v1.0.1 is published as a pre-release. The repository is public. The
+laptop still has v1.0.0 on it, and the next step is Jared installing v1.0.1
+over it without uninstalling first.
 
 ## The release
 
-    https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.0
+    https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.1
 
-Public, and reachable by anyone with no account. It is marked **Pre-release**,
-because nothing README claims about a first install has been checked on a
-machine that did not build the program. That flag is the whole point: it says
-in GitHub's own vocabulary what a paragraph of prose would need a reader to
-notice. It comes off when the test passes.
+Public, marked **Pre-release**, from tag `v1.0.1`, commit `fd8a8f9`.
 
-Because a pre-release carries no "Latest" badge, `/releases/latest` does not
-resolve to it -- the API returns 404 and the web URL falls back to the releases
-index, which does list it. README's install section now sends people to the
-releases page and says to take the topmost entry, rather than to "the latest
-release page", which would have been the stranger's very first stumble.
-
-Four assets, from tag `v1.0.0`, commit `200b97b`:
-
-    The.Pastor.Bible_1.0.0_x64-setup.exe     467,271,875 bytes   Windows NSIS
-    The.Pastor.Bible_1.0.0_amd64.deb                             Linux
-    The.Pastor.Bible_1.0.0_amd64.AppImage                        Linux
-    SHA256SUMS.txt
+    The.Pastor.Bible_1.0.1_x64-setup.exe     467,250,688 bytes
+    The.Pastor.Bible_1.0.1_amd64.deb         515,160,224 bytes
+    The.Pastor.Bible_1.0.1_amd64.AppImage    574,913,016 bytes
+    SHA256SUMS.txt                                   306 bytes
 
 **The Windows installer's sha256:**
 
-    093f26f2a8eb39bb21c5b32d28921278c291743fa11804b960f9e7ca47f616c0
+    17164c3b4280b0bbd409d55e362a9f991289215e93858c9730ec082246b363f9
 
-That was verified twice: once by downloading the asset from the draft and
-hashing it, and again after publication from a shell with no GitHub credentials
-at all -- no token in the environment, `curl` rather than `gh` -- which is the
-path a stranger takes. Both matched, and neither read the build log. It matches
-the line in `SHA256SUMS.txt`. The release notes carry the index.db checksum,
-`d3b0579281b6a5044b6f59a0e50ec3424ef3fc25dac43042d5c8168cb29bec58`, and its
-byte count.
+Verified by downloading it from a shell with no credentials at all -- no token
+in the environment, `curl` rather than `gh` -- and hashing it. Not from the
+build log.
 
-### Two warts in SHA256SUMS.txt, neither blocking
+**`sha256sum -c SHA256SUMS.txt` now works**, which it could not for v1.0.0. Both
+warts are fixed: the names in the file are the dotted names GitHub actually
+serves, and the file no longer lists itself with the hash of an empty file. On
+Windows:
 
-Read these before the laptop test so they do not read as defects when they turn
-up.
+    certutil -hashfile "The.Pastor.Bible_1.0.1_x64-setup.exe" SHA256
 
-1. **The names in the file have spaces; the assets on GitHub have dots.** GitHub
-   rewrites spaces in asset filenames on upload, so the file says
-   `The Pastor Bible_1.0.0_x64-setup.exe` while what downloads is
-   `The.Pastor.Bible_1.0.0_x64-setup.exe`. `sha256sum -c SHA256SUMS.txt` will
-   therefore report all three as missing. Verify one file by comparing the
-   number instead:
+## What v1.0.0 got wrong
 
-       certutil -hashfile "The.Pastor.Bible_1.0.0_x64-setup.exe" SHA256
+Jared installed the public v1.0.0 on a clean laptop. SmartScreen appeared as
+README 9.4 describes, More info then Run anyway worked, and the installer
+completed with no administrator prompt -- **so the three things README claims
+about installing on a machine that has never seen this program are confirmed,
+on the first machine that could confirm them.** Then the app opened to:
 
-2. **The file lists itself, with the hash of an empty file**
-   (`e3b0c442...b855`). The publish step regenerates the checksums over a
-   directory that already contains a copy of the file it is writing, so the
-   glob catches it after the redirect has emptied it. Harmless; the three real
-   hashes are correct.
+    The Pastor Bible could not start
+    cannot read disclaimer.txt: The system cannot find the path specified (os error 3)
 
-Both are cosmetic and both cost a full rebuild to fix — about 69 billable
-minutes, though minutes are free now that the repository is public. They are not
-worth a rebuild of their own before the clean-machine test. Fix them in whatever
-build comes next, whether that is v1.0.1 or a later version.
+**It was nine files, not one.** `paths::repo_root()` was
+`env!("CARGO_MANIFEST_DIR")`, an absolute path on whoever ran the compiler, and
+nine runtime files resolved through it and nothing else: the disclaimer, the
+crisis note, the crisis term list, the three prompts, and the evaluation set the
+self-test draws its questions from. `strings` on the shipped binary shows what
+it was hunting for:
+
+    ...\Haomuch-Programs\The-Pastor-Bible\src-tauri\core
+
+`disclaimer.txt` was only the first one read. Behind it stood the crisis term
+list, which by its own design refuses to start when it holds no terms, so the
+app could not have reached the main screen even if the disclaimer had loaded.
+`os error 3` rather than `error 2` is itself the evidence: that is
+ERROR_PATH_NOT_FOUND, raised for a missing intermediate directory, and the
+laptop has no `D:` drive at all.
+
+The three large resources -- index.db, the search model, the sidecar -- were
+never affected. They resolve through Tauri's resource directory, which is the
+mechanism P5.1 taught the shell to use. That lesson was never carried across to
+the small text files.
+
+### Why P6's install tests did not catch it
+
+Every P6 check ran the installed program on the machine that built it, where
+`D:\Haomuch-Programs\The-Pastor-Bible\data` is a real directory holding exactly
+the right files. The installed app quietly read the repository. P6's 27 files,
+its single Add/Remove entry, its ten verified answers and its passing upgrade
+test were all true, and all true of an app silently using something no reader
+would ever have. The defect was invisible not because those tests were careless
+but because the machine supplied the missing piece. P6's own rule -- "never
+against a build script" -- was the right instinct applied one level too shallow:
+it is not enough to test the artifact, the artifact has to be tested somewhere
+the source is not.
+
+### The test that would have caught it
+
+`tools/clean-machine-check.ps1` renames the repository directory away, clears
+every `TPB_*` variable, and requires the installed binary to resolve everything
+it needs. The rename is undone in a `finally`, and the restoration is verified
+again outside it, so failing to put the repository back is itself a failure of
+the script.
+
+    powershell -ExecutionPolicy Bypass -File tools\clean-machine-check.ps1
+
+It asks the program a question the program can answer about itself:
+
+    "%LOCALAPPDATA%\The Pastor Bible\pastor-bible.exe" --self-check
+
+which performs exactly the reads that failed, names each with where it came
+from, and exits non-zero if any is missing. It writes its report to
+`%APPDATA%\io.github.haomuch1.pastorbible\self-check.txt`, because a release
+build is a GUI-subsystem binary with no console and anything printed would be
+seen by nobody.
+
+**Verified both ways on this machine.** Against the installed v1.0.0 the app
+reproduced the laptop's error character for character. Against v1.0.1 the check
+passes, and the window reaches the main screen with `data/` gone.
+
+**One caveat on how it was run here.** Windows will not rename a directory that
+any process holds open, and `docs/EVAL-GOLD-REVIEW.md` was open in Notepad, so
+the full-repository rename could not run. It was run as `-DataOnly`, which hides
+only `data/` -- where all nine files lived. That is the weaker claim: it proves
+the app no longer reads `data/`, not that it reads nothing from the repository
+at all. Close anything holding the directory and run the full form once before
+the next release.
+
+## The fix, per file
+
+All nine are compiled into the binary with `include_str!`, in
+`core/src/builtin.rs`. **None became a bundle resource.** A resource is a file
+that can be missing; each of these is part of what the program *is* rather than
+data it operates on, and compiled in there is no path to resolve and so nothing
+about a machine that can make them absent.
+
+    data/disclaimer.txt          329 B     include_str!
+    data/crisis_note.txt         333 B     include_str!
+    data/crisis_terms.txt        2.7 KB    include_str!
+    data/prompts/synopsis.txt    1.4 KB    include_str!
+    data/prompts/retry.txt       505 B     include_str!
+    data/prompts/rewrite.txt     770 B     include_str!
+    data/eval/questions.json     148 KB    include_str!
+
+`summarize_batch.txt` and `summarize_merge.txt` are deliberately **not**
+compiled in. Nothing loads them; they belong to the summarize-the-whole-set mode
+P2 planned and nobody wired in. They stay on disk where that decision can still
+be seen.
+
+The evaluation set goes in whole rather than as the three questions lifted out
+of it, because the self-test's value is that it asks what a reader would ask
+rather than something chosen to pass, and it keeps that only by still being read
+from the evaluation set. 148 KB inside a 445 MB installer is not worth a build
+step to avoid.
+
+They are still files on disk. `include_str!` reads them at build time, so
+`data/prompts/` is versioned and diffable exactly as the P3 decision requires,
+and `data/disclaimer.txt` is still the single source README is checked against.
+
+`Settings.prompts_dir`, `crisis_terms` and `crisis_note` are now
+`Option<String>`. `None` means the compiled-in copy, which is what the app
+passes; `Some(path)` reads that file, which is what the harness passes so a
+variant can still be tried without rebuilding. The old code could not express
+"there is no file", so it always answered with a path, and the path was the
+build machine's.
+
+**The disclaimer's README-parity test did not exist.** The P5 decision says "The
+welcome screen and README both come from it and a test asserts they match"; a
+test asserted it for the crisis note and never for the disclaimer. It exists
+now, in `tests/builtin.rs`, along with a test that every compiled-in copy is
+byte-identical to its file on disk -- without which `include_str!` could point
+somewhere else and every other test would still pass. That is the second
+claimed-but-absent test this phase has found, after the credits one in P7-prep.
 
 ## The workflow run
 
-Run 33102314189, on tag `v1.0.0`. Every job green:
+Run 33125580837, on tag `v1.0.1`. Every job green:
 
-    version    9s        ubuntu
-    offline    2m26s     ubuntu
-    build      13m4s     ubuntu-22.04     .deb and .AppImage
-    build      20m47s    windows-latest   NSIS
-    upgrade    2m35s     windows-latest   ran the candidate twice
+    version    7s        ubuntu
+    offline    1m27s     ubuntu           now runs the builtin suite too
+    build      8m21s     ubuntu-22.04     .deb and .AppImage
+    build      12m54s    windows-latest   NSIS
+    upgrade    2m29s     windows-latest   a real version change, at last
     sign       skipped                    waiting on SignPath, by design
-    publish    1m5s      ubuntu           draft, published since
+    publish    1m17s     ubuntu
 
-**Billable: 69 minutes.** 68 for this run and 1 for the run before it, which the
-version gate stopped in 13 seconds. Windows is counted at 2x and each job is
-rounded up to the minute: 1 + 3 + 14 + (21x2) + (3x2) + 2. The timing API still
-returns zero for both runs, so these are computed from the job durations, the
-same way P6's 84 was.
+**Billable: 0.** The repository is public, so Actions minutes are free. Had it
+still been private this run would have cost 46, against v1.0.0's 68.
 
-The upgrade gate found no previous release and said so in the log, running the
-candidate twice. That tests reinstall over itself, not a version change. v1.0.0
-is published now, so the next tag makes it a real version change by itself —
-including a v1.0.1 built on the fail path below.
+**The upgrade gate did something new.** Every previous run found no published
+release and installed the candidate twice, testing reinstall-over-itself. This
+time it fetched the published v1.0.0, installed it, and upgraded:
 
-## What this session changed before tagging
+    installed 1.0.0
+    one Add/Remove entry, now 1.0.1
+    history survived the upgrade
+    the model was not re-downloaded
+    install directory holds 29 files
+    downgrade refused with exit code 4; still 1.0.1
 
-The pre-release check failed on eight findings. All eight are fixed in `a334194`,
-one commit ahead of the version bump, and DECISIONS records each with its
-reason.
+That last line had never run in CI before -- the downgrade step is skipped when
+there is no previous release. The whole gate is finally doing what PLAN 11
+describes.
 
-- **The installer shipped llama.cpp's binaries with no licence text at all**,
-  while NOTICE.md said the MIT text travelled with them. It does not: the
-  release archives carry no llama.cpp LICENSE, only `LICENSE-LLVM-OpenMP` for
-  libomp, and the bundler selected files by extension. Both texts are now
-  vendored in `src-tauri/licenses/`, copied into `resources/llama/` by
-  `fetch_llama.py --bundle`, which refuses to assemble without them, and
-  asserted by a test. **The sidecar is 25 files and the install directory is 29,
-  not the 23 and 27 P6 recorded.** This was the only finding with a real legal
-  obligation behind it.
-- **README's three placeholder sections are written** — "Using it", "Building
-  from source", "Sources and credits" — each naming a phase that had long since
-  finished. P7's script says to follow only the README, so a README that did not
-  describe using the app would have made every step of the test read as a
-  defect.
-- **Credits live in `pastor_bible_core::credits` and nowhere else.** About reads
-  them; `tests/credits.rs` asserts README's list matches, in order, and runs in
-  the offline gate. The check that failed was "About matches README credits",
-  and it could not be made: About had carried the list since P5 and the README
-  section said "filled in at P3".
-- Two false statements in NOTICE.md corrected, the release notes' claim that the
-  README has the SmartScreen screenshots corrected, and two figures reconciled
-  to their measurements: disk 5.3 to 5.4, and graphics memory 5.4 to 5.6, the
-  latter being the disk figure copied by mistake.
+## The same upgrade, on this machine
 
-Then the tag itself found a ninth thing, fixed in `200b97b`.
+Published v1.0.0 downloaded and installed, then 1.0.1 installed over it without
+uninstalling:
 
-- **The version gate compared the candidate against its own tag** and refused
-  v1.0.0 in 13 seconds with "version 1.0.0 is already released". It read
-  `git tag -l 'v*'`, and the tag being built is in the checkout. P6 recorded
-  this fault as fixed and verified by a full tagged run; its fix filtered the
-  tag list to plain `vX.Y.Z`, which excluded `v0.9.1-ci` — the only tag any P6
-  run could have collided with. The gate was never exercised on the path a
-  release takes. It now asks `gh release list --exclude-drafts` what has been
-  published, which is what the step's own name always said.
+    before 1.0.0, after 1.0.1, one Add/Remove entry
+    user.db 118,784 bytes before and after
+    chat model timestamp unchanged, 2026-08-26 21:45:24
+    29 files in the install directory
 
-## The laptop script
+29 rather than P6's 27, because the sidecar now carries the two licence texts
+P7-prep added.
 
-Before starting: the laptop must never have had The Pastor Bible, Rust, Node, or
-the dev tools on it. Do not sign in to GitHub on it, and do not sign in to
-anything else either. The repository is public now, so every step below is a
-step a stranger takes, and that is the point of the test.
+## The laptop script, resumed
+
+v1.0.0 stays on the laptop. Do **not** uninstall it. Installing v1.0.1 over it
+is the first real upgrade this project has ever had on a machine that did not
+build it.
+
+Before starting: still no GitHub login, and nothing else installed. The
+repository is public, so every step is a step a stranger takes.
 
 1. Download the Windows installer from
-   https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.0 . Run it. Take a
-   screenshot of the SmartScreen warning if one appears, and of the
-   "More info / Run anyway" step. Record whether the README's description
-   matched what you saw.
-2. Follow only the README from here. Do not use anything you know from building
-   it.
-3. First run: record what the hardware check said about the 3050; the download
+   https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.1 -- the file is
+   `The.Pastor.Bible_1.0.1_x64-setup.exe`. Run it **without uninstalling v1.0.0
+   first**.
+
+   **Expect the blue SmartScreen screen again.** It is a different file, so
+   Windows has no reputation for it either. **This time take the two
+   screenshots**: the blue "Windows protected your PC" screen, and the screen
+   after "More info" showing "Run anyway". Save them as
+   `docs/screenshots/install-1-smartscreen.png` and `install-2-more-info.png`.
+   Those are the two images README 9.4 has been describing since P1 and that no
+   machine here can produce.
+
+2. Open Add/Remove Programs. Expect **one** entry showing **1.0.1**. Two
+   entries, or one still showing 1.0.0, is a failure -- record which.
+
+3. Open the app from the desktop icon. It must reach the first-run screen. If it
+   shows "The Pastor Bible could not start", that is the bug again, the test
+   stops there, and the message should be sent verbatim.
+
+Then the ten steps, from the first-run screen:
+
+4. First run: record what the hardware check said about the 3050; the download
    time and size; whether the self-test passed and how long it took.
-4. Ask three questions in 66-book mode. Record the time of each and whether the
+5. Ask three questions in 66-book mode. Record the time of each and whether the
    answer showed. Open Settings > Compute: record the device name shown and
    which path it chose. Expected: 8B on CPU, because 4 GB is below the
    6,325 MiB threshold.
-5. Settings > switch to the smaller model. Let it download. Ask one question.
+6. Settings > switch to the smaller model. Let it download. Ask one question.
    Record the time and the Compute readout. Expected: GPU.
-6. Turn on the Deuterocanon, ask "What does Tobit say about giving to the poor?",
+7. Turn on the Deuterocanon, ask "What does Tobit say about giving to the poor?",
    confirm the tag appears.
-7. Click a citation; open Read chapter; delete one history entry; export as
+8. Click a citation; open Read chapter; delete one history entry; export as
    spreadsheet and open it.
-8. Close the app. Open Task Manager: confirm no llama-server or pastor-bible
+9. Close the app. Open Task Manager: confirm no llama-server or pastor-bible
    process remains.
-9. Reboot the laptop. Reopen the app from the desktop icon; confirm history is
-   there.
-10. Uninstall from Add/Remove Programs, choose Keep. Reinstall from the same
+10. Reboot the laptop. Reopen the app from the desktop icon; confirm history is
+    there.
+11. Uninstall from Add/Remove Programs, choose Keep. Reinstall from the same
     file. Confirm history returns. Uninstall again, choose Delete.
 
-Report back: each step pass/fail with the numbers, the SmartScreen screenshots,
-and anything that confused you even slightly. Confusion is a defect.
+Report back: each step pass/fail with the numbers, the two SmartScreen
+screenshots, and anything that confused you even slightly. Confusion is a
+defect.
 
-### Four notes on that script, from the repository
+### Four notes, from the repository
 
-Nothing in the repository contradicts the script. These four things it does not
-say, and each would otherwise look like a failure.
-
-- **Step 1, the file is named with dots.** It downloads as
-  `The.Pastor.Bible_1.0.0_x64-setup.exe`, not with spaces. Its sha256 is above,
-  and the `certutil` line above verifies it. Save the two screenshots as
-  `docs/screenshots/install-1-smartscreen.png` and `install-2-more-info.png`;
-  those are the two images README 9.4 has been describing since P1 and that P6
-  could not produce.
 - **Step 4 will be slow, and that is the expected result.** On the processor an
   answer took 2 to 3 minutes on a Ryzen 7 5800X; a laptop will be slower. Three
-  questions is likely half an hour. Also watch memory: the 8B needs about 9 GB
-  for one answer. If the laptop has 8 GB of RAM it will swap, which is worth
-  recording as a number rather than treated as a fault.
-- **Step 5 is close to the line.** The smaller model needs 2,994 MiB of *free*
+  questions is likely half an hour. The 8B needs about 9 GB for one answer, so
+  if the laptop has 8 GB of RAM it will swap -- record that as a number rather
+  than treat it as a fault.
+- **Step 6 is close to the line.** The smaller model needs 2,994 MiB of *free*
   graphics memory. A 4 GB card has about 4,096 MiB total and Windows spends some
-  of it on the desktop, so free is usually around 3,400 to 3,700. If Compute
-  says it chose the processor and names a free figure below 2,994, that is the
-  rule working correctly, not a failure — record the number it gives.
-- **Step 9 has a desktop icon to click.** The installer creates one, and a Start
-  Menu entry. Confirmed on this machine.
+  on the desktop. If Compute says it chose the processor and names a free figure
+  below 2,994, that is the rule working correctly -- record the number.
+- **Step 10 has a desktop icon to click.** The installer creates one, and a
+  Start Menu entry.
+- **If it will not start**, run this and send the file it names:
+
+      "%LOCALAPPDATA%\The Pastor Bible\pastor-bible.exe" --self-check
+
+  It writes `%APPDATA%\io.github.haomuch1.pastorbible\self-check.txt` listing
+  everything the program needs before it can show anything and what it found for
+  each. It would have identified this defect in one line.
 
 ## The two paths afterwards
 
-**Pass** -- remove the prerelease flag and retitle:
+**Pass** -- take the pre-release mark off v1.0.1 and finish it:
 
-    gh release edit v1.0.0 --repo haomuch1/pastor-bible \
-      --prerelease=false \
-      --title "The Pastor Bible 1.0.0"
+    gh release edit v1.0.1 --repo haomuch1/pastor-bible \
+      --prerelease=false --title "The Pastor Bible 1.0.1"
 
 Then drop the pre-release note from README's install section, add the two
-SmartScreen screenshots, and that is v1.0.0 finished. Applying to SignPath is
-what remains, and it is P8's, in its own session.
+SmartScreen screenshots, and delete the "added after the clean-machine test"
+sentence under README 9.4. Leave v1.0.0 marked pre-release permanently: it does
+not start on a clean machine and must never be the one somebody downloads.
+Applying to SignPath is what remains, and it is P8's, in its own session.
 
-**Fail** -- fix the fault and ship **v1.0.1**. Do not remake v1.0.0:
+**Fail** -- fix and ship **v1.0.2**. Neither published version is ever recreated:
+somebody may already have the file, and two different files claiming one version
+number defeats the checksum printed beside them.
 
-    # bump src-tauri/Cargo.toml to 1.0.1, commit
-    git tag -a v1.0.1 -m "The Pastor Bible 1.0.1"
-    git push origin main v1.0.1
-
-v1.0.0 is published and public, so somebody may already have it. A published
-release is not a draft and must not be deleted and recreated under the same
-number: that would leave two different files claiming to be v1.0.0, and the
-whole point of printing a checksum is that a version names exactly one file.
-This is the one thing that changed when the repository went public, and it is
-why the version gate asks about published releases -- it will now correctly
-refuse a second v1.0.0.
-
-Leave v1.0.0 in place, marked pre-release, and let v1.0.1 supersede it. Fix the
-two SHA256SUMS.txt warts above in the same pass, since a rebuild is being spent
-anyway.
+    # bump src-tauri/Cargo.toml, commit
+    git tag -a v1.0.2 -m "The Pastor Bible 1.0.2"
+    git push origin main v1.0.2
 
 ## Still not verified
 
-- **SmartScreen.** Unchanged from P6: no warning appeared on this machine,
-  which has run these bytes many times. `docs/screenshots/` has no install
-  images, and the release notes now say the screenshots are added after the
-  clean-machine test rather than claiming the README already has them. Step 1
-  above is the only place the claim can be checked.
+- **SmartScreen screenshots.** Jared saw the screen on the laptop and confirmed
+  README 9.4's wording, but took no screenshots. Step 1 above is the second
+  chance, and v1.0.1 being a new file means the screen should appear again.
 - **The Linux packages have never been run.** Built in CI, checksums recorded,
-  no Linux machine here. The `.deb` declares `libwebkit2gtk-4.1-0` and
-  `libgtk-3-0` and has not met a real apt.
-- **WebView2 bootstrapping.** The silent downloadBootstrapper has never actually
-  run; this machine already had WebView2. The laptop is the first place it will.
-- **The upgrade gate has still never seen a version change.** v1.0.0 is now a
-  published release, so the next tag makes it a real version change by itself.
-- **Everything visual is still Jared's.** Nothing this session touched the
-  palette, the type or the spacing.
+  no Linux machine here.
+- **WebView2 bootstrapping.** Still unknown, but narrowed: the laptop reached
+  the app's own error screen, which is rendered in the web view, so WebView2 was
+  either already present or installed silently without Jared noticing. Worth
+  asking him which.
+- **The full-repository clean-machine check** has not been run, only `-DataOnly`.
+  See the caveat above.
+- **Everything visual is still Jared's.** Nothing this session changed the
+  palette, the type or the spacing, beyond refreshing `12-settings.png`, which
+  was two phases out of date and public.
 
 ## Housekeeping
 
 `docs/pastor-bible-history.txt` is an export of Jared's own question history,
-sitting untracked in `docs/`. It is not committed and will not reach a public
-repository, but it should come off the machine before P8. A stray
-`docs/screenshots/tmp-state.png` was removed this session, and the two files
-both numbered 30 were renumbered.
+untracked in `docs/`. It is in `.git/info/exclude` so `git add -A` cannot take
+it, and its name is not published. It should come off the machine before P8.
 
 ## Running and building here
 
     src-tauri\target\release\pastor-bible.exe          the built app
     npx tauri build --bundles nsis                     the installer
+    tools\clean-machine-check.ps1                      the installed app, honestly
 
 From a fresh clone, three things must be fetched before a build; none is
 committed, and each is checksummed:
@@ -258,7 +331,7 @@ committed, and each is checksummed:
     gh release download index-0.2.0 --pattern index.db --dir src-tauri/resources
 
 `npm test` runs the frontend tests; `cargo test --manifest-path
-src-tauri/core/Cargo.toml` runs the rest. `tools/click.ps1` drives the window —
+src-tauri/core/Cargo.toml` runs the rest. `tools/click.ps1` drives the window --
 WebView2 drops a zero-duration synthetic press, which is why `shot.ps1`'s own
 click cannot be trusted for anything but screenshots.
 
