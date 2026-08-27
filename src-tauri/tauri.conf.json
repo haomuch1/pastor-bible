@@ -1,7 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "The Pastor Bible",
-  "version": "0.0.1",
   "identifier": "io.github.haomuch1.pastorbible",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -39,7 +38,8 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "installerHooks": "./installer.nsh"
       },
       "webviewInstallMode": {
         "type": "downloadBootstrapper",
