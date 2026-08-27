@@ -247,6 +247,20 @@ PLATFORMS = {
 
 BUNDLE_DIR = os.path.join(ROOT, 'src-tauri', 'resources', 'llama')
 
+# The licence texts that have to travel with the binaries.
+#
+# llama.cpp is MIT and libomp is Apache-2.0 with LLVM exceptions. Both of those
+# licences require their notice to be included with any copy of the software,
+# and the installer is a copy of the software, so the notices go inside it.
+#
+# They are vendored in src-tauri/licenses/ rather than lifted out of the
+# archive, because the archive does not carry llama.cpp's own LICENSE at all:
+# the only licence file in it is the LLVM one, which covers libomp. The
+# llama.cpp text is the LICENSE at the pinned commit. NOTICE.md records both,
+# with checksums.
+LICENSE_DIR = os.path.join(ROOT, 'src-tauri', 'licenses')
+LICENSES = ('llama.cpp-LICENSE.txt', 'LICENSE-LLVM-OpenMP.txt')
+
 
 def ensure(key):
     """Fetch and unpack one asset, returning the directory it is in."""
@@ -292,9 +306,25 @@ def bundle():
     kept += 1
     total += os.path.getsize(backend)
 
+    # The licences ship beside the binaries they cover. A missing one stops the
+    # build rather than warning: an installer carrying the code but not the
+    # notice is one this project must not produce.
+    for name in LICENSES:
+        src = os.path.join(LICENSE_DIR, name)
+        if not os.path.isfile(src):
+            raise SystemExit(
+                '%s is missing from src-tauri/licenses/. llama.cpp is MIT and '
+                'libomp is Apache-2.0 with LLVM exceptions; both require their '
+                'notice to travel with the binaries, so the bundle cannot be '
+                'assembled without it.' % name)
+        shutil.copy2(src, os.path.join(BUNDLE_DIR, name))
+        kept += 1
+        total += os.path.getsize(src)
+
     print('assembled %d files, %.1f MB, in %s' % (kept, total / float(1 << 20), BUNDLE_DIR))
     print('  server  %s' % plat['server'])
     print('  backend %s (the Vulkan build\'s only extra file)' % plat['backend'])
+    print('  licences %s' % ', '.join(LICENSES))
     return 0
 
 

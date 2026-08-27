@@ -50,9 +50,18 @@ difference:
 So the installer ships one server and one set of libraries with the Vulkan
 backend among them, and `-ngl` decides at launch which processor runs the model.
 `tools/fetch_llama.py --bundle` assembles it into `src-tauri/resources/llama/`:
-23 files, 90.3 MB, trimmed from the archive's 51 to what llama-server actually
-loads. That trim was established by removing files until it stopped starting;
-dropping `mtmd.dll` makes it exit 0xC0000135, DLL not found.
+23 binaries, 90.3 MB, trimmed from the archive's 51 to what llama-server
+actually loads. That trim was established by removing files until it stopped
+starting; dropping `mtmd.dll` makes it exit 0xC0000135, DLL not found.
+
+Beside them go two licence texts, making 25 files in all. llama.cpp is MIT and
+`libomp.dll` is Apache-2.0 with LLVM exceptions, and both licences require their
+notice to travel with any copy of the software; an installer is such a copy.
+They are vendored in `src-tauri/licenses/` rather than lifted out of the
+archive, because the archive has no llama.cpp LICENSE in it at all -- the only
+licence file it carries is `LICENSE-LLVM-OpenMP`, for libomp. `--bundle` refuses
+to assemble without both. Found in P7-prep, when NOTICE.md was checked against
+the shipped directory and turned out to claim a licence text that was not there.
 
 `tools/fetch_llama.py` fetches a named asset of the pinned tag, checks the
 sha256 before unpacking, and refuses on a mismatch. The zip already on this

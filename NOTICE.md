@@ -43,13 +43,22 @@ llama.cpp, the local model server
              llama-b10639-bin-ubuntu-vulkan-x64.tar.gz
                sha256 6168bd9affe15b5cdbf553d70d2f162df5268c50da038000dcd3f0dc537ec7ca
   Fetched by tools/fetch_llama.py, which refuses to unpack a mismatched
-  checksum. The MIT licence text ships beside the binaries in the archive and
-  is included in the installer.
+  checksum.
+
+  Corrected 2026-08-27: this entry previously said the MIT licence text ships
+  beside the binaries in the archive and is included in the installer. Neither
+  half was true. The release archives carry no llama.cpp LICENSE at all -- the
+  only licence file in them is LICENSE-LLVM-OpenMP, which covers libomp -- and
+  the bundler selected files by extension, so no licence text of any kind
+  reached the installer. Both texts are now vendored below and copied into
+  resources/llama/ by tools/fetch_llama.py, which refuses to assemble a bundle
+  without them. The installed sidecar is 25 files.
 
   The Vulkan archives are the same build as the CPU archives with one extra
   library in them, the Vulkan backend, which ggml loads at run time; measured
   2026-08-27, every other file is byte-identical. The installer therefore ships
-  one server and one set of libraries, 23 files, with that backend among them.
+  one server and one set of libraries, 23 files, with that backend among them,
+  and the two licence texts above beside them, making 25.
   docs/SIDECAR.md has the measurement.
 
 Qwen3-8B, the answering model
@@ -133,6 +142,33 @@ Contributor Covenant Code of Conduct, version 2.1
              repository", and the now-redundant preposition "at" preceding it
              was dropped so the sentence reads correctly. No other text differs
              from the upstream 2.1 markdown.
+
+llama.cpp licence, shipped with the sidecar
+  File:      src-tauri/licenses/llama.cpp-LICENSE.txt
+  URL:       https://raw.githubusercontent.com/ggml-org/llama.cpp/5e6a37cb115dc1074e274ac004373f5661909695/LICENSE
+  License:   MIT
+  Retrieved: 2026-08-27
+  SHA-256:   94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d
+  Bytes:     1078
+  Modified:  No.
+  Note:      The LICENSE as it stands at the pinned commit b10639. Vendored
+             because the binary release archives do not contain it, and MIT
+             requires the notice to travel with any copy of the software. The
+             installer is such a copy, so tools/fetch_llama.py puts this file
+             in resources/llama/ beside the server it covers.
+
+LLVM OpenMP licence, shipped with the sidecar
+  File:      src-tauri/licenses/LICENSE-LLVM-OpenMP.txt
+  URL:       In the llama.cpp release archives, as LICENSE-LLVM-OpenMP.
+  License:   Apache License 2.0 with LLVM Exceptions
+  Retrieved: 2026-08-27
+  SHA-256:   fdad1758a9e1f9d5a81e18879b3406772115edc92c24bfa36b70c654f325e8e4
+  Bytes:     19741
+  Modified:  No, beyond this repository's line-ending normalisation.
+  Note:      Copied out of the checksummed archive. It covers libomp.dll, which
+             llama-server loads and which the installer therefore ships. Placed
+             in resources/llama/ by tools/fetch_llama.py for the same reason as
+             the file above.
 
 Apache License, Version 2.0
   File:      LICENSE
@@ -266,13 +302,32 @@ These are overwhelmingly MIT, Apache-2.0, BSD, or ISC, and none is vendored into
 this repository: each is fetched from its own registry and pinned by the
 committed lockfiles, which are the authoritative record of exactly what is used.
 
-A full transitive licence audit, and the bundling of third-party licence texts
-into the shipped installer, is done in P6 alongside packaging, when the set of
-crates that actually reaches an end user is fixed. Until then the lockfiles
-stand as the record.
+The set of crates that actually reaches an end user was fixed in P6, when
+packaging settled. What ships is this project's own program, the Tauri runtime
+compiled into it, and the llama.cpp sidecar; the Rust and JavaScript
+dependencies above are compiled in rather than shipped as files, and every one
+of them is permissive.
+
+Third-party licence texts that must travel as files with the binaries they cover
+are the sidecar's two, vendored above and installed in resources/llama/. This
+project's own Apache-2.0 text is installed by the installer from LICENSE. The
+lockfiles remain the authoritative record of the compiled-in set.
 
 ## Model files
 
-None. Models are chosen in P3, are required to be Apache-2.0 or MIT, are not
-distributed by this project, and are downloaded by the user's machine from the
-model's own host on first run. They are listed here once chosen.
+Chosen in P3 and listed in full under "Pinned binaries and models" at the top of
+this file: Qwen3-8B and Qwen3-1.7B, which write the answers, and
+nomic-embed-text-v1.5, which does the searching. All three are Apache-2.0, as
+the plan requires; no model under a community licence or an acceptable-use
+policy is used, so no model's terms reach a reader.
+
+They reach a machine two different ways, and the difference matters for
+attribution. The search model is bundled inside the installer, so this project
+distributes it and its licence obligations are ours. The answering models are
+not distributed by this project: the app downloads the one that is chosen from
+the model's own host on first run, by pinned checksum.
+
+Corrected 2026-08-27: this section previously read "None. Models are chosen in
+P3 ... are not distributed by this project", which was written before P3 chose
+them and was left standing afterwards. It contradicted the top of this same
+file, and it was wrong about the search model, which ships in the installer.

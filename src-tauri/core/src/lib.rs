@@ -5,6 +5,7 @@
 
 pub mod api;
 pub mod compute;
+pub mod credits;
 pub mod crisis;
 pub mod download;
 pub mod hardware;

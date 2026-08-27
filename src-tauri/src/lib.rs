@@ -19,6 +19,7 @@ use tauri::{Emitter, Manager, State};
 
 use pastor_bible_core::api::Answer;
 use pastor_bible_core::compute::{self, ComputeChoice};
+use pastor_bible_core::credits;
 use pastor_bible_core::download::{self, ModelStatus, Progress};
 use pastor_bible_core::hardware::{self, Hardware};
 use pastor_bible_core::pipeline::{Engine, QueryMode, Settings, DEFAULT_CHAT_GGUF, EMBED_GGUF};
@@ -401,17 +402,14 @@ fn app_info(state: State<'_, AppState>) -> Result<AppInfo, String> {
              download it makes no connection to anything, and nothing you type is ever sent \
              anywhere."
                 .to_string(),
-        authors: vec!["Jared".to_string(), "Claude (Anthropic)".to_string()],
-        license: "Apache-2.0".to_string(),
-        sources: vec![
-            ["World English Bible, Classic".into(), "public domain".into()],
-            ["Treasury of Scripture Knowledge".into(), "public domain".into()],
-            ["Nave's Topical Bible".into(), "public domain".into()],
-            ["llama.cpp".into(), "MIT".into()],
-            ["Tauri".into(), "MIT or Apache-2.0".into()],
-            ["Qwen3 (answering model)".into(), "Apache-2.0".into()],
-            ["nomic-embed-text-v1.5 (search model)".into(), "Apache-2.0".into()],
-        ],
+        // One list, in core, checked against README's "Sources and credits"
+        // by a test. See pastor_bible_core::credits.
+        authors: credits::AUTHORS.iter().map(|s| s.to_string()).collect(),
+        license: credits::LICENSE.to_string(),
+        sources: credits::SOURCES
+            .iter()
+            .map(|(name, licence)| [name.to_string(), licence.to_string()])
+            .collect(),
         reference_hardware: format!("{}, {}, {:.0} GB RAM, {}", r.cpu, r.gpu, r.ram_gb, r.os),
         paths: state.paths.clone(),
         prompt_versions: Vec::new(),

@@ -16,9 +16,8 @@ A free, offline, nondenominational Bible study tool with cited answers.
 
 ## Install
 
-Installers are published with each release. There is no release yet: v1.0.0 is
-the first. The steps below are what a release will ask of you, and they have
-been tested against installers built from this repository.
+Installers are published with each release. Download the one for your system
+from the latest release page.
 
 ### Windows
 
@@ -87,7 +86,7 @@ RAM, Windows 11. Everything below was measured on that machine on 2026-08-26.
 
     disk           about 5.4 GB in all
     memory in use  about 9 GB for one answer on the processor, rising to about
-                   12 GB over a long session of several questions; about 5.4 GB
+                   12 GB over a long session of several questions; about 5.6 GB
                    of graphics memory instead when the graphics card is used
     an answer      about 6 seconds on the graphics card, and about 13 seconds
                    for the first question after the program opens, which
@@ -99,7 +98,7 @@ machine with much less memory it may swap and be slower still; it does not
 refuse to start, and it does not check your hardware except to show you one
 plain note on first run if something is below the machine above.
 
-The 5.3 GB is everything: the program, the Bible index that ships with it, and
+The 5.4 GB is everything: the program, the Bible index that ships with it, and
 the answering model that downloads once on first run. The index and the search
 model are about 630 MB of that and arrive with the installer. The answering
 model is the rest, and it is the only thing downloaded afterwards.
@@ -132,12 +131,110 @@ release.
 
 ## Using it
 
-Not yet available; filled in at P5.
+Type a question in your own words and press **Ask**, or Ctrl+Enter. There is no
+syntax to learn and there are no search operators: "What does the Bible say
+about anger?" is the whole of it.
+
+Two things then happen at different speeds. The passages appear almost at once,
+because searching the index takes a fraction of a second, and you can start
+reading them straight away. The written synopsis takes longer -- seconds on a
+graphics card, minutes on a processor -- and it appears only after every
+reference in it has been checked. **Stop** abandons a question that is taking
+longer than you want to wait, and nothing is saved.
+
+### The 66 books, and the Deuterocanon
+
+Under the question box are two buttons: **66 books** and **Include
+Deuterocanon**. The 66 books are always searched. The Deuterocanon is the set of
+books that some Christian traditions include and others do not. It is off until
+you turn it on, and it stays on until you turn it off. The same choice is in
+Settings, under "Which books".
+
+Turning it on does not simply add to what you would otherwise have seen. It is a
+larger library, so the search returns a different set of passages, and some of
+the passages from the 66 books that you would have seen are displaced by them.
+Every passage from those books is labelled **Deuterocanon** -- in the passage
+list, on the citation in the answer, and in the reading view -- so you always
+know which books an answer is drawing on. The Pastor Bible takes no position on
+whether they belong. That is what the setting is for.
+
+### The answer, and the passages under it
+
+The synopsis is written in themes, each with its own heading. Every reference in
+it is a button showing chapter and verse. Click one and the passage list below
+scrolls to that passage and outlines it. That is the point of the whole design:
+the summary is a way into the text, not a replacement for it.
+
+Below the synopsis is everything the search found, not only what the answer
+quoted. It is grouped by book in Bible order, with a count beside each book.
+Books the answer drew on are open; the rest are one press away behind "Show N
+more passages", and **Expand all** opens all of them at once. Each passage
+carries small tags saying how it was found -- by meaning, by wording, through a
+Nave's topic, or as a cross-reference -- and the ones the answer used are marked
+**In the answer**.
+
+The verse text you read here is read from the Bible index on your own computer.
+It never comes from the model.
+
+### Reading the chapter around a passage
+
+A run of verses is not always enough to judge what it says: the verse before it
+may be the condition and the verse after it the qualification. So every passage
+has a **Read chapter** button, which opens the whole chapter with the cited
+verses marked and scrolled to. The chapters either side are one press away, the
+left and right arrow keys turn the page, and Escape closes it. Closing puts you
+back exactly where you were: the answer underneath is never thrown away.
+
+### Choosing the model and the processor
+
+Settings has two choices that change how long an answer takes.
+
+**Answering model** offers the standard model, which every install gets, and a
+smaller one for machines with less memory. The smaller one answers in about half
+a minute where the standard one takes two and a half, and it writes a plainer
+answer. Choosing it downloads it once; both are then on the machine, and you can
+switch back.
+
+**Compute** is Auto, Processor, or Graphics card. Auto uses the card when the
+card has room for the model and the processor when it does not. Underneath,
+Settings says which one was actually chosen and why, and names the card and how
+much of its memory is free. If you know your machine better than the driver
+does, you can insist on either.
+
+### Your past questions
+
+Every question and answer is kept on this computer and listed in the sidebar,
+newest first. Click one to reopen it with its passages. The box above the list
+searches your questions. An entry that used the Deuterocanon says so.
+
+To delete one, press the waste-basket beside it and confirm. It deletes that
+entry and nothing else, and it does not open it first. To delete all of them,
+open **Settings > Question history** and press **Delete all history**, which
+asks once, naming the number, before anything happens.
+
+### Exporting your history
+
+**Settings > Question history > Export history** offers two files.
+
+- **Text file (.txt)** -- the copy to read, print, or keep in a folder: every
+  question, its answer, and the references underneath it.
+- **Spreadsheet (.xlsx)** -- the copy to sort, filter, or hand to somebody else:
+  one sheet listing every question, then one sheet per question holding its
+  answer and every passage it rested on, with the verse text in the column
+  beside the reference.
+
+Both are written from the Bible index at the moment you save, never from
+anything the model produced. You choose where the file goes. Nothing is
+uploaded, and no copy is kept anywhere else.
+
+### When a summary cannot be written
+
+Sometimes the model writes a reference that does not check out. The answer is
+then written a second time. If the second attempt fails as well, The Pastor
+Bible shows you the passages it found and says plainly that it could not produce
+a summary. It will not show you an answer it could not verify.
 
 ## How answers are produced, and why you can trust the references
-
-This section describes how v1.0.0 works. The mechanism is settled; the code that
-implements it is written in P4.
 
 The Pastor Bible does not answer from memory. Everything it says is built from
 passages it has actually retrieved from the text of the Bible on your computer.
@@ -181,14 +278,102 @@ blocked.
 
 ## Building from source
 
-Not yet available; filled in at P6.
+You do not need to build The Pastor Bible in order to use it. This section is
+here because the licence gives you the right to build it, because macOS has no
+installer and building is the only way to run it there, and because a program
+that asks to be trusted should be one anybody can rebuild for themselves.
+
+### What you need
+
+    Rust, stable       https://rustup.rs
+    Node 20 or newer   https://nodejs.org
+    Python 3           only to fetch the search model and the model server
+
+Tauri also needs some system libraries, listed for every platform at
+https://tauri.app/start/prerequisites. On Debian or Ubuntu they are:
+
+    sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev \
+      librsvg2-dev patchelf libgtk-3-dev
+
+### Three things are fetched rather than committed
+
+The Bible index, the search model and the model server are all too large for
+git. Each is fetched by pinned checksum, and each fetcher refuses a file whose
+checksum does not match:
+
+    python tools/fetch_model.py             the search model, 262 MB
+    python tools/fetch_llama.py --bundle    the model server, 90 MB
+    gh release download index-0.2.0 --pattern index.db --dir src-tauri/resources
+
+The index is a release asset of this repository rather than a file inside it.
+All three are declared as bundle resources, so `tauri build` refuses to produce
+an installer without them, and a build cannot quietly succeed with no Bible in
+it.
+
+### Building
+
+    npm ci
+    npx tauri build --bundles nsis           on Windows
+    npx tauri build --bundles deb,appimage   on Linux
+
+The installers are written to `src-tauri/target/release/bundle/`. They are
+unsigned; see the Windows warning above.
+
+### Tests
+
+    npm test                                              the window's components
+    cargo test --manifest-path src-tauri/core/Cargo.toml   everything else
+
+Two of the Rust suites, `session_lifecycle` and `sidecar_lifecycle`, start a
+real model server against the 4.7 GB answering model, and they fail rather than
+skip when it is not there. Everything else runs without it.
+
+### macOS
+
+There is no macOS installer. Notarising one requires a paid Apple developer
+account, and this project costs nothing to run and never will. The code is
+cross-platform and Tauri supports macOS, so building there is expected to work.
+Nobody has done it, and it is not tested.
 
 ## Sources and credits
 
-Not yet available; filled in at P3.
+The About screen inside the app shows this same list. A test in the build fails
+if the two ever come to disagree.
 
-Attribution for everything currently in this repository is recorded in
-[NOTICE.md](NOTICE.md), and is kept current as each source is added.
+    World English Bible, Classic            public domain
+    Treasury of Scripture Knowledge         public domain
+    Nave's Topical Bible                    public domain
+    llama.cpp                               MIT
+    Tauri                                   MIT or Apache-2.0
+    Qwen3 (answering model)                 Apache-2.0
+    nomic-embed-text-v1.5 (search model)    Apache-2.0
+
+Made by Jared and Claude (Anthropic). Licensed Apache-2.0.
+
+**The text** is the World English Bible, Classic edition, which is in the public
+domain worldwide. It is reproduced unmodified. The translators' footnotes and
+cross-references are left out, being apparatus around the text rather than the
+text itself, and not one word of the translation is changed. "World English
+Bible" is a trademark of eBible.org, and the condition attached to it is that
+anyone who changes the text must not call the result by that name. We do not
+change it.
+
+**The two study aids** are the Treasury of Scripture Knowledge, a
+cross-reference work, and Nave's Topical Bible, a topical index. Both are in the
+public domain, and both are used only to widen a search. Neither is commentary.
+The Pastor Bible ships no commentary of any kind, because commentary is one
+tradition's reading and this tool takes no side.
+
+**The software** is llama.cpp, which runs the models on your own computer, and
+Tauri, which is the window around it. Their licence texts are installed
+alongside them.
+
+**The models** are Qwen3, which writes the synopsis, and nomic-embed-text-v1.5,
+which does the searching. Both are Apache-2.0. No model under a community
+licence or an acceptable-use policy is used, so no model's terms reach you.
+
+Every source is recorded in full in [NOTICE.md](NOTICE.md), with its URL, its
+licence, the date it was retrieved, and the checksum of the exact file used.
 
 ## License
 
