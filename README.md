@@ -35,6 +35,10 @@ from the [releases page](https://github.com/haomuch1/pastor-bible/releases).
 
 > Because this is a free project made by volunteers, the installer is not yet signed with a paid certificate. When you run it, Windows will show a blue screen that says "Windows protected your PC." This is expected. Click "More info," then "Run anyway." We will apply for free open-source signing after the first release; when granted, the publisher shown will be "SignPath Foundation."
 
+Screenshots of those two screens are added after the clean-machine test. They
+can only be taken on a computer that has never seen the installer before, and
+this project does not show a picture it has not taken.
+
 Nothing is put in `Program Files` and nothing is installed for other accounts on
 the computer. If two people share a machine, each installs their own copy and
 each keeps their own questions.

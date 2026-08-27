@@ -18,6 +18,7 @@ use serde::Serialize;
 use tauri::{Emitter, Manager, State};
 
 use pastor_bible_core::api::Answer;
+use pastor_bible_core::builtin;
 use pastor_bible_core::compute::{self, ComputeChoice};
 use pastor_bible_core::credits;
 use pastor_bible_core::download::{self, ModelStatus, Progress};
@@ -299,14 +300,18 @@ fn engine_settings(
     compute: &ComputeChoice,
 ) -> Result<Settings, String> {
     let spec = download::model(&s.model).ok_or_else(|| format!("unknown model {:?}", s.model))?;
+    let crisis_paths = paths::crisis_overrides();
     Ok(Settings {
         index_db: paths.index_db.clone(),
         llama_server: paths.llama_server.clone(),
         chat_model: std::path::Path::new(&paths.models).join(spec.file).to_string_lossy().into_owned(),
         embed_model: paths.embed_model.clone(),
-        prompts_dir: paths::prompts_dir(),
-        crisis_terms: paths::crisis_terms(),
-        crisis_note: paths::crisis_note(),
+        // None means the copies compiled into this binary, which is what a
+        // shipped build uses. A path only when TPB_* asks for one, or in a
+        // debug build where the repository is really there. See paths.rs.
+        prompts_dir: paths::prompts_dir_override(),
+        crisis_terms: crisis_paths.0,
+        crisis_note: crisis_paths.1,
         log_dir: Some(paths.logs.clone()),
         canon: CanonMode::parse(&s.canon)?,
         query_mode: QueryMode::Raw,
@@ -395,8 +400,11 @@ fn app_info(state: State<'_, AppState>) -> Result<AppInfo, String> {
         model_id: s.model.clone(),
         model_file: spec.file.to_string(),
         embedding_model: EMBED_GGUF.to_string(),
-        disclaimer: read_text(&paths::data_dir(), "disclaimer.txt")?,
-        crisis_note: read_text(&paths::data_dir(), "crisis_note.txt")?,
+        // Compiled in. These are the two pieces of wording PLAN 9.2 and 9.3
+        // fix verbatim, and the first file the installed app ever failed to
+        // find. There is no longer a path to get wrong.
+        disclaimer: builtin::DISCLAIMER.trim().to_string(),
+        crisis_note: builtin::CRISIS_NOTE.trim().to_string(),
         offline_statement:
             "The Pastor Bible works entirely on this computer. After the one-time model \
              download it makes no connection to anything, and nothing you type is ever sent \
@@ -414,12 +422,6 @@ fn app_info(state: State<'_, AppState>) -> Result<AppInfo, String> {
         paths: state.paths.clone(),
         prompt_versions: Vec::new(),
     })
-}
-
-fn read_text(dir: &str, name: &str) -> Result<String, String> {
-    std::fs::read_to_string(std::path::Path::new(dir).join(name))
-        .map(|s| s.trim().to_string())
-        .map_err(|e| format!("cannot read {}: {}", name, e))
 }
 
 #[tauri::command]
@@ -698,10 +700,11 @@ async fn run_self_test(
 /// The three canned questions, read from the evaluation set so the self-test
 /// asks what a reader would ask rather than something chosen to pass.
 fn self_test_questions() -> Result<Vec<(String, String)>, String> {
-    let path = std::path::Path::new(&paths::data_dir()).join("eval").join("questions.json");
-    let text = std::fs::read_to_string(&path)
-        .map_err(|e| format!("cannot read the self-test questions: {}", e))?;
-    let v: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
+    // The evaluation set, compiled in. Still the evaluation set, so the
+    // self-test still asks what a reader would ask rather than something chosen
+    // to pass; it simply no longer needs the repository to be on the machine.
+    let v: serde_json::Value =
+        serde_json::from_str(builtin::EVAL_QUESTIONS).map_err(|e| e.to_string())?;
     let mut out = Vec::new();
     for want in SELF_TEST_IDS {
         let found = v["smoke"]
@@ -823,11 +826,11 @@ fn chapter(
     })
 }
 
-/// The crisis note, for the panel above an answer. Loaded from the same file
-/// README quotes, so the two cannot drift.
+/// The crisis note, for the panel above an answer. The same text README
+/// quotes, compiled in from the same file, so the two cannot drift.
 #[tauri::command]
 fn crisis_note() -> Result<String, String> {
-    read_text(&paths::data_dir(), "crisis_note.txt")
+    Ok(builtin::CRISIS_NOTE.trim().to_string())
 }
 
 /// The tokens an answer cites, so the frontend marks the same passages the
@@ -854,7 +857,146 @@ fn lock<T>(_: T) -> String {
 // ------------------------------------------------------------------- setup
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// Everything the program needs before it can show anything, checked and
+/// reported, with no window and no GUI.
+///
+/// P7 is why this exists. The installed app opened to "cannot read
+/// disclaimer.txt: The system cannot find the path specified (os error 3)"
+/// because nine runtime files resolved through the build machine's own absolute
+/// path. Every check P6 ran was run on the build machine, where that path is a
+/// real directory, so nothing caught it. A reader who hits a startup failure can
+/// now run this and paste the output, and tools/clean-machine-check.ps1 runs it
+/// with the repository renamed away, which is the only arrangement in which the
+/// answer means anything.
+///
+/// Exits 0 if everything resolved, 1 otherwise, and names what failed.
+fn self_check() -> i32 {
+    let mut out = String::new();
+    let mut bad = 0;
+    let mut ok = |label: &str, r: Result<String, String>| match r {
+        Ok(detail) => out.push_str(&format!("ok    {:<22} {}\n", label, detail)),
+        Err(e) => {
+            bad += 1;
+            out.push_str(&format!("FAIL  {:<22} {}\n", label, e));
+        }
+    };
+
+    ok("version", Ok(APP_VERSION.to_string()));
+
+    // The two pieces of wording the reader meets first, and the file that
+    // failed on the laptop. Compiled in now, so this can only fail if a build
+    // shipped them empty.
+    ok(
+        "disclaimer",
+        match builtin::DISCLAIMER.trim() {
+            "" => Err("the built-in disclaimer is empty".into()),
+            t => Ok(format!("{} characters, built in", t.len())),
+        },
+    );
+    ok(
+        "crisis note",
+        match builtin::CRISIS_NOTE.trim() {
+            "" => Err("the built-in crisis note is empty".into()),
+            t => Ok(format!("{} characters, built in", t.len())),
+        },
+    );
+
+    let (ct, cn) = paths::crisis_overrides();
+    let source = if ct.is_some() { "from files" } else { "built in" };
+    ok(
+        "crisis list",
+        pastor_bible_core::crisis::CrisisMatcher::resolve(ct.as_deref(), cn.as_deref())
+            .map(|_| format!("loaded, {}", source)),
+    );
+
+    let pd = paths::prompts_dir_override();
+    let psource = match &pd {
+        Some(d) => d.clone(),
+        None => "built in".to_string(),
+    };
+    ok(
+        "prompts",
+        pastor_bible_core::prompts::Prompts::resolve(pd.as_deref())
+            .map(|_| format!("loaded, {}", psource)),
+    );
+
+    ok("self-test questions", self_test_questions().map(|q| format!("{} found", q.len())));
+
+    // The three large resources. Tauri resolves these through its own resource
+    // directory, which is the executable's folder on Windows and on Linux; this
+    // derives the same place from the executable rather than from a build-time
+    // path, which is the whole point.
+    let beside = std::env::current_exe()
+        .ok()
+        .and_then(|e| e.parent().map(|d| d.to_path_buf()));
+    let mut resource_check = |label: &str, rel: &str| {
+        let found = beside.as_ref().map(|d| d.join("resources").join(rel)).filter(|p| p.exists());
+        match found {
+            Some(p) => out.push_str(&format!("ok    {:<22} {}\n", label, p.display())),
+            None => {
+                // Not a failure on a development build, where these live in the
+                // repository and Tauri is not resolving anything.
+                if cfg!(debug_assertions) {
+                    out.push_str(&format!("--    {:<22} not beside the binary (debug build)\n", label));
+                } else {
+                    bad += 1;
+                    out.push_str(&format!("FAIL  {:<22} not found beside the binary\n", label));
+                }
+            }
+        }
+    };
+    resource_check("index.db", "index.db");
+    resource_check("search model", EMBED_GGUF);
+    resource_check(
+        "model server",
+        &format!("llama/{}", if cfg!(windows) { "llama-server.exe" } else { "llama-server" }),
+    );
+
+    out.push('\n');
+    let code = if bad == 0 {
+        out.push_str("everything the program needs before it can show anything is here.\n");
+        0
+    } else {
+        out.push_str(&format!("{} thing(s) missing. The app would not start.\n", bad));
+        1
+    };
+
+    // A release build is a GUI-subsystem binary: there is no console attached,
+    // so nothing printed here would ever be seen and no shell would wait for
+    // it. The report goes to a file beside the reader's own data, where a
+    // script can read it and a person can be asked to send it.
+    print!("{}", out);
+    let written = self_check_report_path().and_then(|p| {
+        p.parent().map(std::fs::create_dir_all);
+        std::fs::write(&p, &out).ok().map(|_| p)
+    });
+    match written {
+        Some(p) => print!("report written to {}\n", p.display()),
+        None => print!("(the report could not be written to a file)\n"),
+    }
+    code
+}
+
+/// Where `--self-check` leaves its report. Beside the reader's data, resolved
+/// without Tauri so the check needs nothing built up first.
+fn self_check_report_path() -> Option<std::path::PathBuf> {
+    let base = if cfg!(windows) {
+        std::env::var("APPDATA").ok().map(std::path::PathBuf::from)
+    } else {
+        std::env::var("XDG_DATA_HOME")
+            .ok()
+            .map(std::path::PathBuf::from)
+            .or_else(|| std::env::var("HOME").ok().map(|h| std::path::PathBuf::from(h).join(".local/share")))
+    }?;
+    Some(base.join("io.github.haomuch1.pastorbible").join("self-check.txt"))
+}
+
 pub fn run() {
+    // Before Tauri, so it needs no window and no display.
+    if std::env::args().any(|a| a == "--self-check") {
+        std::process::exit(self_check());
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {

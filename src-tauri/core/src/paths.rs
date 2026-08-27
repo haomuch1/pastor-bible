@@ -86,6 +86,50 @@ pub fn crisis_note() -> String {
     from_env_or("TPB_CRISIS_NOTE", PathBuf::from(data_dir()).join("crisis_note.txt"))
 }
 
+/// A text path for an installed build: only if something explicitly asked for
+/// one, never the repository.
+///
+/// The functions above answer with a repository path when no variable is set,
+/// which is right for the harness and the tests and was catastrophic for the
+/// shipped app: `repo_root()` is `CARGO_MANIFEST_DIR`, an absolute path on
+/// whoever ran the compiler. P7's laptop opened to "cannot read
+/// disclaimer.txt: The system cannot find the path specified (os error 3)",
+/// looking in a directory on a drive it does not have.
+///
+/// So the app asks this instead. `Some` only when the variable is set, or in a
+/// debug build where the repository really is where the binary was built and
+/// editing a prompt without recompiling is worth having. Otherwise `None`, and
+/// the caller uses the copy compiled into the binary.
+pub fn override_path(var: &str, fallback: impl FnOnce() -> String) -> Option<String> {
+    if let Ok(p) = std::env::var(var) {
+        return Some(p);
+    }
+    if cfg!(debug_assertions) {
+        let p = fallback();
+        if std::path::Path::new(&p).exists() {
+            return Some(p);
+        }
+    }
+    None
+}
+
+/// The prompts directory an installed build should read, or `None` for built in.
+pub fn prompts_dir_override() -> Option<String> {
+    override_path("TPB_PROMPTS_DIR", prompts_dir)
+}
+
+/// The crisis list and note an installed build should read, or `None` for both.
+pub fn crisis_overrides() -> (Option<String>, Option<String>) {
+    let terms = override_path("TPB_CRISIS_TERMS", crisis_terms);
+    let note = override_path("TPB_CRISIS_NOTE", crisis_note);
+    match (terms, note) {
+        // Both or neither: a matcher built from one file and one built-in would
+        // be a state nobody asked for and nobody could reason about.
+        (Some(t), Some(n)) => (Some(t), Some(n)),
+        _ => (None, None),
+    }
+}
+
 pub fn log_dir() -> String {
     from_env_or("TPB_LOG_DIR", repo_root().join("tools"))
 }

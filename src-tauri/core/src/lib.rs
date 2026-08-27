@@ -4,6 +4,7 @@
 //! is another; the tests are a third.
 
 pub mod api;
+pub mod builtin;
 pub mod compute;
 pub mod credits;
 pub mod crisis;

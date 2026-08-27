@@ -67,9 +67,14 @@ pub struct Settings {
     pub llama_server: String,
     pub chat_model: String,
     pub embed_model: String,
-    pub prompts_dir: String,
-    pub crisis_terms: String,
-    pub crisis_note: String,
+    /// `None` uses the prompts compiled into the binary, which is what the
+    /// shipped app does. `Some(dir)` reads that directory instead, which is how
+    /// the harness and the measurements try a variant. Before P7 this was a
+    /// path in every build, and the path was the build machine's.
+    pub prompts_dir: Option<String>,
+    /// `None` for both uses the built-in crisis list and note. See above.
+    pub crisis_terms: Option<String>,
+    pub crisis_note: Option<String>,
     pub log_dir: Option<String>,
     pub canon: CanonMode,
     pub query_mode: QueryMode,
@@ -100,8 +105,11 @@ impl Engine {
         let retriever = Retriever::open(&settings.index_db, EMBED_MODEL_ID)?;
         let index_load_seconds = t0.elapsed().as_secs_f64();
         let verifier = Verifier::new(&retriever.index);
-        let crisis = CrisisMatcher::load(&settings.crisis_terms, &settings.crisis_note)?;
-        let prompts = Prompts::load(&settings.prompts_dir)?;
+        let crisis = CrisisMatcher::resolve(
+            settings.crisis_terms.as_deref(),
+            settings.crisis_note.as_deref(),
+        )?;
+        let prompts = Prompts::resolve(settings.prompts_dir.as_deref())?;
         Ok(Engine { retriever, verifier, crisis, prompts, settings, index_load_seconds })
     }
 

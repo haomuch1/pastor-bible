@@ -1,9 +1,15 @@
-//! Prompts, loaded verbatim from data/prompts/.
+//! Prompts, verbatim from data/prompts/.
 //!
 //! A prompt is part of the product's behaviour, so it is versioned and diffable
 //! rather than buried in code. The version line is read at start-up and carried
 //! into the output structure, so an answer in history says which prompt wrote
 //! it.
+//!
+//! The shipped app uses the copies compiled in by `builtin`, which are these
+//! same files read at build time. `load` remains for the harness and the
+//! measurements, which point `TPB_PROMPTS_DIR` at a directory to try a variant
+//! without rebuilding. P7 is why: a path baked in at compile time is a path
+//! that does not exist on anybody else's machine.
 
 use std::collections::HashMap;
 
@@ -21,6 +27,19 @@ pub struct Prompts {
 }
 
 impl Prompts {
+    /// The copies compiled into this binary. What the shipped app uses.
+    pub fn builtin() -> Self {
+        let mut bodies = HashMap::new();
+        let mut versions = HashMap::new();
+        for (name, text) in crate::builtin::PROMPTS {
+            versions.insert(name.to_string(), version_line(text));
+            bodies.insert(name.to_string(), body(text));
+        }
+        Prompts { dir: "(built in)".to_string(), bodies, versions }
+    }
+
+    /// Read from a directory. For the harness, the tests, and anyone pointing
+    /// `TPB_PROMPTS_DIR` at a variant. A missing file is an error naming it.
     pub fn load(dir: &str) -> Result<Self, String> {
         let mut bodies = HashMap::new();
         let mut versions = HashMap::new();
@@ -32,6 +51,14 @@ impl Prompts {
             bodies.insert(name.to_string(), body(&text));
         }
         Ok(Prompts { dir: dir.to_string(), bodies, versions })
+    }
+
+    /// `Some(dir)` reads that directory; `None` uses the built-in copies.
+    pub fn resolve(dir: Option<&str>) -> Result<Self, String> {
+        match dir {
+            Some(d) => Prompts::load(d),
+            None => Ok(Prompts::builtin()),
+        }
     }
 
     pub fn dir(&self) -> &str {

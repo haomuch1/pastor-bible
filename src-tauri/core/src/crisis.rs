@@ -44,10 +44,41 @@ pub fn parse_terms(text: &str) -> Vec<String> {
 }
 
 impl CrisisMatcher {
+    /// The list and the note compiled into this binary. What the shipped app
+    /// uses. Built through the same checks `load` applies, so an empty list
+    /// fails here exactly as it would from a file.
+    pub fn builtin() -> Result<Self, String> {
+        Self::from_text(
+            crate::builtin::CRISIS_TERMS,
+            crate::builtin::CRISIS_NOTE,
+            "the built-in crisis list",
+            "the built-in crisis note",
+        )
+    }
+
+    /// `Some` paths read those files; `None` uses the built-in copies.
+    pub fn resolve(terms: Option<&str>, note: Option<&str>) -> Result<Self, String> {
+        match (terms, note) {
+            (Some(t), Some(n)) => Self::load(t, n),
+            _ => Self::builtin(),
+        }
+    }
+
     pub fn load(terms_path: &str, note_path: &str) -> Result<Self, String> {
         let raw = std::fs::read_to_string(terms_path)
             .map_err(|e| format!("cannot read {}: {}", terms_path, e))?;
-        let terms = parse_terms(&raw);
+        let note = std::fs::read_to_string(note_path)
+            .map_err(|e| format!("cannot read {}: {}", note_path, e))?;
+        Self::from_text(&raw, &note, terms_path, note_path)
+    }
+
+    fn from_text(
+        raw: &str,
+        note: &str,
+        terms_name: &str,
+        note_name: &str,
+    ) -> Result<Self, String> {
+        let terms = parse_terms(raw);
         if terms.is_empty() {
             // An empty list matches nothing, and PLAN 5.8 holds that
             // under-triggering is unacceptable. Refusing to start is the only
@@ -55,15 +86,12 @@ impl CrisisMatcher {
             return Err(format!(
                 "{} holds no terms. A crisis list that matches nothing is worse \
                  than no crisis feature, because it looks like one.",
-                terms_path
+                terms_name
             ));
         }
-        let note = std::fs::read_to_string(note_path)
-            .map_err(|e| format!("cannot read {}: {}", note_path, e))?
-            .trim()
-            .to_string();
+        let note = note.trim().to_string();
         if note.is_empty() {
-            return Err(format!("{} is empty", note_path));
+            return Err(format!("{} is empty", note_name));
         }
         Ok(CrisisMatcher { terms, note })
     }

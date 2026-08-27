@@ -144,7 +144,7 @@ jobs:
       # five gigabytes. They are run by hand; docs/HANDOFF.md says so.
       - name: build the tests while the network is still here
         run: |
-          cargo test --manifest-path src-tauri/core/Cargo.toml --no-run --locked             --lib --test book_names --test bundled_model --test chapter --test credits --test crisis             --test download --test prompts_and_output --test retrieval_parity             --test spreadsheet --test userdb --test verifier_parity
+          cargo test --manifest-path src-tauri/core/Cargo.toml --no-run --locked             --lib --test book_names --test builtin --test bundled_model --test chapter --test credits --test crisis             --test download --test prompts_and_output --test retrieval_parity             --test spreadsheet --test userdb --test verifier_parity
 
       - name: run the suite with no network
         shell: bash
@@ -163,7 +163,7 @@ jobs:
             exec sudo -u '$USER' \
               env PATH='$PATH' HOME='$HOME' CARGO_HOME='${CARGO_HOME:-$HOME/.cargo}' \
                   RUSTUP_HOME='${RUSTUP_HOME:-$HOME/.rustup}' CARGO_TERM_COLOR=always \
-              '$CARGO' test --manifest-path src-tauri/core/Cargo.toml --locked                 --lib --test book_names --test bundled_model --test chapter --test credits --test crisis                 --test download --test prompts_and_output --test retrieval_parity                 --test spreadsheet --test userdb --test verifier_parity
+              '$CARGO' test --manifest-path src-tauri/core/Cargo.toml --locked                 --lib --test book_names --test builtin --test bundled_model --test chapter --test credits --test crisis                 --test download --test prompts_and_output --test retrieval_parity                 --test spreadsheet --test userdb --test verifier_parity
           "
 
       - name: prove the network really was gone
@@ -369,9 +369,31 @@ jobs:
         with: { path: dist }
       - shell: bash
         run: |
-          mkdir -p release && find dist -type f -exec cp {} release/ \;
-          cd release && sha256sum * > SHA256SUMS.txt
+          # Each build job uploaded its own SHA256SUMS.txt inside its artifact.
+          # Those are not the published file and must not be copied in: the
+          # published one is written here, over all three installers at once.
+          mkdir -p release
+          find dist -type f ! -name SHA256SUMS.txt -exec cp {} release/ \;
+          cd release
+
+          # GitHub replaces spaces in an asset's filename with dots when it is
+          # uploaded, so a checksums file naming "The Pastor Bible_..." matches
+          # nothing a reader ever downloads: sha256sum -c reports every file
+          # missing. Renaming here means the name in the file and the name on
+          # the release page are the same name. Found in P7-prep, on v1.0.0.
+          for f in *; do
+            n="${f// /.}"
+            [ "$f" = "$n" ] || mv -- "$f" "$n"
+          done
+
+          # Written outside the directory and moved in, so the glob cannot
+          # catch the file being written. Generating it in place listed it with
+          # the sha256 of an empty file, which is what v1.0.0 shipped.
+          sha256sum -- * > ../SHA256SUMS.txt
+          mv ../SHA256SUMS.txt .
           ls -la
+          echo "--- SHA256SUMS.txt ---"
+          cat SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
