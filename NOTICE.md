@@ -36,11 +36,21 @@ llama.cpp, the local model server
   Release:   b10639, commit 5e6a37cb115dc1074e274ac004373f5661909695
   Assets:    llama-b10639-bin-win-cpu-x64.zip
                sha256 3bffee4da688dc404e8599571a6f79ca5f38f42b428c4f74a51945520305284e
+             llama-b10639-bin-win-vulkan-x64.zip
+               sha256 3fb85c859f2cf90b9626a66e9742baed416c1ceda767d5c906520547b36425ad
              llama-b10639-bin-ubuntu-x64.tar.gz
                sha256 3f928f12abc5aaec2b21e9c8116292910f9f5e76eb2605ae6a9578b0413de626
+             llama-b10639-bin-ubuntu-vulkan-x64.tar.gz
+               sha256 6168bd9affe15b5cdbf553d70d2f162df5268c50da038000dcd3f0dc537ec7ca
   Fetched by tools/fetch_llama.py, which refuses to unpack a mismatched
   checksum. The MIT licence text ships beside the binaries in the archive and
   is included in the installer.
+
+  The Vulkan archives are the same build as the CPU archives with one extra
+  library in them, the Vulkan backend, which ggml loads at run time; measured
+  2026-08-27, every other file is byte-identical. The installer therefore ships
+  one server and one set of libraries, 23 files, with that backend among them.
+  docs/SIDECAR.md has the measurement.
 
 Qwen3-8B, the answering model
   Project:   https://huggingface.co/Qwen/Qwen3-8B-GGUF

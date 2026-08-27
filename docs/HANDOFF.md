@@ -1,189 +1,174 @@
 # HANDOFF
 
-Session: P5.2 Sidebar delete, by-book default, spreadsheet export
+Session: P6 Packaging, GPU sidecar, upgrades, CI
 Date: 2026-08-27
-Status: P5.2 COMPLETE. Three things to re-check, listed below.
-Next session is P6. Do not begin P7.
+Status: P6 COMPLETE except the SmartScreen screenshots, which only a clean
+machine can produce. Next session is P7. Do not begin P8.
 
 ## State
 
 Repository at D:\Haomuch-Programs\The-Pastor-Bible, branch main, pushed to
 https://github.com/haomuch1/pastor-bible, still private.
 
-Jared approved everything from P5.1 and asked for three things. All three are
-done and all three were used in the running app, including the export, which was
-written through the real Windows save dialog and then read back with two
-independent readers.
+P6's deliverable is met: unsigned Windows and Linux installers from a tagged
+build, and the upgrade test passed on this machine and again in CI.
 
-The app runs with no environment variables:
+    Windows   The Pastor Bible_0.9.1_x64-setup.exe        445.6 MB   NSIS, per user
+    Linux     The Pastor Bible_0.9.1_amd64.deb                       from CI
+              The Pastor Bible_0.9.1_amd64.AppImage                  from CI
 
-    src-tauri\target\release\pastor-bible.exe
+The version now lives in one place, `src-tauri/Cargo.toml`. `tauri.conf.json`
+has no version key, so Tauri falls back to the Cargo one and the installer and
+the About screen cannot disagree — they did until this session.
 
-Tests: 66 in cargo, 2 more run explicitly, **6 in Vitest — the first frontend
-tests this project has had** — and 134 in pytest. tsc and vite build clean.
+Tests: 70 in cargo, 2 more run by hand, 6 in Vitest, 134 in pytest. tsc and vite
+clean.
 
-## The delete finding
+## The two findings that reshaped the session
 
-**The control had never been written.** Not hidden, not zero-sized, not
-overlapped, not undiscoverable: absent. `historyDelete` was exported from
-`src/api.ts` and called from nowhere — `grep -rn "historyDelete" src/` returned
-the definition and nothing else — and a sidebar entry rendered one button
-holding the question and its date, with no other element in it.
+**There is one llama.cpp build, not two.** Every file in the Vulkan release
+archive is byte-identical to the CPU archive's, on Windows and on Linux, and the
+Vulkan archive holds exactly one extra file: `ggml-vulkan.dll`, or
+`libggml-vulkan.so`. ggml loads its backends as dynamic libraries at run time,
+so that one file beside the CPU build turns `(none)` into
+`Vulkan0: NVIDIA GeForce RTX 3080 (10267 MiB, 9495 MiB free)` from the same
+binary. The installer ships one server, 23 files, 90.3 MB, with the Vulkan
+backend among its libraries; `-ngl` decides at launch. Two copies would have
+cost 99 MB for nothing. This corrects the brief's "both sidecars" and PLAN 11's
+externalBin wording; DECISIONS carries both.
 
-What made the false claim easy is that everything beneath the button was real
-and tested: `UserDb::delete`, the `history_delete` Tauri command, its
-registration, the frontend binding, and a passing cargo test named
-`deleting_removes_exactly_one_and_search_forgets_it`. P5 put "Delete one" on
-Jared's click-through checklist, which was an instruction to try rather than a
-claim; P5.1's handoff then wrote "Per-entry delete is unchanged", and that was
-written in a session where the app was being driven and could have been looked
-at. DECISIONS carries a dated correction.
+**Tauri's NSIS does not refuse a downgrade.** It compares versions only to word
+the reinstall page, and `/S` never shows a page, so the 0.9.0 installer replaced
+a 0.9.1 installation without a word. `src-tauri/installer.nsh` now refuses it in
+`NSIS_HOOK_PREINSTALL`, before anything is written.
 
-**A passing test on the command underneath is not evidence that a reader can
-reach it.** This repository had no test that rendered a component at all until
-today; it has six now, and the first of them fails if the delete control is
-missing from the DOM.
+## Verified, against the artifacts
 
-## Jared's re-check
+Every check below was made against a built installer, an installed directory,
+the registry, or the running installed program — never against a build script.
 
-1. **Delete one question.** Every entry has a waste-basket at its right edge,
-   always visible, titled "Delete this question". Press it: Delete and Cancel
-   appear on that entry and on no other, and the main area does not move. Press
-   Delete and that entry goes. "Clear history" has left the sidebar; Delete all
-   history is in Settings, next to the export.
-2. **The passage panel opens grouped by book.** Canonical order, chapter and
-   verse order inside a book, cited passages marked where they fall rather than
-   lifted to the top. "Group by topic" is still there as the second button and
-   your choice is remembered. *The topic view is the thing I would still like
-   you to decide about; see the flag below.*
-3. **Export a spreadsheet.** Settings → Export history → Spreadsheet (.xlsx).
-   One tab listing every question, then one tab per question with the answer at
-   the top and every passage underneath: reference, cited, Deuterocanon, and the
-   verse text. **There is one already written for you at
-   `tools\history-check.xlsx`**, produced by the running app; open it in Excel
-   and see whether the widths and the freeze work on your screen. *That file is
-   the one thing here I could measure but not look at.*
+**Install directory**, after installing 0.9.1: exactly 27 files, 734.8 MB, in
+`%LOCALAPPDATA%\The Pastor Bible` — `pastor-bible.exe`, `uninstall.exe`,
+`resources\index.db`, `resources\nomic-embed-text-v1.5-f16.gguf`, and
+`resources\llama\` with 23 files. Nothing else. **App data**, in
+`%APPDATA%\io.github.haomuch1.pastorbible`: `user.db`, `logs\`, `models\` with
+the downloaded chat model. Nothing of the reader's is in the install directory
+and nothing of the program's is in app data.
 
-## Verified this session, in the running app
+**Installer size** 445.6 MB, compressing 734.8 MB: index.db 366.8, embedding
+model 261.6, sidecar 90.3, program 16.1.
 
-**Deleting one entry.** Pressed the waste-basket on "What does the Bible say
-about rest?", pressed Delete, and that row left the sidebar while the other
-three stayed and the main area did not navigate. `user.db` afterwards holds
-three rows and `history_fts` holds three, so the FTS index followed the delete
-rather than keeping a ghost that search would still find. Screenshots 23 and 24.
+**Upgrade**, measured: install 0.9.0, ask two questions, install 0.9.1 over it →
+one Add/Remove entry showing 0.9.1, 27 files, 16 history entries intact, chat
+model timestamp unchanged at 07:53:14, About shows 0.9.1.
 
-**By book as the default.** A fresh question, "What does the Bible say about
-rest?", verified, 1 minute 57 seconds, 317 passages found and 15 used. The panel
-opened on "Group by book" with the stored setting cleared first, so the default
-is what was exercised: Genesis, Exodus, Leviticus, Numbers, Deuteronomy, Joshua,
-Judges, Ruth, 1 Samuel, in order, with Exodus 23:12, 34:21 and 35:1-3 in verse
-order and marked "IN THE ANSWER" where they fall. Screenshot 25. Pressing "Group
-by topic" wrote `group_by=topic` to user.db and pressing "Group by book" wrote
-it back, so the choice is remembered.
+**Downgrade**, measured: 0.9.0 over 0.9.1 → exit code 4, Add/Remove still 0.9.1,
+27 files, history and model untouched.
 
-**The export, through the real save dialog.** Settings → Export history offers
-"Text file (.txt)", "Spreadsheet (.xlsx)" and Cancel before any dialog opens
-(screenshot 27). The Windows save dialog was driven, a 36 KB workbook was
-written, and it was then read back twice: once by the cargo test with calamine,
-and once here by a reader built from the Python standard library. Five sheets
-for four entries, the tabs named by number and question, the two questions
-beginning "What does the Bible say abou" kept apart by their numbers, references
-in full book names, Deuterocanon marked yes on all eight Tobit rows, and the
-verse text matching index.db character for character.
+**Uninstall**, both answers measured. Keep: install directory gone, Add/Remove
+entry gone, app data and model present, and a reinstall found the history again.
+Delete: app data and the 4.7 GB model gone. Screenshot 31 is the prompt, with
+No as the default.
 
-**One real defect found by opening that file**: theme headings arrived in the
-cells as "## Tithing as a Divine Commandment", because a cell renders no
-markdown. The hashes now come off and the row is set in bold. Found by looking,
-not by a test; the test now covers it.
+**GPU**, from the shipped binary: the ten P3 graded questions asked through the
+installed window, **all ten verified, no fallbacks, zero fabricated references**,
+median 6.5 s, and 13.2 s for the first of a session including the model load.
+Thresholds measured at full offload with the 8192 context: 5,750 MiB for the 8B
+and 2,722 MiB for the 1.7B, pinned as those plus a tenth. With `TPB_NO_GPU=1`
+the probe found nothing, Settings said so, and the processor answered in 134.0 s.
 
-**Closing.** No `llama-server` remained after the window closed.
+**CI**, one full run on tag `v0.9.1-ci`, every job green: version gate, offline
+gate, Windows NSIS, Linux .deb and .AppImage, upgrade gate, draft publish. The
+tag and its draft release have been deleted.
+
+**Offline gate** runs the query suite inside a network namespace with only
+loopback, then proves it: `curl https://huggingface.co` inside the same
+namespace failed with exit 6, and loopback still worked. A gate that quietly had
+a network, or that passed because it had no server to talk to, would prove
+nothing.
+
+**Actions minutes: 84 billable**, Windows counted at 2x — 17 across three cheap
+dry runs that found the real faults, 65 for the full tagged run, 2 for two runs
+the version gate stopped in seconds.
 
 ## Not verified
 
-- **The spreadsheet has never been opened in Excel.** It has been parsed by two
-  readers and every value checked, but column widths, the frozen header and the
-  wrapped text are laid out by Excel and nobody here can see them.
-  `tools\history-check.xlsx` is waiting.
-- **jsdom does no layout.** The six frontend tests prove the delete control is
-  in the DOM, is reachable by the name it announces, and deletes exactly one
-  entry; they cannot prove it is visible, because every rectangle in jsdom is
-  zero. What stands behind "visible" is that the control's coordinates were
-  clicked in the running window and the confirm appeared. A browser-based test
-  would close that gap and is not worth its weight yet.
-- **Everything visual is still Jared's to judge.** The palette, the type and the
-  spacing are unchanged and remain placeholders. The waste-basket icon is drawn
-  in the source rather than fetched, and its size and weight are a guess.
-- **Nothing is signed, packaged or installed.** P6.
+- **SmartScreen.** README 9.4 describes "Windows protected your PC" and promises
+  screenshots. I gave the installer a browser's mark-of-the-web and ran it, and
+  no warning appeared on this machine — which has executed these exact bytes
+  dozens of times and has a local reputation for them. **The screenshots are not
+  in docs/screenshots/, because I will not fabricate them.** A machine that has
+  never seen the file is the only place the claim can be checked, and that is
+  P7. If the wording turns out to be wrong there, README 9.4 needs the edit.
+- **The Linux installers have never been run.** They were built in CI and their
+  checksums recorded; there is no Linux machine here. `.deb` dependencies are
+  declared as `libwebkit2gtk-4.1-0` and `libgtk-3-0` and have not been tested
+  against a real apt.
+- **WebView2 bootstrapping.** Configured as the silent downloadBootstrapper. This
+  machine already has WebView2, so the bootstrapper has never actually run.
+- **The upgrade gate has never seen a version change.** There is no previous
+  release, so it installed the candidate twice and said so in the log. The first
+  real release makes it a version change by itself.
+- **Everything visual is still Jared's.** Nothing in this session changed the
+  palette, the type or the spacing.
 
-## Flags for Jared
+## Jared's P7 script, on a clean Windows machine
 
-**The topic view has not earned its place, and I have left it in.** By book is
-now the default because Nave's roots are not a category system: the Tobit answer
-grouped passages under "HAMATH" and "TOB-ADONIJAH", roots that merely happen to
-contain a matching verse. The switch is still there and still shows that. If you
-want it gone, it is one button and one branch.
+Follow only the README. If a step is not in the README, that is the finding.
 
-**A cited passage is now marked where it falls.** In book order it is no longer
-lifted to the top of its book. That is what canonical order is for, but it does
-mean that in a book with eleven passages the cited one may not be the first
-thing you see until you expand it.
-
-**The frontend test runner is 84 new npm packages**, all development-only and
-none shipped. NOTICE records the counts before and after. It is the price of
-being able to test that a control exists, and this session is the argument for
-paying it.
-
-## Carried forward, unchanged
-
-Answers still take two to three minutes on the reference machine, CPU only:
-1 minute 57 seconds this session. Memory, the GPU path and the hardware floor
-are as P5 measured them.
+1. Download the Windows installer from the release page. **Expect the blue
+   "Windows protected your PC" screen. Photograph or screenshot it, and the
+   screen after "More info".** Those two images are what README 9.4 promises and
+   the only thing P6 could not produce. Save them as
+   `docs/screenshots/install-1-smartscreen.png` and `install-2-more-info.png`.
+2. Install. It should ask for no administrator password.
+3. Open it. If the machine has never had WebView2, it should install itself
+   without asking. Note whether anything appeared.
+4. First run: the model download, then the check. Note the download time and
+   whether the check passed.
+5. Pull the network cable, or turn off Wi-Fi, and ask three questions. All three
+   must answer.
+6. Look at Settings > Compute. Note what it says about that machine's graphics
+   card, and whether answers match the wording.
+7. Install a second build over the first. Confirm one entry in Add/Remove
+   Programs, your questions still there, and no second model download.
+8. Uninstall, choose **Keep**. Reinstall. Confirm the questions came back.
 
 ## Next session
 
-P6 Packaging and CI, per PLAN sections 11 and 13.
+**P7 Fresh-machine verification**, per PLAN section 13. Jared installs on a
+clean Windows machine following only the README, confirms offline operation,
+then installs a second build over it and confirms a single install with history
+intact. Deliverable: v1.0.0 public release.
 
-Installers with the fixed product id, in-place upgrade, the uninstall prompt for
-user data, sidecar bundling per Tauri's externalBin convention, WebView2
-bootstrapping on a clean Windows 10, the offline gate, the upgrade gate, and the
-release workflow.
+Four things P6 leaves for it.
 
-Five things earlier sessions leave for it.
-
-- **The app must be built with the Tauri CLI, not with `cargo build`.** A plain
-  cargo build produces a binary that loads the dev URL and shows "localhost
-  refused to connect". CI must call the CLI.
-- **index.db is not a declared bundle resource.** The embedding model is, and it
-  works; index.db is a gigabyte and still resolves through the fallback chain in
-  `resolve_paths`. P6 decides whether it is declared, shipped separately, or
-  fetched.
-- **The Vulkan sidecar** is fetched and measured but not bundled; the Compute
-  setting is in the window, disabled, waiting for it.
-- **`tools/fetch_llama.py --sidecar`** places the CPU build in
-  `src-tauri/binaries` under the target-triple name Tauri wants, and that layout
-  has not been tested against an actual bundle. `tools/fetch_model.py` is the
-  same idea for the embedding model and has been.
-- **The transitive licence audit** NOTICE defers to P6 now covers five more Rust
-  crates for the spreadsheet writer, all permissive and all pure Rust, and a
-  development-only frontend test runner that reaches no end user.
+- **The SmartScreen screenshots**, above. README 9.4 is unverified prose until
+  they exist.
+- **The Linux packages need a Linux machine.** They build; nobody has run one.
+- **The repository is still private.** Making it public is part of v1.0.0, and
+  it also makes Actions minutes free rather than metered.
+- **`index-0.2.0` is a prerelease holding the built index** so CI can fetch it.
+  It is a build input, not a product release, and its notes say so. If the index
+  is ever rebuilt, that asset and the `INDEX_SHA256` in the workflow move
+  together.
 
 Read PLAN.md, DECISIONS.md, API.md, SIDECAR.md and this file before starting.
-Do not begin P7.
+Do not begin P8.
 
-## Running it without an installer
+## Running and building here
 
-    src-tauri\target\release\pastor-bible.exe
+    src-tauri\target\release\pastor-bible.exe          the built app
+    npx tauri build --bundles nsis                     the installer
 
-The embedding model is beside the binary in `target\release\resources\`, put
-there by `npx tauri build`; the chat model is in
-`%APPDATA%\io.github.haomuch1.pastorbible\models\`, where the first-run download
-puts it, and a development build will also accept the repository's `models\`
-folder. To start over, close the app and delete
-`%APPDATA%\io.github.haomuch1.pastorbible`.
+From a fresh clone, three things must be fetched before a build; none is
+committed, and each is checksummed:
 
-If the repository has just been cloned, `python tools/fetch_model.py` places the
-embedding model in `src-tauri/resources/` and checks it against its pinned
-sha256; `npx tauri build` will refuse to build without it.
+    python tools/fetch_model.py        the embedding model, into resources/
+    python tools/fetch_llama.py --bundle   the sidecar, into resources/llama/
+    gh release download index-0.2.0 --pattern index.db --dir src-tauri/resources
 
 `npm test` runs the frontend tests; `cargo test --manifest-path
-src-tauri/core/Cargo.toml` runs the rest.
+src-tauri/core/Cargo.toml` runs the rest. `tools/click.ps1` drives the window —
+WebView2 drops a zero-duration synthetic press, which is why `shot.ps1`'s own
+click cannot be trusted for anything but screenshots.

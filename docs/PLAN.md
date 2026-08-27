@@ -430,7 +430,20 @@ After The Pastor Bible v1.0.0 is functional and public, a separately named app f
 - Embedding, reranker, and chat model candidates and licenses [P2, P3]
 - llama-server binary name, flags, and OpenAI-compatible endpoint [P4]
 - Model download host, size, checksum [P5]
-- NSIS vs MSI; WebView2 bootstrapping on clean Windows 10 [P6]
-- Tauri 2 NSIS/.deb in-place upgrade behavior and product-id handling [P6]
-- Uninstaller prompt for user data on Windows and Linux [P6]
+- ~~NSIS vs MSI; WebView2 bootstrapping on clean Windows 10~~ [P6] — RESOLVED:
+  NSIS, per user, into %LOCALAPPDATA%; no administrator password, and each
+  account on a shared machine keeps its own copy and its own questions. MSI is
+  built for administrators deploying to fleets and would need elevation for a
+  program nobody else can use. WebView2 uses the downloadBootstrapper, silent,
+  about 2 MB. The clean-machine test of that bootstrapper is P7's.
+- ~~Tauri 2 NSIS/.deb in-place upgrade behavior and product-id handling~~ [P6] —
+  RESOLVED: the upgrade is in place and leaves exactly one Add/Remove entry,
+  measured. The downgrade was NOT refused — Tauri compares versions only to word
+  a page that /S never shows — so src-tauri/installer.nsh refuses it in
+  NSIS_HOOK_PREINSTALL with a plain message and exit code 4.
+- ~~Uninstaller prompt for user data on Windows and Linux~~ [P6] — RESOLVED on
+  Windows: NSIS_HOOK_PREUNINSTALL asks in plain words and defaults to keep, and
+  both answers are verified. On Linux a .deb removal does not touch $HOME and
+  the AppImage installs nothing, so there is nothing to ask; the reader's data
+  is left alone by construction.
 - SignPath current requirements at time of application [P8]

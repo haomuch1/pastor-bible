@@ -22,10 +22,37 @@ The Linux counterpart of the same tag, for the Linux target in P6:
     asset       llama-b10639-bin-ubuntu-x64.tar.gz
     sha256      3f928f12abc5aaec2b21e9c8116292910f9f5e76eb2605ae6a9578b0413de626
 
-The Vulkan build, measured in P4 as a candidate second sidecar and not bundled:
+The Vulkan builds, bundled from P6:
 
     asset       llama-b10639-bin-win-vulkan-x64.zip
     sha256      3fb85c859f2cf90b9626a66e9742baed416c1ceda767d5c906520547b36425ad
+    asset       llama-b10639-bin-ubuntu-vulkan-x64.tar.gz
+    sha256      6168bd9affe15b5cdbf553d70d2f162df5268c50da038000dcd3f0dc537ec7ca
+    size        32,936,221 bytes
+
+## There is one build, not two
+
+Measured on 2026-08-27, on both platforms: every file in the Vulkan archive is
+byte-identical to the file of the same name in the CPU archive, and the Vulkan
+archive holds exactly one file the CPU archive does not — `ggml-vulkan.dll` on
+Windows, `libggml-vulkan.so` on Linux. ggml loads its backends as dynamic
+libraries at run time, so that one file beside the CPU build is the whole
+difference:
+
+    > llama-server.exe --list-devices          (without it)
+    Available devices:
+      (none)
+
+    > llama-server.exe --list-devices          (with it)
+    Available devices:
+      Vulkan0: NVIDIA GeForce RTX 3080 (10267 MiB, 9495 MiB free)
+
+So the installer ships one server and one set of libraries with the Vulkan
+backend among them, and `-ngl` decides at launch which processor runs the model.
+`tools/fetch_llama.py --bundle` assembles it into `src-tauri/resources/llama/`:
+23 files, 90.3 MB, trimmed from the archive's 51 to what llama-server actually
+loads. That trim was established by removing files until it stopped starting;
+dropping `mtmd.dll` makes it exit 0xC0000135, DLL not found.
 
 `tools/fetch_llama.py` fetches a named asset of the pinned tag, checks the
 sha256 before unpacking, and refuses on a mismatch. The zip already on this

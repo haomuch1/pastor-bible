@@ -16,28 +16,83 @@ A free, offline, nondenominational Bible study tool with cited answers.
 
 ## Install
 
-The Pastor Bible is not released yet. Installers for Windows and Linux come with
-v1.0.0.
+Installers are published with each release. There is no release yet: v1.0.0 is
+the first. The steps below are what a release will ask of you, and they have
+been tested against installers built from this repository.
 
-When you install on Windows, expect this:
+### Windows
 
-> Because this is a free project made by volunteers, the installer is not yet signed with a paid certificate. When you run it, Windows will show a blue screen that says "Windows protected your PC." This is expected. Click "More info," then "Run anyway." (Screenshots follow.) We will apply for free open-source signing after the first release; when granted, the publisher shown will be "SignPath Foundation."
+1. Download `The Pastor Bible_<version>_x64-setup.exe` from the release page.
+2. Run it.
+3. **Windows will warn you.** See below.
+4. It installs for you alone, into your own user folder, and asks for no
+   administrator password.
 
-Install steps, the Linux package, and upgrading: not yet available; filled in at P6.
+> Because this is a free project made by volunteers, the installer is not yet signed with a paid certificate. When you run it, Windows will show a blue screen that says "Windows protected your PC." This is expected. Click "More info," then "Run anyway." We will apply for free open-source signing after the first release; when granted, the publisher shown will be "SignPath Foundation."
+
+Nothing is put in `Program Files` and nothing is installed for other accounts on
+the computer. If two people share a machine, each installs their own copy and
+each keeps their own questions.
+
+If your computer has never run a program that uses Microsoft's web view, the
+installer fetches it from Microsoft and installs it without asking. That is the
+one thing the installer downloads, it is about 2 MB, and most Windows 10 and 11
+machines already have it.
+
+### Linux
+
+Download either the `.deb` or the `.AppImage`.
+
+    sudo apt install ./the-pastor-bible_<version>_amd64.deb
+
+or make the AppImage executable and run it. The `.deb` needs
+`libwebkit2gtk-4.1-0` and `libgtk-3-0`, which apt will pull in for you.
+
+### Upgrading
+
+Download the new installer and run it. That is all. It replaces the program, the
+Bible index and the search model, and it leaves your questions and your
+downloaded answering model exactly where they are. You will have one entry in
+Add/Remove Programs, not two.
+
+An older installer run over a newer installation stops and says so, and changes
+nothing.
+
+### Uninstalling
+
+Uninstall from Add/Remove Programs, or run `uninstall.exe` in the install
+folder. It removes the program and asks one question in plain words: whether to
+delete your saved questions and the answering model you downloaded. **The
+default is to keep them**, so that installing again later finds your questions
+still there and does not have to download five gigabytes again.
 
 ## First run
 
-Not yet available; filled in at P5.
+The Pastor Bible arrives with the Bible index and the search model already in
+it. One thing is downloaded, once: the answering model, about 4.7 GB. You are
+shown the size before it starts, and it resumes if it is interrupted.
+
+After the download it offers a check: three real questions, answered end to
+end, so you can see it working before you trust it with your own. On the
+machine below that check takes about **40 seconds** using the graphics card, or
+about **7 minutes 30 seconds** on the processor.
+
+Nothing else is ever downloaded. After the model is in place the program makes
+no network connection at all.
 
 ## Hardware requirements
 
 Built and tested on: AMD Ryzen 7 5800X (8 cores), NVIDIA RTX 3080 10 GB, 32 GB
 RAM, Windows 11. Everything below was measured on that machine on 2026-08-26.
 
-    disk           about 5.3 GB in all
-    memory in use  about 9 GB for one answer, rising to about 12 GB over a
-                   long session of several questions
-    an answer      around 2 to 4 minutes on the processor, 157 seconds typical
+    disk           about 5.4 GB in all
+    memory in use  about 9 GB for one answer on the processor, rising to about
+                   12 GB over a long session of several questions; about 5.4 GB
+                   of graphics memory instead when the graphics card is used
+    an answer      about 6 seconds on the graphics card, and about 13 seconds
+                   for the first question after the program opens, which
+                   includes loading the model
+                   about 2 to 3 minutes on the processor
 
 The Pastor Bible will run on less than that. It will be slower, and on a
 machine with much less memory it may swap and be slower still; it does not
@@ -56,14 +111,24 @@ instead of 9, and writes a plainer answer, usually one heading followed by the
 passages in turn rather than several themes. Both cite only passages that were
 actually found, and neither can invent a reference.
 
-Answers take minutes rather than seconds because everything happens on your own
-machine, with nothing sent anywhere. A faster processor is the thing that helps
-most. A graphics card will help a great deal in a later release: the same
-answer that takes 157 seconds on this processor takes 12 seconds on the
-graphics card in the machine above, and that path is not switched on yet.
+Everything happens on your own machine, with nothing sent anywhere, so the
+hardware is the whole of the speed.
 
-The timings above were measured on one machine. They will be checked on a clean
-machine before release.
+**A graphics card is worth more than anything else.** The ten questions used to
+measure this project were answered in a median of 6.5 seconds each on the
+graphics card above and 134 to 178 seconds on the processor. The Pastor Bible
+uses the card by itself when the card has room for the model: the standard model
+needs about 6.2 GB of free graphics memory and the smaller one about 2.9 GB.
+Settings says which one is being used, names the card, and lets you insist on
+either.
+
+If there is no card, or the card is too small, or the card is busy with
+something else, the processor answers instead and the program says so. Nothing
+fails; it just takes minutes rather than seconds.
+
+The timings above were measured on one machine, through the installed program
+rather than a test harness. They will be checked on a clean machine before
+release.
 
 ## Using it
 
