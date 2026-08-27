@@ -64,7 +64,9 @@ jobs:
           # suffixed tag like v0.9.1-ci is a test of this workflow; neither is
           # something a version has to be greater than. Without this the gate
           # compares a tagged build against its own tag and always refuses.
-          latest=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | sort -V | tail -1)
+          # The braces keep a grep that matches nothing from killing the step:
+          # pipefail plus set -e makes "no releases yet" look like a failure.
+          latest=$(git tag -l 'v*' | { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sed 's/^v//' | sort -V | tail -1)
           if [ -z "$latest" ]; then
             echo "no previous v* tag; $v is the first"
             exit 0
