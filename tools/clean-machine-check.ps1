@@ -24,14 +24,22 @@
 # reaches the main screen. --self-check cannot see the window, only the reads
 # behind it.
 #
-# -DataOnly hides just data/ instead of the whole repository. Windows refuses to
-# rename a directory that any process has open -- an editor with a file from it,
-# a shell sitting in it -- and that is a normal state on a machine somebody
-# works on. data/ is where all nine files that broke lived, so hiding it
-# exercises the same reads. It is the weaker claim: it proves the app no longer
-# reads data/, not that it reads nothing from the repository at all. Run the
-# full form before a release; use -DataOnly when something has the directory
-# open and you want the answer now.
+# Windows refuses to rename a directory that any process has open -- an editor
+# with a file from it, a shell sitting in it -- and that is the normal state on
+# a machine somebody works on. Two fallbacks, in descending strength:
+#
+#   (none)         rename the repository itself. The real thing. Needs nothing
+#                  holding the directory, so run it from a shell that is not in
+#                  it, with editors closed.
+#   -HideContents  rename every top-level entry instead, leaving an empty
+#                  directory behind. Nothing has a *child* as its current
+#                  directory, so this works while a shell sits in the root. The
+#                  app then finds nothing at any repository path, which is the
+#                  same claim; all that survives is an empty directory node.
+#                  .git is left alone: the app never reads it.
+#   -DataOnly      rename only data/, where all nine files that broke lived.
+#                  Proves the app no longer reads data/, not that it reads
+#                  nothing from the repository at all.
 #
 # Nothing here writes to the repository. It needs the app installed already.
 
@@ -39,6 +47,7 @@
 param(
     [switch] $Interactive,
     [switch] $DataOnly,
+    [switch] $HideContents,
     [int] $TimeoutSeconds = 60
 )
 
@@ -47,13 +56,21 @@ $ErrorActionPreference = 'Stop'
 $repo    = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $parent  = Split-Path $repo -Parent
 $leaf    = Split-Path $repo -Leaf
+$SUFFIX = '.hidden-by-clean-machine-check'
+if ($DataOnly -and $HideContents) { throw "-DataOnly and -HideContents are different checks; pick one." }
 if ($DataOnly) {
+    $mode   = 'one'
     $target = Join-Path $repo 'data'
-    $hidden = Join-Path $repo 'data.hidden-by-clean-machine-check'
+    $hidden = Join-Path $repo ('data' + $SUFFIX)
     $what   = 'data/'
-} else {
+} elseif ($HideContents) {
+    $mode   = 'many'
     $target = $repo
-    $hidden = Join-Path $parent ("$leaf.hidden-by-clean-machine-check")
+    $what   = "everything in the repository"
+} else {
+    $mode   = 'one'
+    $target = $repo
+    $hidden = Join-Path $parent ($leaf + $SUFFIX)
     $what   = 'the repository'
 }
 $install = Join-Path $env:LOCALAPPDATA 'The Pastor Bible'
@@ -68,7 +85,12 @@ function Pass($msg) { Write-Host "pass  $msg" -ForegroundColor Green }
 
 if (-not (Test-Path $exe))    { throw "no installed app at $exe. Install one first." }
 if (-not (Test-Path $target)) { throw "$target is not there to hide." }
-if (Test-Path $hidden)     { throw "$hidden already exists; a previous run did not clean up." }
+if ($mode -eq 'many') {
+    $leftovers = @(Get-ChildItem -LiteralPath $repo -Force | Where-Object Name -like "*$SUFFIX")
+    if ($leftovers.Count) { throw "a previous run left: $($leftovers.Name -join ', ')" }
+} elseif (Test-Path $hidden) {
+    throw "$hidden already exists; a previous run did not clean up."
+}
 
 # Every TPB_* override off. A variable left set would let the app find the
 # repository by another route, and the run would prove nothing.
@@ -90,19 +112,35 @@ if (Test-Path $report) { throw "cannot clear the previous report at $report" }
 Set-Location -LiteralPath $parent
 
 $moved = $false
+$renamed = @()
 try {
     Write-Host "hiding $what  ($target)"
-    try {
-        Move-Item -LiteralPath $target -Destination $hidden -ErrorAction Stop
-    } catch {
-        throw ("cannot rename $target : $($_.Exception.Message)`n" +
-               "Something is holding it open. Close editors, shells and file " +
-               "managers sitting in that directory and run this again from " +
-               "outside it, or pass -DataOnly for the narrower check.")
+    if ($mode -eq 'many') {
+        # .git is not something the app can read, and renaming it under a live
+        # git checkout invites trouble for no gain.
+        foreach ($c in Get-ChildItem -LiteralPath $repo -Force | Where-Object Name -ne '.git') {
+            $to = Join-Path $repo ($c.Name + $SUFFIX)
+            Move-Item -LiteralPath $c.FullName -Destination $to -ErrorAction Stop
+            $renamed += ,@($to, $c.FullName)
+        }
+        $moved = $true
+        $left = @(Get-ChildItem -LiteralPath $repo -Force | Where-Object { $_.Name -ne '.git' -and $_.Name -notlike "*$SUFFIX" })
+        if ($left.Count) { throw "these were not hidden: $($left.Name -join ', ')" }
+        Pass "the repository holds nothing but an empty directory and .git ($($renamed.Count) entries hidden)"
+    } else {
+        try {
+            Move-Item -LiteralPath $target -Destination $hidden -ErrorAction Stop
+        } catch {
+            throw ("cannot rename $target : $($_.Exception.Message)`n" +
+                   "Something is holding it open. Close editors, shells and file " +
+                   "managers sitting in that directory and run this again from " +
+                   "outside it, or pass -HideContents, which renames the entries " +
+                   "inside instead and makes the same claim.")
+        }
+        $moved = $true
+        if (Test-Path $target) { throw "$target is still there after the move" }
+        Pass "$what is not on disk at its build-time path"
     }
-    $moved = $true
-    if (Test-Path $target) { throw "$target is still there after the move" }
-    Pass "$what is not on disk at its build-time path"
 
     Write-Host ""
     Write-Host "--- $exe --self-check ---"
@@ -153,7 +191,13 @@ try {
     }
 }
 finally {
-    if ($moved) {
+    if ($moved -and $mode -eq 'many') {
+        Write-Host "restoring $($renamed.Count) entries"
+        foreach ($pair in $renamed) {
+            try { Move-Item -LiteralPath $pair[0] -Destination $pair[1] -ErrorAction Stop }
+            catch { Write-Host "COULD NOT RESTORE $($pair[0]) -> $($pair[1]): $($_.Exception.Message)" -ForegroundColor Red }
+        }
+    } elseif ($moved) {
         Write-Host "restoring $target"
         Move-Item -LiteralPath $hidden -Destination $target
     }
@@ -162,12 +206,17 @@ finally {
 # Verified outside the finally: putting it back is part of passing.
 $proof = if ($DataOnly) { Join-Path $repo 'data/disclaimer.txt' } else { Join-Path $repo 'README.md' }
 if (Test-Path $proof) {
-    Pass "$what is back at $target"
+    Pass "$what is back"
 } else {
-    Write-Host "$what IS NOT RESTORED. Look for $hidden" -ForegroundColor Red
+    Write-Host "$what IS NOT RESTORED. Look for *$SUFFIX under $repo" -ForegroundColor Red
     exit 2
 }
-if (Test-Path $hidden) {
+$stragglers = @(Get-ChildItem -LiteralPath $repo -Force -EA SilentlyContinue | Where-Object Name -like "*$SUFFIX")
+if ($stragglers.Count) {
+    Write-Host "STILL HIDDEN: $($stragglers.Name -join ', ')" -ForegroundColor Red
+    exit 2
+}
+if ($mode -eq 'one' -and (Test-Path $hidden)) {
     Write-Host "AND $hidden STILL EXISTS" -ForegroundColor Red
     exit 2
 }
