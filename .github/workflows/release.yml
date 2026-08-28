@@ -144,7 +144,7 @@ jobs:
       # five gigabytes. They are run by hand; docs/HANDOFF.md says so.
       - name: build the tests while the network is still here
         run: |
-          cargo test --manifest-path src-tauri/core/Cargo.toml --no-run --locked             --lib --test book_names --test builtin --test bundled_model --test chapter --test credits --test crisis             --test download --test prompts_and_output --test retrieval_parity             --test spreadsheet --test userdb --test verifier_parity
+          cargo test --manifest-path src-tauri/core/Cargo.toml --no-run --locked             --lib --test book_names --test builtin --test bundled_model --test chapter --test credits --test crisis             --test download --test hardware_screen --test low_memory --test prompts_and_output --test retrieval_parity             --test spreadsheet --test userdb --test verifier_parity
 
       - name: run the suite with no network
         shell: bash
@@ -163,7 +163,7 @@ jobs:
             exec sudo -u '$USER' \
               env PATH='$PATH' HOME='$HOME' CARGO_HOME='${CARGO_HOME:-$HOME/.cargo}' \
                   RUSTUP_HOME='${RUSTUP_HOME:-$HOME/.rustup}' CARGO_TERM_COLOR=always \
-              '$CARGO' test --manifest-path src-tauri/core/Cargo.toml --locked                 --lib --test book_names --test builtin --test bundled_model --test chapter --test credits --test crisis                 --test download --test prompts_and_output --test retrieval_parity                 --test spreadsheet --test userdb --test verifier_parity
+              '$CARGO' test --manifest-path src-tauri/core/Cargo.toml --locked                 --lib --test book_names --test builtin --test bundled_model --test chapter --test credits --test crisis                 --test download --test hardware_screen --test low_memory --test prompts_and_output --test retrieval_parity                 --test spreadsheet --test userdb --test verifier_parity
           "
 
       - name: prove the network really was gone

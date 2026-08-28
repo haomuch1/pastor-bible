@@ -1,327 +1,242 @@
 # HANDOFF
 
-Session: P7-fix-1, the installed app could not find its own text
+Session: P7-fix-2, three defects a person found by clicking
 Date: 2026-08-27
-Status: v1.0.1 is published as a pre-release. The repository is public. The
-laptop still has v1.0.0 on it, and the next step is Jared installing v1.0.1
-over it without uninstalling first.
+Status: v1.0.2 is published as a pre-release. The repository is public. The
+laptop is still on 1.0.1 and stays there, so 1.0.2 can be installed over it by
+hand. Next after that: a pastor's review, on a fresh install.
 
 ## The release
 
-    https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.1
+    https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.2
 
-Public, marked **Pre-release**, from tag `v1.0.1`, commit `fd8a8f9`.
+Public, marked **Pre-release**, from tag `v1.0.2`, commit `fb14026`.
+The installer's sha256 and the asset sizes are in the session report and in
+`SHA256SUMS.txt` beside the files, which since 1.0.1 uses the dotted names
+GitHub actually serves, so `sha256sum -c` works.
 
-    The.Pastor.Bible_1.0.1_x64-setup.exe     467,250,688 bytes
-    The.Pastor.Bible_1.0.1_amd64.deb         515,160,224 bytes
-    The.Pastor.Bible_1.0.1_amd64.AppImage    574,913,016 bytes
-    SHA256SUMS.txt                                   306 bytes
+## What the laptop found
 
-**The Windows installer's sha256:**
+The install of 1.0.1 over 1.0.0 worked and the app started. **The startup
+defect P7-fix-1 shipped for is fixed on a machine that never built this
+program**, which is the thing v1.0.1 existed to prove. Along the way it also
+confirmed, for the first time on a machine that could confirm it:
 
-    17164c3b4280b0bbd409d55e362a9f991289215e93858c9730ec082246b363f9
+    SmartScreen appeared, and matched what README describes
+    no WebView2 install was needed
+    the model downloaded at about 10 MB/s
+    the quick check passed in three to four minutes on the processor
+    a real question was answered in under two minutes
 
-Verified by downloading it from a shell with no credentials at all -- no token
-in the environment, `curl` rather than `gh` -- and hashing it. Not from the
-build log.
+Then a person clicking found three defects. No script here could have found
+any of them.
 
-**`sha256sum -c SHA256SUMS.txt` now works**, which it could not for v1.0.0. Both
-warts are fixed: the names in the file are the dotted names GitHub actually
-serves, and the file no longer lists itself with the hash of an empty file. On
-Windows:
+### 1. The upgrade was five screens and two questions about deleting data
 
-    certutil -hashfile "The.Pastor.Bible_1.0.1_x64-setup.exe" SHA256
+Going from 1.0.0 to 1.0.1 the reader saw: "Already Installed" with two radio
+buttons defaulting to *uninstall first*, a licence page, the **old version's
+uninstaller** with a "Delete the application data" checkbox, the custom Yes/No
+from `installer.nsh`, "The Pastor Bible is running! Click OK to kill it",
+"Choose Install Location", and Finish.
 
-## What v1.0.0 got wrong
+P6's upgrade test ran with `/S`. A silent installer shows no pages at all, so
+that test never saw a single one of them. A test that cannot see the thing it
+is testing is not a test of it.
 
-Jared installed the public v1.0.0 on a clean laptop. SmartScreen appeared as
-README 9.4 describes, More info then Run anyway worked, and the installer
-completed with no administrator prompt -- **so the three things README claims
-about installing on a machine that has never seen this program are confirmed,
-on the first machine that could confirm them.** Then the app opened to:
+**What was measured first, because it decided the fix:** the already-published
+1.0.0 and 1.0.1 uninstallers run perfectly under `/S` -- exit 0 at once,
+nothing shown, install directory and Add/Remove entry gone, `user.db` and the
+4.7 GB model untouched. They never needed avoiding, only invoking properly.
+Tauri's template simply never passes `/S`.
 
-    The Pastor Bible could not start
-    cannot read disclaimer.txt: The system cannot find the path specified (os error 3)
+**The mechanism, and its cost.** Every screen above is decided before the
+install section starts, and all four of Tauri's installer hooks run inside it,
+so no hook could reach them. `bundle.windows.nsis.template` is the only
+supported extension point that can. `src-tauri/nsis-installer.nsi` is Tauri
+2.11.4's own template, pulled out of the CLI binary by
+`tools/extract_nsis_template.py` and verified before anything was changed:
+built from the unmodified extraction, the generated `installer.nsi` differed
+from Tauri's own by two `CreateDirectory` lines in a non-deterministic order
+and nothing else. Our changes are 135 lines, each bracketed by
+`; >>> PASTOR BIBLE` and `; <<<`.
 
-**It was nine files, not one.** `paths::repo_root()` was
-`env!("CARGO_MANIFEST_DIR")`, an absolute path on whoever ran the compiler, and
-nine runtime files resolved through it and nothing else: the disclaimer, the
-crisis note, the crisis term list, the three prompts, and the evaluation set the
-self-test draws its questions from. `strings` on the shipped binary shows what
-it was hunting for:
+The cost is real and is the thing to remember: **a Tauri upgrade now needs
+those blocks re-applied and the screen-by-screen test re-run.**
 
-    ...\Haomuch-Programs\The-Pastor-Bible\src-tauri\core
+    python tools/extract_nsis_template.py --diff    ours against a fresh stock
 
-`disclaimer.txt` was only the first one read. Behind it stood the crisis term
-list, which by its own design refuses to start when it holds no terms, so the
-app could not have reached the main screen even if the disclaimer had loaded.
-`os error 3` rather than `error 2` is itself the evidence: that is
-ERROR_PATH_NOT_FOUND, raised for a missing intermediate directory, and the
-laptop has no `D:` drive at all.
+An upgrade now shows no reinstall, welcome, licence or location page, closes
+the running app quietly instead of offering to kill it, and runs the previous
+uninstaller with `/S`. A downgrade shows no page either and runs nothing --
+which closed a hazard nobody had noticed, because the stock page would have
+uninstalled the newer version *first* and only then been refused.
 
-The three large resources -- index.db, the search model, the sidecar -- were
-never affected. They resolve through Tauri's resource directory, which is the
-mechanism P5.1 taught the shell to use. That lesson was never carried across to
-the small text files.
+The uninstaller asks **once**: the stock checkbox is gone, the worded question
+that names the folder and defaults to keeping stays.
 
-### Why P6's install tests did not catch it
+**Recorded, screen by screen, with the app running and nothing silent.**
+`tools/record-installer.ps1` reads the installer's own windows, because "the
+upgrade test passed" with no screen list is exactly what let this through.
 
-Every P6 check ran the installed program on the machine that built it, where
-`D:\Haomuch-Programs\The-Pastor-Bible\data` is a real directory holding exactly
-the right files. The installed app quietly read the repository. P6's 27 files,
-its single Add/Remove entry, its ten verified answers and its passing upgrade
-test were all true, and all true of an app silently using something no reader
-would ever have. The defect was invisible not because those tests were careless
-but because the machine supplied the missing piece. P6's own rule -- "never
-against a build script" -- was the right instinct applied one level too shallow:
-it is not enough to test the artifact, the artifact has to be tested somewhere
-the source is not.
+    1.0.1 -> 1.0.2    "Updating The Pastor Bible / Updating from version 1.0.1
+                       to version 1.0.2. Your saved questions and your
+                       downloaded model are kept."
+                      then "Installation Complete".
+                      Two pages, no dialog boxes. One Add/Remove entry at
+                      1.0.2, 29 files, user.db unchanged at 118,784 bytes,
+                      model untouched, running app closed without a word.
+    1.0.2 -> 1.0.2    the same, reading "Reinstalling version 1.0.2".
+    1.0.2 over 1.0.3  one message, "A newer version of The Pastor Bible is
+                      already on this computer", nothing changed.
 
-### The test that would have caught it
+### 2. The memory message sent the reader looking for disk space
 
-`tools/clean-machine-check.ps1` renames the repository directory away, clears
-every `TPB_*` variable, and requires the installed binary to resolve everything
-it needs. The rename is undone in a `finally`, and the restoration is verified
-again outside it, so failing to put the repository back is itself a failure of
-the script.
+The quick check failed with "needs 6.7 GB free, only 4.3 GB available". The
+reader took it for disk, uninstalled programs looking for room, and finally
+rebooted -- which fixed it, because it was memory all along.
 
-    powershell -ExecutionPolicy Bypass -File tools\clean-machine-check.ps1
+It now reads: *"The Pastor Bible needs about 6.7 GB of free memory to load the
+answering model, and this computer has 4.3 GB free right now. Close other
+programs or restart the computer, then try again."* It says memory twice, names
+what it was loading, says what to do, and never says space or disk. A test
+asserts all of that, including that the word "space" does not appear.
 
-It asks the program a question the program can answer about itself:
+Pressing the button again **did** retry -- the check re-measures on every
+attempt. What it did not do was look like it: it failed under identical
+conditions with identical words, which is indistinguishable from nothing
+happening. `TPB_FAKE_FREE_RAM_GB` now makes the path testable, the way
+`TPB_NO_GPU` does for graphics, and a test proves two attempts report two
+different readings. A failed attempt also drops the session, so the search
+model it loaded is not still holding a quarter of a gigabyte of the memory the
+message just called short.
+
+The disk figure disagreed with the installer's because they measure different
+things. This screen already measured the drive holding the app data directory,
+where the model goes; it just never said which drive. It names it now.
+
+### 3. "This computer" was wrong about graphics, twice in one sentence
+
+It said "No separate graphics card was found. The Pastor Bible does not use one
+yet" -- on a machine with an RTX 3050, from an app that has used graphics cards
+since P6. It was asking the OS for one display adapter and knew nothing about
+whether a model would fit on it.
+
+It now uses `llama-server --list-devices`, the same probe Settings > Compute
+uses, lists every device with its memory, and says what will happen: *"NVIDIA
+GeForce RTX 3050 Laptop GPU, 4.0 GB: too small for the standard model, which
+will run on the processor instead. The smaller model in Settings can use it."*
+Verified both ways on this machine: the real RTX 3080 reads "big enough", and
+`TPB_NO_GPU=1` reads "No graphics card was found that The Pastor Bible can use,
+so the processor will answer."
+
+## Also this session
+
+- **README 9.4 said the SmartScreen page is blue. It is purple.** Jared's
+  screenshots show it. README and PLAN 9.4 now say "a full-screen warning",
+  changed together as P1 did the last time that paragraph moved. Both
+  screenshots are embedded in README and the note promising them later is gone.
+- README's first-run section now says the quick check takes a few minutes on a
+  laptop processor, so a reader does not think it has hung.
+- DECISIONS corrects P6's in-place-upgrade claim. Its numbers were all true and
+  all measured with `/S`; what was verified was that a *silent* upgrade
+  preserves data, not what an upgrade *looks like*.
+
+## The laptop, next
+
+The laptop is on 1.0.1 and stays there. Install 1.0.2 over it **by hand,
+without uninstalling first** -- that is the whole point, and it is the first
+time this flow will be seen on a machine that did not build it.
+
+1. Download `The.Pastor.Bible_1.0.2_x64-setup.exe` from the release page and
+   run it. Expect SmartScreen again; it is a new file.
+2. **Write down every screen you see, in order.** Expected: one window that
+   says "Updating from version 1.0.1 to version 1.0.2. Your saved questions and
+   your downloaded model are kept", a progress bar, then Installation Complete.
+   Nothing should ask about deleting anything. Nothing should mention killing.
+3. Add/Remove Programs: one entry, 1.0.1 gone, 1.0.2 there.
+4. Open it. Your three questions from the 1.0.1 session must still be listed.
+
+Then the things the laptop has still never done:
+
+5. **Settings > Compute**: record the device name and which path it chose.
+   Expected: the 3050 named, and the processor chosen, because 4 GB is below
+   the 6,325 MiB the standard model needs.
+6. **Switch to the smaller model** in Settings, let it download, ask one
+   question. Expected: the graphics card, this time. It is close to the line --
+   the smaller model needs 2,994 MiB free of about 4,096 total -- so if it
+   chooses the processor and names a figure below that, the rule is working.
+7. **Turn on the Deuterocanon**, ask "What does Tobit say about giving to the
+   poor?", confirm the Deuterocanon tag appears.
+8. **Click a citation**, open Read chapter, delete one history entry, export as
+   a spreadsheet and open it.
+9. **Close the app**, then Task Manager: no `llama-server` and no
+   `pastor-bible` left behind.
+10. **Reboot**, reopen from the desktop icon, confirm the history is there.
+11. **Uninstall**, choose Keep. There should be exactly **one** question about
+    your saved questions, in words, defaulting to keeping them. Reinstall and
+    confirm the history came back.
+
+If it will not start:
 
     "%LOCALAPPDATA%\The Pastor Bible\pastor-bible.exe" --self-check
 
-which performs exactly the reads that failed, names each with where it came
-from, and exits non-zero if any is missing. It writes its report to
-`%APPDATA%\io.github.haomuch1.pastorbible\self-check.txt`, because a release
-build is a GUI-subsystem binary with no console and anything printed would be
-seen by nobody.
+writes `%APPDATA%\io.github.haomuch1.pastorbible\self-check.txt` listing
+everything the program needs before it can show anything.
 
-**Verified both ways on this machine.** Against the installed v1.0.0 the app
-reproduced the laptop's error character for character. Against v1.0.1 the check
-passes, and the window reaches the main screen with `data/` gone.
+## After that: the pastor's review
 
-**One caveat on how it was run here.** Windows will not rename a directory that
-any process holds open, and `docs/EVAL-GOLD-REVIEW.md` was open in Notepad, so
-the full-repository rename could not run. It was run as `-DataOnly`, which hides
-only `data/` -- where all nine files lived. That is the weaker claim: it proves
-the app no longer reads `data/`, not that it reads nothing from the repository
-at all. Close anything holding the directory and run the full form once before
-the next release.
+A fresh install of 1.0.2 on a machine that has never had it, given to someone
+who reads scripture for a living, with no instructions beyond the README. The
+gold lists were never reviewed by a pastor -- docs/EVAL.md says so in those
+words -- and that is the largest unexamined claim this project makes.
 
-## The fix, per file
+## The two paths
 
-All nine are compiled into the binary with `include_str!`, in
-`core/src/builtin.rs`. **None became a bundle resource.** A resource is a file
-that can be missing; each of these is part of what the program *is* rather than
-data it operates on, and compiled in there is no path to resolve and so nothing
-about a machine that can make them absent.
+**Pass** -- take the pre-release mark off 1.0.2 and finish it:
 
-    data/disclaimer.txt          329 B     include_str!
-    data/crisis_note.txt         333 B     include_str!
-    data/crisis_terms.txt        2.7 KB    include_str!
-    data/prompts/synopsis.txt    1.4 KB    include_str!
-    data/prompts/retry.txt       505 B     include_str!
-    data/prompts/rewrite.txt     770 B     include_str!
-    data/eval/questions.json     148 KB    include_str!
+    gh release edit v1.0.2 --repo haomuch1/pastor-bible \
+      --prerelease=false --title "The Pastor Bible 1.0.2"
 
-`summarize_batch.txt` and `summarize_merge.txt` are deliberately **not**
-compiled in. Nothing loads them; they belong to the summarize-the-whole-set mode
-P2 planned and nobody wired in. They stay on disk where that decision can still
-be seen.
+Then drop the pre-release note from README's install section. Leave v1.0.0 and
+v1.0.1 marked pre-release permanently: 1.0.0 does not start on a clean machine,
+and 1.0.1's upgrade asks the two questions this release removed. SignPath is
+P8's, in its own session.
 
-The evaluation set goes in whole rather than as the three questions lifted out
-of it, because the self-test's value is that it asks what a reader would ask
-rather than something chosen to pass, and it keeps that only by still being read
-from the evaluation set. 148 KB inside a 445 MB installer is not worth a build
-step to avoid.
-
-They are still files on disk. `include_str!` reads them at build time, so
-`data/prompts/` is versioned and diffable exactly as the P3 decision requires,
-and `data/disclaimer.txt` is still the single source README is checked against.
-
-`Settings.prompts_dir`, `crisis_terms` and `crisis_note` are now
-`Option<String>`. `None` means the compiled-in copy, which is what the app
-passes; `Some(path)` reads that file, which is what the harness passes so a
-variant can still be tried without rebuilding. The old code could not express
-"there is no file", so it always answered with a path, and the path was the
-build machine's.
-
-**The disclaimer's README-parity test did not exist.** The P5 decision says "The
-welcome screen and README both come from it and a test asserts they match"; a
-test asserted it for the crisis note and never for the disclaimer. It exists
-now, in `tests/builtin.rs`, along with a test that every compiled-in copy is
-byte-identical to its file on disk -- without which `include_str!` could point
-somewhere else and every other test would still pass. That is the second
-claimed-but-absent test this phase has found, after the credits one in P7-prep.
-
-## The workflow run
-
-Run 33125580837, on tag `v1.0.1`. Every job green:
-
-    version    7s        ubuntu
-    offline    1m27s     ubuntu           now runs the builtin suite too
-    build      8m21s     ubuntu-22.04     .deb and .AppImage
-    build      12m54s    windows-latest   NSIS
-    upgrade    2m29s     windows-latest   a real version change, at last
-    sign       skipped                    waiting on SignPath, by design
-    publish    1m17s     ubuntu
-
-**Billable: 0.** The repository is public, so Actions minutes are free. Had it
-still been private this run would have cost 46, against v1.0.0's 68.
-
-**The upgrade gate did something new.** Every previous run found no published
-release and installed the candidate twice, testing reinstall-over-itself. This
-time it fetched the published v1.0.0, installed it, and upgraded:
-
-    installed 1.0.0
-    one Add/Remove entry, now 1.0.1
-    history survived the upgrade
-    the model was not re-downloaded
-    install directory holds 29 files
-    downgrade refused with exit code 4; still 1.0.1
-
-That last line had never run in CI before -- the downgrade step is skipped when
-there is no previous release. The whole gate is finally doing what PLAN 11
-describes.
-
-## The same upgrade, on this machine
-
-Published v1.0.0 downloaded and installed, then 1.0.1 installed over it without
-uninstalling:
-
-    before 1.0.0, after 1.0.1, one Add/Remove entry
-    user.db 118,784 bytes before and after
-    chat model timestamp unchanged, 2026-08-26 21:45:24
-    29 files in the install directory
-
-29 rather than P6's 27, because the sidecar now carries the two licence texts
-P7-prep added.
-
-## The laptop script, resumed
-
-v1.0.0 stays on the laptop. Do **not** uninstall it. Installing v1.0.1 over it
-is the first real upgrade this project has ever had on a machine that did not
-build it.
-
-Before starting: still no GitHub login, and nothing else installed. The
-repository is public, so every step is a step a stranger takes.
-
-1. Download the Windows installer from
-   https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.1 -- the file is
-   `The.Pastor.Bible_1.0.1_x64-setup.exe`. Run it **without uninstalling v1.0.0
-   first**.
-
-   **Expect the blue SmartScreen screen again.** It is a different file, so
-   Windows has no reputation for it either. **This time take the two
-   screenshots**: the blue "Windows protected your PC" screen, and the screen
-   after "More info" showing "Run anyway". Save them as
-   `docs/screenshots/install-1-smartscreen.png` and `install-2-more-info.png`.
-   Those are the two images README 9.4 has been describing since P1 and that no
-   machine here can produce.
-
-2. Open Add/Remove Programs. Expect **one** entry showing **1.0.1**. Two
-   entries, or one still showing 1.0.0, is a failure -- record which.
-
-3. Open the app from the desktop icon. It must reach the first-run screen. If it
-   shows "The Pastor Bible could not start", that is the bug again, the test
-   stops there, and the message should be sent verbatim.
-
-Then the ten steps, from the first-run screen:
-
-4. First run: record what the hardware check said about the 3050; the download
-   time and size; whether the self-test passed and how long it took.
-5. Ask three questions in 66-book mode. Record the time of each and whether the
-   answer showed. Open Settings > Compute: record the device name shown and
-   which path it chose. Expected: 8B on CPU, because 4 GB is below the
-   6,325 MiB threshold.
-6. Settings > switch to the smaller model. Let it download. Ask one question.
-   Record the time and the Compute readout. Expected: GPU.
-7. Turn on the Deuterocanon, ask "What does Tobit say about giving to the poor?",
-   confirm the tag appears.
-8. Click a citation; open Read chapter; delete one history entry; export as
-   spreadsheet and open it.
-9. Close the app. Open Task Manager: confirm no llama-server or pastor-bible
-   process remains.
-10. Reboot the laptop. Reopen the app from the desktop icon; confirm history is
-    there.
-11. Uninstall from Add/Remove Programs, choose Keep. Reinstall from the same
-    file. Confirm history returns. Uninstall again, choose Delete.
-
-Report back: each step pass/fail with the numbers, the two SmartScreen
-screenshots, and anything that confused you even slightly. Confusion is a
-defect.
-
-### Four notes, from the repository
-
-- **Step 4 will be slow, and that is the expected result.** On the processor an
-  answer took 2 to 3 minutes on a Ryzen 7 5800X; a laptop will be slower. Three
-  questions is likely half an hour. The 8B needs about 9 GB for one answer, so
-  if the laptop has 8 GB of RAM it will swap -- record that as a number rather
-  than treat it as a fault.
-- **Step 6 is close to the line.** The smaller model needs 2,994 MiB of *free*
-  graphics memory. A 4 GB card has about 4,096 MiB total and Windows spends some
-  on the desktop. If Compute says it chose the processor and names a free figure
-  below 2,994, that is the rule working correctly -- record the number.
-- **Step 10 has a desktop icon to click.** The installer creates one, and a
-  Start Menu entry.
-- **If it will not start**, run this and send the file it names:
-
-      "%LOCALAPPDATA%\The Pastor Bible\pastor-bible.exe" --self-check
-
-  It writes `%APPDATA%\io.github.haomuch1.pastorbible\self-check.txt` listing
-  everything the program needs before it can show anything and what it found for
-  each. It would have identified this defect in one line.
-
-## The two paths afterwards
-
-**Pass** -- take the pre-release mark off v1.0.1 and finish it:
-
-    gh release edit v1.0.1 --repo haomuch1/pastor-bible \
-      --prerelease=false --title "The Pastor Bible 1.0.1"
-
-Then drop the pre-release note from README's install section, add the two
-SmartScreen screenshots, and delete the "added after the clean-machine test"
-sentence under README 9.4. Leave v1.0.0 marked pre-release permanently: it does
-not start on a clean machine and must never be the one somebody downloads.
-Applying to SignPath is what remains, and it is P8's, in its own session.
-
-**Fail** -- fix and ship **v1.0.2**. Neither published version is ever recreated:
-somebody may already have the file, and two different files claiming one version
-number defeats the checksum printed beside them.
-
-    # bump src-tauri/Cargo.toml, commit
-    git tag -a v1.0.2 -m "The Pastor Bible 1.0.2"
-    git push origin main v1.0.2
+**Fail** -- fix and ship **v1.0.3**. No published version is ever recreated.
 
 ## Still not verified
 
-- **SmartScreen screenshots.** Jared saw the screen on the laptop and confirmed
-  README 9.4's wording, but took no screenshots. Step 1 above is the second
-  chance, and v1.0.1 being a new file means the screen should appear again.
+- **Everything in steps 5 to 11 above.** The laptop has never seen the Compute
+  readout, the smaller model, the Deuterocanon tag, the export, or the orphan
+  check after closing.
 - **The Linux packages have never been run.** Built in CI, checksums recorded,
   no Linux machine here.
-- **WebView2 bootstrapping.** Still unknown, but narrowed: the laptop reached
-  the app's own error screen, which is rendered in the web view, so WebView2 was
-  either already present or installed silently without Jared noticing. Worth
-  asking him which.
-- **The full-repository clean-machine check** has not been run, only `-DataOnly`.
-  See the caveat above.
-- **Everything visual is still Jared's.** Nothing this session changed the
-  palette, the type or the spacing, beyond refreshing `12-settings.png`, which
-  was two phases out of date and public.
+- **A deliberate downgrade from the published 1.0.1 installer.** Someone who
+  has 1.0.2 and then runs the published 1.0.1 gets the old flow, which
+  uninstalls 1.0.2 before refusing the downgrade, leaving no program installed
+  -- their questions and model survive, and reinstalling fixes it. The 1.0.1
+  installer is published and cannot be changed.
+- **The uninstaller's single question, clicked through.** The stock checkbox is
+  observed gone; the worded question's presence and its keep-by-default are
+  proven by the `/S` run, in which the data survived, and by screenshot 31 from
+  P6. Nobody has re-recorded the click-through since the checkbox was removed.
+- **Everything visual is still Jared's.**
 
 ## Housekeeping
 
-`docs/pastor-bible-history.txt` is an export of Jared's own question history,
-untracked in `docs/`. It is in `.git/info/exclude` so `git add -A` cannot take
-it, and its name is not published. It should come off the machine before P8.
+`docs/pastor-bible-history.txt` is Jared's own exported history, untracked and
+in `.git/info/exclude`. It should come off the machine before P8.
+
+`src-tauri/target/release/bundle/nsis/` holds a stray `1.0.3` installer built
+only to test the downgrade refusal. It is not committed and not published.
 
 ## Running and building here
 
     src-tauri\target\release\pastor-bible.exe          the built app
     npx tauri build --bundles nsis                     the installer
     tools\clean-machine-check.ps1                      the installed app, honestly
+    tools\record-installer.ps1                         every screen an installer shows
+    tools\extract_nsis_template.py --diff              what we changed in Tauri's template
 
 From a fresh clone, three things must be fetched before a build; none is
 committed, and each is checksummed:
