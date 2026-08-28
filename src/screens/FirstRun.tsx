@@ -122,13 +122,32 @@ function HardwareStep({ onNext }: { onNext: () => void }) {
               </tr>
               <tr>
                 <td>Free disk</td>
-                <td>{hw.free_disk_gb.toFixed(0)} GB free</td>
+                <td>
+                  {hw.free_disk_gb.toFixed(0)} GB free
+                  {hw.disk_drive && <span className="faint"> on {hw.disk_drive}</span>}
+                </td>
                 <td className="ref">about {hw.reference.disk_gb.toFixed(0)} GB needed</td>
               </tr>
+              {/* The devices the model server can see, which is the same list
+                  Settings > Compute shows. This row used to name one display
+                  adapter from the OS and say "not used yet", on a machine with
+                  an RTX 3050 and an app that has used graphics cards since P6. */}
               <tr>
                 <td>Graphics</td>
-                <td>{hw.gpu}</td>
-                <td className="ref">not used yet</td>
+                <td>
+                  {hw.gpu_devices.length === 0
+                    ? "None the model server can use"
+                    : hw.gpu_devices.map((d) => (
+                        <div key={d.name}>
+                          {d.name}
+                          <span className="faint">
+                            {" "}
+                            · {(d.total_mib / 1024).toFixed(1)} GB, {(d.free_mib / 1024).toFixed(1)} GB free
+                          </span>
+                        </div>
+                      ))}
+                </td>
+                <td className="ref">tested on {hw.reference.gpu}</td>
               </tr>
               <tr>
                 <td>System</td>
@@ -137,6 +156,8 @@ function HardwareStep({ onNext }: { onNext: () => void }) {
               </tr>
             </tbody>
           </table>
+
+          {hw.graphics && <p className="muted">{hw.graphics}</p>}
 
           {hw.warning ? (
             <div className="notice">

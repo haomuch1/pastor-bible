@@ -33,11 +33,16 @@ from the [releases page](https://github.com/haomuch1/pastor-bible/releases).
 4. It installs for you alone, into your own user folder, and asks for no
    administrator password.
 
-> Because this is a free project made by volunteers, the installer is not yet signed with a paid certificate. When you run it, Windows will show a blue screen that says "Windows protected your PC." This is expected. Click "More info," then "Run anyway." We will apply for free open-source signing after the first release; when granted, the publisher shown will be "SignPath Foundation."
+> Because this is a free project made by volunteers, the installer is not yet signed with a paid certificate. When you run it, Windows will show a full-screen warning that says "Windows protected your PC." This is expected. Click "More info," then "Run anyway." We will apply for free open-source signing after the first release; when granted, the publisher shown will be "SignPath Foundation."
 
-Screenshots of those two screens are added after the clean-machine test. They
-can only be taken on a computer that has never seen the installer before, and
-this project does not show a picture it has not taken.
+This is what it looks like. The warning names the file and says "Unknown
+publisher", because nobody has paid to tell Windows who we are.
+
+![Windows protected your PC](docs/screenshots/install-01-smartscreen.png)
+
+Click **More info** and the same screen grows a **Run anyway** button.
+
+![More info, showing Run anyway](docs/screenshots/install-02-run-anyway.png)
 
 Nothing is put in `Program Files` and nothing is installed for other accounts on
 the computer. If two people share a machine, each installs their own copy and
@@ -84,7 +89,8 @@ shown the size before it starts, and it resumes if it is interrupted.
 After the download it offers a check: three real questions, answered end to
 end, so you can see it working before you trust it with your own. On the
 machine below that check takes about **40 seconds** using the graphics card, or
-about **7 minutes 30 seconds** on the processor.
+about **7 minutes 30 seconds** on the processor. On a laptop that answers on its
+processor, expect a few minutes; it has not stopped working.
 
 Nothing else is ever downloaded. After the model is in place the program makes
 no network connection at all.

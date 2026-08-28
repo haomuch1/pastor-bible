@@ -72,6 +72,8 @@ tools/*
 !tools/shot.ps1
 !tools/click.ps1
 !tools/clean-machine-check.ps1
+!tools/extract_nsis_template.py
+!tools/record-installer.ps1
 models/
 
 # Evaluation scratch output; the kept copy lives in data/eval/

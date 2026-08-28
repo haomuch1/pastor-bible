@@ -426,7 +426,19 @@ fn app_info(state: State<'_, AppState>) -> Result<AppInfo, String> {
 
 #[tauri::command]
 fn hardware_check(state: State<'_, AppState>) -> Hardware {
-    hardware::probe(&state.paths.app_data)
+    // The graphics part of this screen now asks the model server what devices
+    // exist, exactly as Settings > Compute does, and measures against what the
+    // reader's chosen model actually needs. It used to ask the OS for one
+    // display adapter and then say the card was not used, which was two
+    // separate untruths on P7's laptop.
+    // If the database is momentarily unavailable, ask about the model that
+    // every install gets, which is the honest default for this screen.
+    let model_id = match state.db.lock() {
+        Ok(d) => read_settings(&d).model,
+        Err(_) => "standard".to_string(),
+    };
+    let needs = download::model(&model_id).map(|m| m.vram_mib).unwrap_or(u64::MAX);
+    hardware::probe(&state.paths.app_data, &state.paths.llama_server, needs)
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -685,7 +697,22 @@ async fn run_self_test(
         let mut on = move |st: Stage| {
             let _ = app2.emit("ask-stage", &st);
         };
-        let result = s.self_test(&questions, &mut on)?;
+        // If it could not run, let go of everything before returning. The
+        // reader's next press then starts from nothing: it measures free
+        // memory again, and the search model this attempt loaded is not still
+        // holding a quarter of a gigabyte of the memory we just said was
+        // short. P7's reader pressed the button again and it looked like
+        // nothing happened; it did retry, but under the same conditions and
+        // with the same words, which is indistinguishable from nothing.
+        let result = match s.self_test(&questions, &mut on) {
+            Ok(r) => r,
+            Err(e) => {
+                if let Some(mut dead) = guard.take() {
+                    dead.shutdown();
+                }
+                return Err(e);
+            }
+        };
         let d = db.lock().map_err(|_| "user.db is unavailable".to_string())?;
         d.set_setting("self_test", &serde_json::to_string(&result).unwrap_or_default())?;
         if result.passed {

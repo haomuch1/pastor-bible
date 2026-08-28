@@ -36,6 +36,15 @@ pub enum Role {
 }
 
 impl Role {
+    /// What to call this model when speaking to the reader. Settings and the
+    /// README use the same two names.
+    pub fn what_it_is(&self) -> &'static str {
+        match self {
+            Role::Embedding => "the search model",
+            Role::Chat => "the answering model",
+        }
+    }
+
     pub fn as_str(&self) -> &'static str {
         match self {
             Role::Embedding => "embedding",
@@ -109,7 +118,17 @@ fn free_port() -> Result<u16, String> {
 }
 
 /// Free physical memory in GB, from the OS.
+///
+/// `TPB_FAKE_FREE_RAM_GB` overrides it, which is how the low-memory path is
+/// tested without filling a machine's memory for real. `TPB_NO_GPU` does the
+/// same job for the graphics probe, and for the same reason: a refusal nobody
+/// can trigger is a refusal nobody has read.
 pub fn free_ram_gb() -> f64 {
+    if let Ok(v) = std::env::var("TPB_FAKE_FREE_RAM_GB") {
+        if let Ok(gb) = v.trim().parse::<f64>() {
+            return gb;
+        }
+    }
     #[cfg(windows)]
     {
         use windows_sys::Win32::System::SystemInformation::{
@@ -331,10 +350,18 @@ impl Sidecar {
         let free = free_ram_gb();
         let need = size_gb + opts.headroom_gb;
         if free < need {
+            // P7's laptop read the old wording -- "needs 6.7 GB, only 4.3 GB
+            // available" -- as disk space. The reader uninstalled programs
+            // looking for room, and only a reboot fixed it, because it was
+            // free memory all along. So this says memory, says it twice, and
+            // says what to do about it. It never says space.
             return Err(format!(
-                "refusing to load {}: needs {:.1} GB ({:.1} GB model + {:.1} GB headroom) \
-                 but only {:.2} GB is free",
-                opts.model, need, size_gb, opts.headroom_gb, free
+                "The Pastor Bible needs about {:.1} GB of free memory to load {}, \
+                 and this computer has {:.1} GB free right now. Close other \
+                 programs or restart the computer, then try again.",
+                need,
+                opts.role.what_it_is(),
+                free
             ));
         }
 

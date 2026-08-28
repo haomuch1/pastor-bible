@@ -35,6 +35,18 @@ pub struct Hardware {
     pub ram_gb: f64,
     pub free_ram_gb: f64,
     pub free_disk_gb: f64,
+    /// Which drive `free_disk_gb` was measured on, e.g. "C:". P7's laptop was
+    /// told 80 GB by this screen and 35.8 GB by the installer, and had no way
+    /// to know the two were talking about different things.
+    pub disk_drive: String,
+    /// Every graphics device the model server can see, with its memory. The
+    /// same probe Settings > Compute uses; this screen used to run its own,
+    /// which reported one adapter from the OS and said the card was not used.
+    pub gpu_devices: Vec<crate::compute::GpuDevice>,
+    /// What the graphics devices mean for this reader, in plain words. Not a
+    /// warning and never part of `below`: a card too small for the standard
+    /// model is an ordinary machine, and the processor answers either way.
+    pub graphics: String,
     pub os: String,
     pub reference: Reference,
     /// One line per thing that is below the reference machine. Empty when
@@ -99,6 +111,26 @@ pub fn free_disk_gb(path: &str) -> f64 {
     {
         let _ = path;
         0.0
+    }
+}
+
+/// The drive a path is on, as a person writes it: "C:" on Windows, "/" on
+/// anything else. Shown beside a free-space figure so it cannot be mistaken
+/// for a different drive's.
+pub fn drive_of(path: &str) -> String {
+    #[cfg(windows)]
+    {
+        let p = path.trim();
+        let b = p.as_bytes();
+        if b.len() >= 2 && b[1] == b':' {
+            return format!("{}:", (b[0] as char).to_ascii_uppercase());
+        }
+        String::new()
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = path;
+        "/".to_string()
     }
 }
 
@@ -202,12 +234,50 @@ pub fn os_name() -> String {
     }
 }
 
+/// What the graphics devices mean, said the way Settings > Compute says it.
+///
+/// P7's laptop was told "No separate graphics card was found. The Pastor Bible
+/// does not use one yet." It has an RTX 3050, and the app has used graphics
+/// cards since P6. Both halves were wrong.
+pub fn graphics_sentence(devices: &[crate::compute::GpuDevice], needs_mib: u64) -> String {
+    if devices.is_empty() {
+        return "No graphics card was found that The Pastor Bible can use, so the \
+                processor will answer. That works; it takes minutes rather than \
+                seconds."
+            .to_string();
+    }
+    let mut parts = Vec::new();
+    for d in devices {
+        let gb = d.total_mib as f64 / 1024.0;
+        if d.free_mib >= needs_mib {
+            parts.push(format!(
+                "{}, {:.1} GB: big enough for the standard model, which will run on it.",
+                d.name, gb
+            ));
+        } else {
+            parts.push(format!(
+                "{}, {:.1} GB: too small for the standard model, which will run on the \
+                 processor instead. The smaller model in Settings can use it.",
+                d.name, gb
+            ));
+        }
+    }
+    parts.join(" ")
+}
+
 /// Read the machine, and say in one sentence what is below the reference.
-pub fn probe(disk_path: &str) -> Hardware {
+pub fn probe(disk_path: &str, llama_server: &str, needs_mib: u64) -> Hardware {
     let ram = total_ram_gb();
     let free_disk = free_disk_gb(disk_path);
+    let drive = drive_of(disk_path);
     let gpu = gpu_name();
     let cores = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(0);
+
+    // The same probe Settings > Compute uses. This screen used to call
+    // gpu_name(), which asks the OS for one display adapter and knows nothing
+    // about whether a model fits on it. On P7's laptop that produced "No
+    // separate graphics card was found" on a machine with an RTX 3050.
+    let devices = crate::compute::list_devices(llama_server).unwrap_or_default();
 
     let mut below = Vec::new();
     if ram > 0.0 && ram + 0.5 < REFERENCE.ram_gb {
@@ -219,24 +289,14 @@ pub fn probe(disk_path: &str) -> Hardware {
     }
     if free_disk > 0.0 && free_disk < REFERENCE.disk_gb {
         below.push(format!(
-            "There is about {:.1} GB free on this drive; The Pastor Bible and its \
-             answering model need about {:.0} GB.",
-            free_disk, REFERENCE.disk_gb
+            "There is about {:.1} GB free on {}, where The Pastor Bible keeps its \
+             files; it and its answering model need about {:.0} GB.",
+            free_disk,
+            if drive.is_empty() { "this drive".to_string() } else { drive.clone() },
+            REFERENCE.disk_gb
         ));
     }
-    // The GPU is not used yet, so it is reported and never warned about beyond
-    // one line: the answer time in README is a processor time either way.
-    let has_discrete = {
-        let g = gpu.to_lowercase();
-        g.contains("nvidia") || g.contains("radeon") || g.contains("geforce") || g.contains("arc")
-    };
-    if !has_discrete {
-        below.push(
-            "No separate graphics card was found. The Pastor Bible does not use one yet, \
-             so this changes nothing today."
-                .to_string(),
-        );
-    }
+    // Deliberately not pushed into `below`: see the field's own note.
 
     let warning = if below.is_empty() {
         None
@@ -255,6 +315,9 @@ pub fn probe(disk_path: &str) -> Hardware {
         ram_gb: ram,
         free_ram_gb: crate::sidecar::free_ram_gb(),
         free_disk_gb: free_disk,
+        disk_drive: drive,
+        graphics: graphics_sentence(&devices, needs_mib),
+        gpu_devices: devices,
         os: os_name(),
         reference: REFERENCE,
         below,

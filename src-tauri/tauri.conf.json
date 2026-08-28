@@ -37,6 +37,7 @@
     ],
     "windows": {
       "nsis": {
+        "template": "nsis-installer.nsi",
         "installMode": "currentUser",
         "displayLanguageSelector": false,
         "installerHooks": "./installer.nsh"

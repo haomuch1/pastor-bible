@@ -157,6 +157,13 @@ export interface Reference {
   disk_gb: number;
 }
 
+export interface GpuDevice {
+  id: string;
+  name: string;
+  total_mib: number;
+  free_mib: number;
+}
+
 export interface Hardware {
   cpu: string;
   cores: number;
@@ -164,6 +171,11 @@ export interface Hardware {
   ram_gb: number;
   free_ram_gb: number;
   free_disk_gb: number;
+  /// The drive free_disk_gb was measured on, e.g. "C:".
+  disk_drive: string;
+  gpu_devices: GpuDevice[];
+  /// What the graphics devices mean, in plain words.
+  graphics: string;
   os: string;
   reference: Reference;
   below: string[];
