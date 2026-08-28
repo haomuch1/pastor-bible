@@ -10,10 +10,19 @@ hand. Next after that: a pastor's review, on a fresh install.
 
     https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.2
 
-Public, marked **Pre-release**, from tag `v1.0.2`, commit `fb14026`.
-The installer's sha256 and the asset sizes are in the session report and in
-`SHA256SUMS.txt` beside the files, which since 1.0.1 uses the dotted names
-GitHub actually serves, so `sha256sum -c` works.
+Public, marked **Pre-release**, from tag `v1.0.2`, commit `f07e534`.
+
+    The.Pastor.Bible_1.0.2_x64-setup.exe     467,259,322 bytes
+    The.Pastor.Bible_1.0.2_amd64.deb         515,159,954 bytes
+    The.Pastor.Bible_1.0.2_amd64.AppImage    574,913,016 bytes
+    SHA256SUMS.txt                                   306 bytes
+
+**The Windows installer's sha256:**
+
+    bba7a7f30dccef747dcbfe75b7dff054374c4c5380b4746bed8b21834cba4656
+
+Downloaded from a shell with no credentials at all and hashed there, and
+`sha256sum -c SHA256SUMS.txt` verifies it, which it could not for v1.0.0.
 
 ## What the laptop found
 
