@@ -22,11 +22,11 @@ Each file there is labelled in plain words with what it is for; the labels are
 what the page shows, and the filenames underneath them are what `SHA256SUMS.txt`
 records.
 
-> **v1.0.0 is marked a pre-release.** Everything works and it is the build to
-> install; the mark means one thing has not been done yet, which is to check a
-> first install on a computer that has never had this program on it. Because it
-> is a pre-release, GitHub does not put a "Latest" badge on it — take the
-> topmost release on that page. The mark comes off once that check is made.
+> **The newest release is marked a pre-release.** Everything works and it is
+> the build to install; the mark means one thing has not been done yet, which is
+> to check a first install on a computer that has never had this program on it.
+> Because it is a pre-release, GitHub does not put a "Latest" badge on it — take
+> the topmost release on that page. The mark comes off once that check is made.
 
 ### Windows
 
@@ -62,7 +62,7 @@ machines already have it.
 Take the file labelled **Linux installer for Ubuntu and Debian** (the `.deb`)
 or **Linux portable app for any distribution** (the `.AppImage`).
 
-    sudo apt install ./the-pastor-bible_<version>_amd64.deb
+    sudo apt install ./The.Pastor.Bible_<version>_amd64.deb
 
 or make the AppImage executable and run it. The `.deb` needs
 `libwebkit2gtk-4.1-0` and `libgtk-3-0`, which apt will pull in for you.

@@ -34,6 +34,12 @@ every asset of all three releases and in the workflow that makes the next one,
 the stray 1.0.3 test installer deleted, and `docs/REVIEW-GUIDE.md` written.
 Details are under "Next: the pastor's review" below.
 
+Then three wrong sentences, all of them in front of the pastor who is about to
+read them: README's pre-release box named v1.0.0 when the pre-release is
+v1.0.2; README's `apt` line named a file that has never existed; and the
+release-notes template still promised the install screenshots as future work
+after P7-fix-2 embedded them. All three are corrected.
+
 ## What the laptop found, in P7-fix-2
 
 The install of 1.0.1 over 1.0.0 worked and the app started. **The startup
@@ -278,8 +284,10 @@ P8's, in its own session.
 
 ## Housekeeping
 
-`docs/pastor-bible-history.txt` is Jared's own exported history, untracked and
-in `.git/info/exclude`. It should come off the machine before P8.
+`docs/pastor-bible-history.txt` was Jared's own exported history, untracked and
+never in any commit. It was deleted on 2026-08-28. The line in
+`.git/info/exclude` stays, so that a future export dropped in the same place
+still cannot be committed by accident.
 
 `src-tauri/target/release/bundle/nsis/` held a stray `1.0.3` installer built
 only to test the downgrade refusal. It was deleted on 2026-08-28. The 0.9.0,

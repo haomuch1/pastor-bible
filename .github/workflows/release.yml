@@ -406,10 +406,7 @@ jobs:
             Windows will show "Windows protected your PC" when you run the
             installer, because this project has no paid signing certificate yet.
             Click "More info", then "Run anyway". The README's install section
-            describes that screen. Screenshots of it are added after the
-            clean-machine test: they can only be taken on a computer that has
-            never seen this file before, and this project does not ship a
-            picture it has not taken.
+            has pictures of both of those screens.
 
             **Bible index**
 
