@@ -1,10 +1,12 @@
 # HANDOFF
 
-Session: P7-fix-2, three defects a person found by clicking
-Date: 2026-08-27
-Status: v1.0.2 is published as a pre-release. The repository is public. The
-laptop is still on 1.0.1 and stays there, so 1.0.2 can be installed over it by
-hand. Next after that: a pastor's review, on a fresh install.
+Session: P7-close-prep, release-note edits, asset labels and the reviewer guide
+Date: 2026-08-28
+Status: v1.0.2 is published as a pre-release. The repository is public. **The
+next thing to happen is the pastor's review, on a fresh install, using
+`docs/REVIEW-GUIDE.md`.** The laptop is still on 1.0.1 and stays there, so
+1.0.2 can be installed over it by hand; laptop steps 5 to 11 below are
+unchanged and still unrun.
 
 ## The release
 
@@ -24,7 +26,15 @@ Public, marked **Pre-release**, from tag `v1.0.2`, commit `f07e534`.
 Downloaded from a shell with no credentials at all and hashed there, and
 `sha256sum -c SHA256SUMS.txt` verifies it, which it could not for v1.0.0.
 
-## What the laptop found
+## This session, P7-close-prep
+
+Metadata only. No installer was built, modified or renamed. In order: the
+superseding line added to the v1.0.0 and v1.0.1 notes, plain-words labels on
+every asset of all three releases and in the workflow that makes the next one,
+the stray 1.0.3 test installer deleted, and `docs/REVIEW-GUIDE.md` written.
+Details are under "Next: the pastor's review" below.
+
+## What the laptop found, in P7-fix-2
 
 The install of 1.0.1 over 1.0.0 worked and the app started. **The startup
 defect P7-fix-1 shipped for is fixed on a machine that never built this
@@ -138,7 +148,7 @@ Verified both ways on this machine: the real RTX 3080 reads "big enough", and
 `TPB_NO_GPU=1` reads "No graphics card was found that The Pastor Bible can use,
 so the processor will answer."
 
-## Also this session
+## Also in P7-fix-2
 
 - **README 9.4 said the SmartScreen page is blue. It is purple.** Jared's
   screenshots show it. README and PLAN 9.4 now say "a full-screen warning",
@@ -192,12 +202,45 @@ If it will not start:
 writes `%APPDATA%\io.github.haomuch1.pastorbible\self-check.txt` listing
 everything the program needs before it can show anything.
 
-## After that: the pastor's review
+## Next: the pastor's review
 
 A fresh install of 1.0.2 on a machine that has never had it, given to someone
-who reads scripture for a living, with no instructions beyond the README. The
-gold lists were never reviewed by a pastor -- docs/EVAL.md says so in those
-words -- and that is the largest unexamined claim this project makes.
+who reads scripture for a living. The gold lists were never reviewed by a
+pastor -- docs/EVAL.md says so in those words -- and that is the largest
+unexamined claim this project makes.
+
+**What to hand them: `docs/REVIEW-GUIDE.md`.** One page, no jargon, no version
+numbers: the releases page, the file labelled "Windows installer", the purple
+warning and Run anyway, the 4.7 GB first-run download and the few-minute
+self-check, how to ask a question, and the three questions their judgement is
+wanted on --
+
+    Does any answer say something the cited passages don't say?
+    Is any passage you'd expect for a question missing?
+    Does any wording in the app feel wrong for someone in your position?
+
+It closes by telling them to send problems to Jared directly or file an issue.
+It replaces "no instructions beyond the README" as the plan for this review: the
+README is written for someone installing a program, and the first two questions
+above are the point of the exercise.
+
+The release page now names each file in plain words. Every asset on v1.0.0,
+v1.0.1 and v1.0.2 carries a label -- "Windows installer -- most people want
+this one (The.Pastor.Bible_1.0.2_x64-setup.exe)", the two Linux ones, and
+"Checksums for verifying your download" -- set through the assets API, so no
+filename, byte or checksum changed and `SHA256SUMS.txt` still matches what a
+reader downloads. Verified anonymously on all three pages, and v1.0.2's three
+installers were downloaded with no credentials and passed `sha256sum -c`.
+`.github/workflows/release.yml` sets the same labels on every future release,
+in a step after the publish step, so this is not a thing to remember. GitHub's
+own two "Source code" entries cannot be removed or labelled.
+
+v1.0.0 and v1.0.1 now open with one line: "Superseded by v1.0.2. Do not run
+this older installer if a newer version is installed -- it will remove the
+newer version before refusing. Your saved questions and downloaded model are
+not affected." It says the "NOT FIXABLE" hazard recorded in DECISIONS where
+the person who would walk into it is standing -- on the page they would have
+to be on to do it. Notes only; assets and tags untouched.
 
 ## The two paths
 
@@ -224,7 +267,9 @@ P8's, in its own session.
   has 1.0.2 and then runs the published 1.0.1 gets the old flow, which
   uninstalls 1.0.2 before refusing the downgrade, leaving no program installed
   -- their questions and model survive, and reinstalling fixes it. The 1.0.1
-  installer is published and cannot be changed.
+  installer is published and cannot be changed; the v1.0.0 and v1.0.1 release
+  notes now warn about it in their first line, which is the only place the
+  warning can reach that person.
 - **The uninstaller's single question, clicked through.** The stock checkbox is
   observed gone; the worded question's presence and its keep-by-default are
   proven by the `/S` run, in which the data survived, and by screenshot 31 from
@@ -236,8 +281,10 @@ P8's, in its own session.
 `docs/pastor-bible-history.txt` is Jared's own exported history, untracked and
 in `.git/info/exclude`. It should come off the machine before P8.
 
-`src-tauri/target/release/bundle/nsis/` holds a stray `1.0.3` installer built
-only to test the downgrade refusal. It is not committed and not published.
+`src-tauri/target/release/bundle/nsis/` held a stray `1.0.3` installer built
+only to test the downgrade refusal. It was deleted on 2026-08-28. The 0.9.0,
+0.9.1, 1.0.1 and 1.0.2 installers are still in that directory; they are build
+output, ignored by git, and about 1.8 GB between them.
 
 ## Running and building here
 

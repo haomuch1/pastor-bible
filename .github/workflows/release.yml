@@ -395,6 +395,7 @@ jobs:
           echo "--- SHA256SUMS.txt ---"
           cat SHA256SUMS.txt
       - uses: softprops/action-gh-release@v2
+        id: gh_release
         with:
           tag_name: ${{ github.ref_name }}
           name: The Pastor Bible ${{ needs.version.outputs.version }}
@@ -422,3 +423,34 @@ jobs:
             app downloads it once, on first run, from the model's own host, with
             its checksum pinned in the program.
           files: release/*
+
+      # The release page lists four files whose names mean nothing to a reader
+      # who is not a programmer. GitHub shows an asset's *label* instead of its
+      # name when one is set, so each asset gets a plain-words label saying what
+      # it is for. The file itself is untouched: the name, the bytes and the
+      # checksum are exactly what SHA256SUMS.txt records, and the label is only
+      # what the page prints above the download link. Set on v1.0.0, v1.0.1 and
+      # v1.0.2 by hand in P7-close-prep; done here so no later release needs it.
+      #
+      # softprops/action-gh-release cannot set labels, and the release is a
+      # draft, so the assets are found by the release id the action returns
+      # rather than by tag.
+      - name: label the assets in plain words
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_ID: ${{ steps.gh_release.outputs.id }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets" \
+            --jq '.[] | "\(.id)|\(.name)"' |
+          while IFS='|' read -r id name; do
+            case "$name" in
+              *.exe)       label="Windows installer — most people want this one ($name)" ;;
+              *.deb)       label="Linux installer for Ubuntu and Debian (.deb)" ;;
+              *.AppImage)  label="Linux portable app for any distribution (.AppImage)" ;;
+              SHA256SUMS*) label="Checksums for verifying your download (SHA256SUMS.txt)" ;;
+              *) echo "no label rule for $name"; continue ;;
+            esac
+            gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/assets/$id" \
+              -f label="$label" --jq '"\(.name) -> \(.label)"'
+          done

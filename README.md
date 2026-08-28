@@ -18,6 +18,9 @@ A free, offline, nondenominational Bible study tool with cited answers.
 
 Installers are published with each release. Download the one for your system
 from the [releases page](https://github.com/haomuch1/pastor-bible/releases).
+Each file there is labelled in plain words with what it is for; the labels are
+what the page shows, and the filenames underneath them are what `SHA256SUMS.txt`
+records.
 
 > **v1.0.0 is marked a pre-release.** Everything works and it is the build to
 > install; the mark means one thing has not been done yet, which is to check a
@@ -27,7 +30,8 @@ from the [releases page](https://github.com/haomuch1/pastor-bible/releases).
 
 ### Windows
 
-1. Download `The.Pastor.Bible_<version>_x64-setup.exe` from the releases page.
+1. On the releases page, take the file labelled **Windows installer — most
+   people want this one**. It is `The.Pastor.Bible_<version>_x64-setup.exe`.
 2. Run it.
 3. **Windows will warn you.** See below.
 4. It installs for you alone, into your own user folder, and asks for no
@@ -55,7 +59,8 @@ machines already have it.
 
 ### Linux
 
-Download either the `.deb` or the `.AppImage`.
+Take the file labelled **Linux installer for Ubuntu and Debian** (the `.deb`)
+or **Linux portable app for any distribution** (the `.AppImage`).
 
     sudo apt install ./the-pastor-bible_<version>_amd64.deb
 
