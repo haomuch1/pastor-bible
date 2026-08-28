@@ -117,6 +117,31 @@ fn free_port() -> Result<u16, String> {
     Ok(p)
 }
 
+/// What to tell a reader when there is not enough memory to load a model.
+///
+/// P7's laptop read the old wording -- "needs 6.7 GB, only 4.3 GB available"
+/// -- as disk space. The reader uninstalled programs looking for room, and a
+/// reboot is what finally fixed it, because it was free memory all along. So
+/// this says memory, says it twice, names what was being loaded, says what to
+/// do, and never says space or disk.
+///
+/// A function rather than a `format!` inside the check, so it can be tested
+/// without starting anything. The first version of those tests drove
+/// `Sidecar::start` while changing a process-global environment variable, and
+/// in CI, where tests run in parallel, they raced each other and the
+/// one-sidecar-at-a-time rule. Running them single-threaded here had hidden
+/// it.
+pub fn low_memory_message(need_gb: f64, free_gb: f64, role: Role) -> String {
+    format!(
+        "The Pastor Bible needs about {:.1} GB of free memory to load {}, and \
+         this computer has {:.1} GB free right now. Close other programs or \
+         restart the computer, then try again.",
+        need_gb,
+        role.what_it_is(),
+        free_gb
+    )
+}
+
 /// Free physical memory in GB, from the OS.
 ///
 /// `TPB_FAKE_FREE_RAM_GB` overrides it, which is how the low-memory path is
@@ -350,19 +375,7 @@ impl Sidecar {
         let free = free_ram_gb();
         let need = size_gb + opts.headroom_gb;
         if free < need {
-            // P7's laptop read the old wording -- "needs 6.7 GB, only 4.3 GB
-            // available" -- as disk space. The reader uninstalled programs
-            // looking for room, and only a reboot fixed it, because it was
-            // free memory all along. So this says memory, says it twice, and
-            // says what to do about it. It never says space.
-            return Err(format!(
-                "The Pastor Bible needs about {:.1} GB of free memory to load {}, \
-                 and this computer has {:.1} GB free right now. Close other \
-                 programs or restart the computer, then try again.",
-                need,
-                opts.role.what_it_is(),
-                free
-            ));
+            return Err(low_memory_message(need, free, opts.role));
         }
 
         let port = free_port()?;
