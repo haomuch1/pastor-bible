@@ -22,11 +22,11 @@ Each file there is labelled in plain words with what it is for; the labels are
 what the page shows, and the filenames underneath them are what `SHA256SUMS.txt`
 records.
 
-> **The newest release is marked a pre-release.** Everything works and it is
-> the build to install; the mark means one thing has not been done yet, which is
-> to check a first install on a computer that has never had this program on it.
-> Because it is a pre-release, GitHub does not put a "Latest" badge on it — take
-> the topmost release on that page. The mark comes off once that check is made.
+> **The newest release is marked a pre-release.** It means the final round of
+> checks on other computers is still finishing. The program itself is complete.
+> It is the build to install. Because it is a pre-release, GitHub does not put a
+> "Latest" badge on it — take the topmost release on that page. The mark comes
+> off when those checks are done.
 
 ### Windows
 
