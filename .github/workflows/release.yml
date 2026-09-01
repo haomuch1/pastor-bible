@@ -393,6 +393,17 @@ jobs:
             --test low_memory --test prompts_and_output --test retrieval_parity \
             --test spreadsheet --test userdb --test verifier_parity
 
+      - name: the "This computer" screen, against this Mac's real server
+        run: |
+          # `probe_against_the_real_server` is ignored by default because it
+          # needs the sidecar. Here the sidecar exists, so it runs: it asks the
+          # real llama-server what it can see and checks what the reader would
+          # be told about it. On Intel that is an assertion -- the x64 build
+          # reports "BLAS: Accelerate (0 MiB, 0 MiB free)" and Accelerate is the
+          # processor, not a card, so nothing about it may reach the screen.
+          cargo test --manifest-path src-tauri/core/Cargo.toml --locked \
+            --test hardware_screen -- --ignored --nocapture --test-threads 1
+
       - name: no llama-server survives its parent, including a hard kill
         run: |
           # The same test as on Windows and Linux. On macOS the mechanism is a

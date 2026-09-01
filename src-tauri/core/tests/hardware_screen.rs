@@ -181,4 +181,37 @@ fn probe_against_the_real_server() {
     assert!(without.gpu_devices.is_empty());
     assert!(without.graphics.contains("processor"));
     assert!(!with.disk_drive.is_empty() || !cfg!(windows));
+
+    // An Intel Mac has no graphics path at all -- llama.cpp's x64 macOS build
+    // carries no Metal backend -- and what its server actually reports is
+    //
+    //     Available devices:
+    //       BLAS: Accelerate (0 MiB, 0 MiB free)
+    //
+    // Accelerate is the processor, not a card. If it ever reaches this screen
+    // the reader is shown a graphics card with 0.0 GB on it, which is the exact
+    // shape of the untruth P7-fix-2 had to rewrite. So on that build this is an
+    // assertion and not a print.
+    if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
+        assert!(
+            with.gpu_devices.is_empty(),
+            "an Intel Mac reported a usable device: {:?}",
+            with.gpu_devices
+        );
+        assert!(
+            with.graphics.contains("No graphics card was found"),
+            "{}",
+            with.graphics
+        );
+        assert!(
+            !with.graphics.contains("0.0 GB"),
+            "Accelerate reached the reader as a card with no memory: {}",
+            with.graphics
+        );
+    }
+
+    // Whatever chip this is, nothing with zero memory may survive the parse.
+    for d in &with.gpu_devices {
+        assert!(d.total_mib > 0, "a device with no memory reached the screen: {:?}", d);
+    }
 }

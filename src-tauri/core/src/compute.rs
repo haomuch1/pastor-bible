@@ -33,6 +33,24 @@
 //! The free figure is what the decision rests on, not the total: a card with
 //! ten gigabytes and nine already spoken for cannot hold an eight-billion
 //! parameter model, and starting anyway would fail slowly rather than quickly.
+//!
+//! ## Not every line is a graphics card
+//!
+//! The macOS builds register the Accelerate framework as a ggml device, and it
+//! prints beside the real ones. Measured on an Intel macOS runner on
+//! 2026-09-01, this is the whole of what a Mac with no usable GPU reports:
+//!
+//!     Available devices:
+//!       BLAS: Accelerate (0 MiB, 0 MiB free)
+//!
+//! Accelerate is the processor doing matrix arithmetic faster; it is not
+//! somewhere a model can live. Shown to a reader it becomes a graphics card
+//! with 0.0 GB, which is worse than saying nothing, and it is exactly the kind
+//! of sentence P7-fix-2 had to rewrite. A device reporting no memory at all is
+//! therefore dropped here, at the parse, so that no screen and no decision ever
+//! sees it. The rule is principled rather than a special case for one name:
+//! the choice rests on whether a device can hold the model, and a device with
+//! no memory can hold nothing.
 
 use std::process::Command;
 use std::time::Duration;
@@ -122,6 +140,11 @@ pub fn parse_devices(text: &str) -> Vec<GpuDevice> {
         let tail = tail.trim_end_matches(')');
         let mut nums = tail.split(',').map(|p| mib(p));
         let (Some(Some(total)), Some(Some(free))) = (nums.next(), nums.next()) else { continue };
+        // "BLAS: Accelerate (0 MiB, 0 MiB free)" and anything else that reports
+        // no memory of its own. See the note at the top of this file.
+        if total == 0 {
+            continue;
+        }
         out.push(GpuDevice {
             id: id.trim().to_string(),
             name: name.trim().to_string(),
@@ -236,6 +259,40 @@ mod tests {
     fn a_machine_with_no_device_yields_none() {
         assert!(parse_devices(NONE).is_empty());
         assert!(parse_devices("").is_empty());
+    }
+
+    /// The whole of what an Intel Mac reports, pasted from a macOS 15 runner on
+    /// 2026-09-01. Accelerate is the processor, not a card, and the reader must
+    /// never be shown it as "0.0 GB free".
+    #[test]
+    fn accelerate_is_not_a_graphics_card() {
+        let text = "Available devices:\n  BLAS: Accelerate (0 MiB, 0 MiB free)\n";
+        assert!(
+            parse_devices(text).is_empty(),
+            "Accelerate was taken for a device: {:?}",
+            parse_devices(text)
+        );
+    }
+
+    /// And it must not crowd out a real one when both are listed.
+    #[test]
+    fn a_real_device_beside_accelerate_survives_alone() {
+        let text = "Available devices:\n  \
+            Metal0: Apple M1 (10922 MiB, 10922 MiB free)\n  \
+            BLAS: Accelerate (0 MiB, 0 MiB free)\n";
+        let d = parse_devices(text);
+        assert_eq!(d.len(), 1, "{:?}", d);
+        assert_eq!(d[0].name, "Apple M1");
+        assert_eq!(d[0].free_mib, 10922);
+    }
+
+    /// The Windows output this file was written against is unchanged by the
+    /// rule above: nothing on Windows reports zero.
+    #[test]
+    fn the_windows_output_is_untouched_by_the_zero_memory_rule() {
+        let d = parse_devices(REAL);
+        assert_eq!(d.len(), 1);
+        assert_eq!(d[0].total_mib, 10267);
     }
 
     #[test]
