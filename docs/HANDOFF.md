@@ -2,20 +2,59 @@
 
 Session: P-MAC, macOS support on Apple Silicon and Intel
 Date: 2026-09-01
-Status: **v1.0.3 is tagged and NOT yet published.** The session ended with the
-release run in flight. Everything in the repository is finished and every piece
-of it has been green on a Mac runner at least once; what has not happened is one
-run in which both macOS jobs are green *at the same time*, which is what the
-`publish` job waits for. See "Finishing the release" below — it is one command
-and then some checking.
+Status: **v1.0.3 is published as a pre-release, and it is the first release with
+macOS installers.** Run `33523973443` was green on every job, including both
+macOS jobs at once. Windows is unchanged from 1.0.2 in every respect a reader
+can see.
 
-Windows is unchanged from 1.0.2 in every respect a reader can see. **No person
-has run the macOS build on a Mac.** Everything a machine can prove about it is
-proven on GitHub's own Apple Silicon and Intel runners; everything visual is
-unseen and labelled as such wherever it appears.
+**No person has run the macOS build on a Mac.** Everything a machine can prove
+about it is proven on GitHub's own Apple Silicon and Intel runners; everything
+visual is unseen and labelled as such wherever it appears.
 
-The laptop is still on 1.0.1. Its steps below are unchanged, now aimed at
-1.0.3.
+The laptop is still on 1.0.1. Its steps below are unchanged, now aimed at 1.0.3.
+
+## The release
+
+    https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.3
+
+Public, marked **Pre-release**, titled "The Pastor Bible 1.0.3 (pre-release: no
+Mac has run this)".
+
+    The.Pastor.Bible_1.0.3_x64-setup.exe     467,313,610 bytes
+    The.Pastor.Bible_1.0.3_aarch64.dmg       483,548,142 bytes
+    The.Pastor.Bible_1.0.3_x64.dmg           484,038,437 bytes
+    The.Pastor.Bible_1.0.3_amd64.deb         515,176,388 bytes
+    The.Pastor.Bible_1.0.3_amd64.AppImage    574,925,304 bytes
+    SHA256SUMS.txt                                   504 bytes
+
+Downloaded from a shell with no credentials and hashed there; `sha256sum -c`
+verifies all three installers:
+
+    2a7b197a8469b4480bdf9a4d566ad9dd47f5c6b3f67416238627b70e9bd37f6f  x64-setup.exe
+    759cdc5fdab1ddebe6e2947ef66df19ebe6b6cea2c1fae9dcc5ed49d4fe30a18  aarch64.dmg
+    ebed4848aa3eb109414e8ed786d9d450549be54548dcb6449a608f135a36accf  x64.dmg
+
+**The asset labels ran for real for the first time and worked.** All six assets
+carry plain-words labels, set by the workflow rather than by hand, and the two
+new ones read "Mac installer — Apple Silicon (M1–M4, 2021 and newer) — unsigned,
+see install steps (<name>)" and "Mac installer — Intel Macs, pre-2021 —
+unsigned, see install steps (<name>)". Verified on the published page.
+
+### The first answers a Mac ever gave
+
+Both through the shipped `.app`'s own index.db, search model and model server,
+on graded eval question g01, with the smaller model:
+
+    Apple Silicon   verdict ok, 293 retrieved / 92 cited, 0 violations
+                    126 tokens in 58.3 s = 2.16 tokens/s, 104.4 s in all
+    Intel           verdict ok, 293 retrieved / 92 cited, 0 violations
+                    126 tokens in 100.7 s = 1.25 tokens/s, 108.8 s in all
+
+The Apple Silicon figure was taken with the free-memory guard **overridden** —
+the runner read 4.81 GB free and the pipeline needs about 5.0 before the chat
+model loads. The job says so in its own log. The Intel job, 14 GB, never
+overrides it. Both disk images reported `Finder layout applied (.DS_Store
+present, 10244 bytes)` with the background picture in them.
 
 ## The reversal
 
@@ -85,42 +124,18 @@ Windows and Linux and is `Contents/MacOS` on a Mac, where nothing lives. It
 would have reported index.db, the search model and the model server all missing
 inside a bundle that had all three. It now tries `Contents/Resources` as well.
 
-## Finishing the release
+## What the release run cost, so a repeat is recognisable
 
-The tag `v1.0.3` exists and has been force-moved twice as fixes landed. To
-finish:
-
-    git push -f origin v1.0.3        # if the tag is behind main
-    gh run watch --repo haomuch1/pastor-bible <run id>
-
-When the run is green, `publish` creates a **draft** release and labels the
-assets. It does not un-draft: that is a hand step, as it was for 1.0.2.
-
-    gh release edit v1.0.3 --repo haomuch1/pastor-bible       --draft=false --prerelease       --title "The Pastor Bible 1.0.3 (pre-release: no Mac has run this)"
-
-Then verify anonymously — download every asset with no credentials and run
-`sha256sum -c SHA256SUMS.txt` against them. Expect four Windows/Linux assets as
-before plus `The.Pastor.Bible_1.0.3_aarch64.dmg` and
-`The.Pastor.Bible_1.0.3_x64.dmg`, each about 484 MB.
-
-**The asset labels have never run for real.** The rules are in
-`.github/workflows/release.yml` and were dry-run against the exact filenames;
-the two Mac ones read "Mac installer — Apple Silicon (M1–M4, 2021 and newer) —
-unsigned, see install steps (<name>)" and "Mac installer — Intel Macs, pre-2021
-— unsigned, see install steps (<name>)". Check the page shows them.
-
-### What went wrong in each attempt, so a repeat is recognisable
+Six attempts. Every failure was a real defect except the last, and none is
+outstanding.
 
     run 1   arm64: llama-server would not start (b10639 librdma) -> repinned
     run 2   arm64: free-memory guard refused the model on a 7 GB runner
-    run 3   both green except arm64 memory; found Accelerate and the MTL name
+    run 3   both green but arm64 memory; found Accelerate and the MTL name
     tag 1   arm64: memory again -- purge ran, then a 57 s compile undid it
-    tag 2   intel: hdiutil "couldn't eject disk4 - Resource busy" on a correct
-            disk image. A flake; the detach now retries five times then forces.
-
-None of these is outstanding. Every one has a fix committed, and every fix has
-been green on the chip it was for. What is missing is one run where the two
-chips are green together.
+    tag 2   intel: hdiutil "couldn't eject disk4 - Resource busy" on a disk
+            image that was already correct. A flake; the detach now retries.
+    tag 3   green on everything, published.
 
 ## What is proven, and by what
 
