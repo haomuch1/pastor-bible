@@ -2,12 +2,17 @@
 
 Session: P-MAC, macOS support on Apple Silicon and Intel
 Date: 2026-09-01
-Status: **v1.0.3 is published as a pre-release, and it is the first release
-with macOS installers.** Windows is unchanged from 1.0.2 in every respect that
-a reader can see. **No person has run the macOS build on a Mac.** Everything a
-machine can prove about it is proven on GitHub's own Apple Silicon and Intel
-runners; everything visual is unseen and is labelled as such wherever it
-appears.
+Status: **v1.0.3 is tagged and NOT yet published.** The session ended with the
+release run in flight. Everything in the repository is finished and every piece
+of it has been green on a Mac runner at least once; what has not happened is one
+run in which both macOS jobs are green *at the same time*, which is what the
+`publish` job waits for. See "Finishing the release" below — it is one command
+and then some checking.
+
+Windows is unchanged from 1.0.2 in every respect a reader can see. **No person
+has run the macOS build on a Mac.** Everything a machine can prove about it is
+proven on GitHub's own Apple Silicon and Intel runners; everything visual is
+unseen and labelled as such wherever it appears.
 
 The laptop is still on 1.0.1. Its steps below are unchanged, now aimed at
 1.0.3.
@@ -80,13 +85,42 @@ Windows and Linux and is `Contents/MacOS` on a Mac, where nothing lives. It
 would have reported index.db, the search model and the model server all missing
 inside a bundle that had all three. It now tries `Contents/Resources` as well.
 
-## The release
+## Finishing the release
 
-    https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.3
+The tag `v1.0.3` exists and has been force-moved twice as fixes landed. To
+finish:
 
-Public, marked **Pre-release**, from tag `v1.0.3`.
+    git push -f origin v1.0.3        # if the tag is behind main
+    gh run watch --repo haomuch1/pastor-bible <run id>
 
-Assets, labels and checksums are in the section "The v1.0.3 assets" below.
+When the run is green, `publish` creates a **draft** release and labels the
+assets. It does not un-draft: that is a hand step, as it was for 1.0.2.
+
+    gh release edit v1.0.3 --repo haomuch1/pastor-bible       --draft=false --prerelease       --title "The Pastor Bible 1.0.3 (pre-release: no Mac has run this)"
+
+Then verify anonymously — download every asset with no credentials and run
+`sha256sum -c SHA256SUMS.txt` against them. Expect four Windows/Linux assets as
+before plus `The.Pastor.Bible_1.0.3_aarch64.dmg` and
+`The.Pastor.Bible_1.0.3_x64.dmg`, each about 484 MB.
+
+**The asset labels have never run for real.** The rules are in
+`.github/workflows/release.yml` and were dry-run against the exact filenames;
+the two Mac ones read "Mac installer — Apple Silicon (M1–M4, 2021 and newer) —
+unsigned, see install steps (<name>)" and "Mac installer — Intel Macs, pre-2021
+— unsigned, see install steps (<name>)". Check the page shows them.
+
+### What went wrong in each attempt, so a repeat is recognisable
+
+    run 1   arm64: llama-server would not start (b10639 librdma) -> repinned
+    run 2   arm64: free-memory guard refused the model on a 7 GB runner
+    run 3   both green except arm64 memory; found Accelerate and the MTL name
+    tag 1   arm64: memory again -- purge ran, then a 57 s compile undid it
+    tag 2   intel: hdiutil "couldn't eject disk4 - Resource busy" on a correct
+            disk image. A flake; the detach now retries five times then forces.
+
+None of these is outstanding. Every one has a fix committed, and every fix has
+been green on the chip it was for. What is missing is one run where the two
+chips are green together.
 
 ## What is proven, and by what
 

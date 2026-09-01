@@ -132,7 +132,25 @@ else
 fi
 
 sync || true
-hdiutil detach "$MNT" >/dev/null
+
+# Finder does not let go the instant AppleScript stops talking to it, and
+# Spotlight starts indexing a volume the moment it appears. A macOS 15 runner
+# answered the first detach with
+#
+#     hdiutil: couldn't eject "disk4" - Resource busy
+#
+# and failed the build over a disk image that was already correct. So: ask
+# politely a few times, then insist. -force is safe here because everything
+# that was going to be written has been written and synced.
+detach() {
+  for _ in 1 2 3 4 5; do
+    if hdiutil detach "$1" >/dev/null 2>&1; then return 0; fi
+    sleep 3
+  done
+  echo "the volume would not eject; forcing"
+  hdiutil detach "$1" -force >/dev/null
+}
+detach "$MNT"
 MNT=""
 
 # A .DS_Store is the only evidence, short of a person looking, that the layout
@@ -146,7 +164,7 @@ DS=absent
 if [ -f "$MNT/.DS_Store" ]; then DS="present, $(stat -f%z "$MNT/.DS_Store") bytes"; fi
 BG=absent
 if [ -f "$MNT/.background/background.png" ]; then BG=present; fi
-hdiutil detach "$MNT" >/dev/null
+detach "$MNT"
 MNT=""
 
 rm -f "$OUT"
