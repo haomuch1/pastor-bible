@@ -34,14 +34,29 @@
 //! ten gigabytes and nine already spoken for cannot hold an eight-billion
 //! parameter model, and starting anyway would fail slowly rather than quickly.
 //!
-//! ## Not every line is a graphics card
+//! ## What a Mac reports
 //!
-//! The macOS builds register the Accelerate framework as a ggml device, and it
-//! prints beside the real ones. Measured on an Intel macOS runner on
-//! 2026-09-01, this is the whole of what a Mac with no usable GPU reports:
+//! Measured on 2026-09-01, on GitHub's own runners, from the shipped binaries.
+//! Apple Silicon:
+//!
+//!     Available devices:
+//!       MTL0: Apple Paravirtual device (4778 MiB, 4778 MiB free)
+//!       BLAS: Accelerate (0 MiB, 0 MiB free)
+//!
+//! and an Intel Mac, which has no Metal backend in its build at all:
 //!
 //!     Available devices:
 //!       BLAS: Accelerate (0 MiB, 0 MiB free)
+//!
+//! Two things follow. The Metal backend calls itself **MTL**, not Metal, and
+//! the device name there is a virtual machine's -- a real Mac says "Apple M2
+//! Pro" or the like, and nobody here has seen one.
+//!
+//! ## Not every line is a graphics card
+//!
+//! The macOS builds register the Accelerate framework as a ggml device, and it
+//! prints beside the real ones, and on an Intel Mac it prints alone where
+//! "(none)" would be on Windows.
 //!
 //! Accelerate is the processor doing matrix arithmetic faster; it is not
 //! somewhere a model can live. Shown to a reader it becomes a graphics card
@@ -274,16 +289,19 @@ mod tests {
         );
     }
 
-    /// And it must not crowd out a real one when both are listed.
+    /// And it must not crowd out a real one when both are listed. This is the
+    /// whole of what an Apple Silicon Mac printed on 2026-09-01, pasted; the
+    /// backend calls itself MTL and the name is a virtual machine's.
     #[test]
     fn a_real_device_beside_accelerate_survives_alone() {
         let text = "Available devices:\n  \
-            Metal0: Apple M1 (10922 MiB, 10922 MiB free)\n  \
+            MTL0: Apple Paravirtual device (4778 MiB, 4778 MiB free)\n  \
             BLAS: Accelerate (0 MiB, 0 MiB free)\n";
         let d = parse_devices(text);
         assert_eq!(d.len(), 1, "{:?}", d);
-        assert_eq!(d[0].name, "Apple M1");
-        assert_eq!(d[0].free_mib, 10922);
+        assert_eq!(d[0].id, "MTL0");
+        assert_eq!(d[0].name, "Apple Paravirtual device");
+        assert_eq!(d[0].free_mib, 4778);
     }
 
     /// The Windows output this file was written against is unchanged by the

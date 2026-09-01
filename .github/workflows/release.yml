@@ -358,20 +358,28 @@ jobs:
           # the x64 archive contains no Metal backend at all and a Metal device
           # appearing would mean docs/SIDECAR.md is wrong about what shipped.
           #
-          # On Apple Silicon it is recorded and not asserted. This runner is a
-          # virtual machine, and whether a Metal device appears inside one says
-          # nothing about whether one appears on a pastor's MacBook. What the
-          # app does when no device is reported is what it does on a Windows
-          # laptop without a card, which is tested; what it says when one is
-          # reported has unit tests over the parsed output.
+          # The backend calls itself MTL, not Metal, which the first version of
+          # this grep did not know and so reported "no Metal device" about a
+          # runner that had one. The whole of what it printed on 2026-09-01 was
+          #
+          #     Available devices:
+          #       MTL0: Apple Paravirtual device (4778 MiB, 4778 MiB free)
+          #       BLAS: Accelerate (0 MiB, 0 MiB free)
+          #
+          # Both halves matter. The Metal device is asserted on Apple Silicon,
+          # because its absence would mean libggml-metal did not ship. Its
+          # *name* and *memory* here are a virtual machine's and say nothing
+          # about a pastor's MacBook, which is why nothing asserts those.
+          # Accelerate is the processor, not a card; core/src/compute.rs drops
+          # it at the parse and has this exact line as a test.
           if [ "${{ matrix.chip }}" = "aarch64" ]; then
-            if grep -qi metal devices.txt; then
-              echo "this Apple Silicon runner reports a Metal device, printed above"
-            else
-              echo "::warning::no Metal device on this Apple Silicon runner, which is a virtual machine. Recorded, not asserted; the answer for real hardware is unverified."
-            fi
+            grep -qiE 'metal|mtl[0-9]' devices.txt || {
+              echo "::error::no Metal device on Apple Silicon. libggml-metal did not ship, or the backend renamed itself again."
+              exit 1
+            }
+            echo "a Metal device is reported, printed above"
           else
-            if grep -qi metal devices.txt; then
+            if grep -qiE 'metal|mtl[0-9]' devices.txt; then
               echo "::error::the Intel build reported a Metal device; docs/SIDECAR.md is wrong"
               exit 1
             fi
@@ -468,6 +476,27 @@ jobs:
           mkdir -p "$RUNNER_TEMP/models"
           curl -sSL -o "$RUNNER_TEMP/models/$SMALL_MODEL" "$SMALL_MODEL_URL"
           echo "$SMALL_MODEL_SHA  $RUNNER_TEMP/models/$SMALL_MODEL" | shasum -a 256 -c -
+
+      - name: give the answering model room, and say what room there is
+        run: |
+          # The Apple Silicon runner has 7 GB of memory, and on 2026-09-01 the
+          # app's own check refused the smaller model on it:
+          #
+          #   The Pastor Bible needs about 3.7 GB of free memory to load the
+          #   answering model, and this computer has 3.3 GB free right now.
+          #
+          # That is the check working, not failing -- it is the first time the
+          # macOS free-memory reading has been exercised against a real machine
+          # and it did exactly what it exists to do. What it was refusing was a
+          # build machine's file cache, though, not another program. `purge`
+          # empties that cache, which is the honest way to give the test the
+          # room a reader's Mac would have: the reading is not faked and the
+          # check is not bypassed. `TPB_FAKE_FREE_RAM_GB` exists and is
+          # deliberately not used here -- it is for making the refusal happen,
+          # never for making it go away.
+          echo "--- before ---"; vm_stat | head -6
+          sudo purge || purge || echo "::warning::purge is not available; carrying on"
+          echo "--- after ---"; vm_stat | head -6
 
       - name: one real question, end to end, through the app's own resources
         run: |

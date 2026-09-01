@@ -239,6 +239,46 @@ in and does nothing else to it. None of this is evidence about the *wording* of
 the dialog a reader sees; that is Apple's documentation, cited in README, and
 nobody here has seen it.
 
+### What `--list-devices` reports on a Mac
+
+Measured on GitHub's runners on 2026-09-01, from the shipped bundle. Apple
+Silicon:
+
+    Available devices:
+      MTL0: Apple Paravirtual device (4778 MiB, 4778 MiB free)
+      BLAS: Accelerate (0 MiB, 0 MiB free)
+
+Intel:
+
+    Available devices:
+      BLAS: Accelerate (0 MiB, 0 MiB free)
+
+Three things to keep. The Metal backend calls itself **MTL**, not Metal — a
+grep for "metal" reports no device on a machine that has one, which is what the
+first CI run of this phase did. The device *name* above is a virtual machine's;
+a real Mac names its chip, and nobody here has seen that. And **Accelerate is
+not a graphics card**: it is the processor doing matrix arithmetic, it reports
+no memory of its own, and where Windows prints "(none)" an Intel Mac prints
+this. `core/src/compute.rs` drops any device reporting zero memory at the parse,
+so neither the first-run screen nor the compute decision ever sees it; both
+lines above are tests in that file.
+
+### The free-memory reading, exercised for the first time
+
+Also on 2026-09-01, on the 7 GB Apple Silicon runner, the app's own check
+refused to load the smaller model:
+
+    The Pastor Bible needs about 3.7 GB of free memory to load the answering
+    model, and this computer has 3.3 GB free right now. Close other programs or
+    restart the computer, then try again.
+
+That is the `vm_stat` reading and the free-RAM rule working on a real machine,
+which nothing on the build machine could have shown. What it was refusing was a
+build machine's file cache rather than another program, so the workflow runs
+`purge` before the end-to-end test — the reading is not faked and the check is
+not bypassed. `TPB_FAKE_FREE_RAM_GB` exists and is deliberately not used there:
+it is for making the refusal happen, never for making it go away.
+
 ### Binary name and flags
 
 `llama-server`, the same name as Linux, and the same flags — nothing in the
