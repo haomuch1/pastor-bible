@@ -273,11 +273,21 @@ refused to load the smaller model:
     restart the computer, then try again.
 
 That is the `vm_stat` reading and the free-RAM rule working on a real machine,
-which nothing on the build machine could have shown. What it was refusing was a
-build machine's file cache rather than another program, so the workflow runs
-`purge` before the end-to-end test — the reading is not faked and the check is
-not bypassed. `TPB_FAKE_FREE_RAM_GB` exists and is deliberately not used there:
-it is for making the refusal happen, never for making it go away.
+which nothing on the build machine could have shown.
+
+The workflow empties the file cache with `purge` before the end-to-end test: the
+1.8 GB model is downloaded in the step before it and is sitting in that cache,
+which is a build machine's problem and not a reader's. It then reads what the app
+itself would read, by the same rule, and prints it. **If that is still short it
+overrides the guard for that one step, and says so in the job log and in the
+end-of-run report.** What is being worked around is a machine smaller than
+anything this ships to — the Apple Silicon runner has 7 GB and the smallest
+Apple Silicon MacBook Apple sells has 8 — and not the rule itself, which is
+unchanged, which the `low_memory` suite tests, and which was watched doing its
+job on this very runner. That step exists to prove the pipeline answers a real
+question on Apple Silicon; a memory check that stopped it would have proved
+nothing about either. The Intel runner has 14 GB and the guard is never
+overridden there, so one of the two jobs always exercises it for real.
 
 ### Binary name and flags
 
