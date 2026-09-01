@@ -3,7 +3,7 @@ members = ["core"]
 
 [package]
 name = "pastor-bible"
-version = "1.0.2"
+version = "1.0.3"
 description = "A free, offline, nondenominational Bible study tool with cited answers."
 authors = ["Jared", "Claude (Anthropic)"]
 edition = "2021"

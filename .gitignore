@@ -74,6 +74,8 @@ tools/*
 !tools/clean-machine-check.ps1
 !tools/extract_nsis_template.py
 !tools/record-installer.ps1
+!tools/make_dmg.sh
+!tools/mac_dmg_background.py
 models/
 
 # Evaluation scratch output; the kept copy lives in data/eval/

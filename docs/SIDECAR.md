@@ -74,6 +74,111 @@ for its target triple as Tauri's externalBin convention requires. Run on
 for its `.gitkeep`: the sidecar is fetched by tag and checksum and bundled by
 the installer, and nothing binary is ever committed.
 
+## macOS, both chips
+
+Added in P-MAC on 2026-09-01, when the "macOS dropped" decision was reversed.
+Everything in this section was measured against the archives themselves, on the
+build machine, by downloading them and reading their bytes. Nothing here was
+recalled and nothing was taken from GitHub's own digest field without checking
+it.
+
+    asset       llama-b10639-bin-macos-arm64.tar.gz
+    sha256      9af0ea99b9221bd5db69c4341b442166d9697d35556708dba11ae44c85567a14
+    size        10,974,544 bytes
+    asset       llama-b10639-bin-macos-x64.tar.gz
+    sha256      72c8b2fccc0f670733c0f51b6f7e40a93246d61a5ff4f4fae4f1d64897c9c5be
+    size        11,043,415 bytes
+
+Both unpack to a single directory `llama-b10639/`: 60 entries on arm64, 56 on
+x64, of which 18 and 16 respectively are symlinks between the three names each
+library carries. Each archive contains llama.cpp's own `LICENSE`, 1,078 bytes,
+sha256 `94f29bbe...f0f1d010d` — **byte-identical to the copy already vendored in
+`src-tauri/licenses/llama.cpp-LICENSE.txt`**, which the Windows and Linux
+bundles ship because the Windows archive carries no licence text at all. The
+same file therefore ships on all three platforms and is now confirmed against
+upstream rather than merely believed.
+
+### Metal is on Apple Silicon and nowhere else
+
+The arm64 archive carries `libggml-metal.0.22.0.dylib` (2,062,024 bytes) and
+`ggml-metal-tuning`. **The x64 archive carries no Metal backend of any kind**,
+and its `llama-server` does not reference one. This is not an inference from
+hardware: it is the file list, and it is the load commands.
+
+    arm64  llama-server references @rpath/libggml-metal.0.dylib
+    x64    llama-server references no metal library
+
+So on an Intel Mac this program has no graphics path at all, whatever card the
+machine has, and the "no graphics card The Pastor Bible can use" wording is a
+statement about the build rather than a guess about the reader's hardware.
+There is no `default.metallib` in the archive: the shaders are embedded in
+`libggml-metal`, which is llama.cpp's release default.
+
+### What the bundle keeps, and why exactly those files
+
+The Windows trim was established by deleting files until the server stopped
+starting. No Mac exists here to do that on, so the list was read out of the
+binaries instead. Every Mach-O in the archive was scanned for its `@rpath`
+load-command strings; the union of what `llama-server` and everything it loads
+ask for is:
+
+    @rpath/libllama-server-impl.dylib     @rpath/libggml.0.dylib
+    @rpath/libllama.0.dylib               @rpath/libggml-base.0.dylib
+    @rpath/libllama-common.0.dylib        @rpath/libggml-cpu.0.dylib
+    @rpath/libmtmd.0.dylib                @rpath/libggml-blas.0.dylib
+                                          @rpath/libggml-rpc.0.dylib
+    and, on arm64 only, @rpath/libggml-metal.0.dylib
+
+`@rpath` itself resolves to `@loader_path` in `llama-server` and in every
+library — the only LC_RPATH either carries. **The server and its libraries must
+therefore sit in one directory**, exactly as on Windows and for the same
+practical reason, though the mechanism is different.
+
+Note that every referenced name is the `.0.dylib` middle name, which in the
+archive is a symlink to a `.0.22.0.dylib` or `.0.3.0.dylib` real file. Tauri's
+resource copying is not relied on to preserve symlinks: `fetch_llama.py`
+resolves each one and writes the real bytes under the referenced name, so the
+bundled directory contains eleven ordinary files and no links. Nothing
+llama.cpp's own CLI tools need — `libllama-cli-impl`, `libllama-bench-impl`,
+`libllama-perplexity-impl` and the rest — is shipped, because the tools are not
+shipped either.
+
+    arm64   llama-server + 10 libraries + LICENSE   12 files, 24,859,070 bytes
+    x64     llama-server +  9 libraries + LICENSE   11 files, 24,283,670 bytes
+
+`libomp` does not exist in either archive, so `LICENSE-LLVM-OpenMP.txt` is a
+Windows and Linux obligation only and is not shipped in the .app.
+
+### The floor is macOS 13.3, on both chips
+
+Read from `LC_BUILD_VERSION` in the shipped binaries:
+
+    arm64  minos 13.3.0   sdk 26.5.0
+    x64    minos 13.3.0   sdk 15.5.0
+
+llama.cpp builds its Intel release against the same 13.3 deployment target as
+its Apple Silicon one, so the Intel build buys no older-macOS support. That is
+why `bundle.macOS.minimumSystemVersion` is `13.3` for both and not Tauri's
+`10.13` default: with the default, a Mac on macOS 12 would install the app
+happily and then fail inside dyld with a message about a library, which is the
+worst possible place to learn it.
+
+### Signing state of the upstream binaries
+
+    arm64  every Mach-O carries LC_CODE_SIGNATURE (ad-hoc; arm64 requires it)
+    x64    no Mach-O carries one (Intel does not require it)
+
+Neither is signed by anybody. This project adds no Developer ID either; see
+DECISIONS for the ad-hoc decision and README for what the reader sees.
+
+### Binary name and flags
+
+`llama-server`, the same name as Linux, and the same flags — nothing in the
+invocation is platform-specific. `-ngl` still decides which processor runs the
+model; on Apple Silicon the "card" it offloads to is the same physical memory
+the rest of the machine is using, which is why the Compute wording differs
+there and only there.
+
 ## Binary name
 
     Windows   llama-server.exe
@@ -190,4 +295,17 @@ outright if what the host offers is not the size this build expects.
   parent's handle closes, which covers a hard kill of the parent that no
   user-space handler would survive. On Linux it is `PR_SET_PDEATHSIG` set in
   the child before exec.
+
+  **macOS has neither.** `PR_SET_PDEATHSIG` is a Linux call and there is no
+  Darwin equivalent, so the same guarantee is built out of a pipe. The parent
+  makes one, keeps the write end (close-on-exec, so no child inherits it), and
+  spawns `/bin/sh -c 'cat >/dev/null; kill -9 <pid>'` with the read end as its
+  standard input. That shell blocks forever on a pipe nothing writes to. When
+  the parent dies — cleanly, by panic, by Force Quit, by `kill -9`, by anything
+  at all — the write end closes with it, `cat` reads end-of-file, and the next
+  thing that shell does is kill the model server. On an orderly stop the reaper
+  is killed first and the server second, so the `kill -9` is never issued
+  against a process id that could by then belong to somebody else.
+  `sidecar_lifecycle`'s hard-kill test is the same test on all three platforms
+  and runs on the macOS runners.
 - Servers run below normal priority so the machine stays usable.

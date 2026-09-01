@@ -377,6 +377,11 @@ pub struct AppInfo {
     pub reference_hardware: String,
     pub paths: AppPaths,
     pub prompt_versions: Vec<(String, String)>,
+    /// One line the reader is owed before they choose a model, on a build whose
+    /// model server has no graphics path at all. `Some` only on an Intel Mac;
+    /// `None` everywhere else, and the screens show nothing when it is None.
+    /// See `hardware::no_gpu_platform_note` for why it is a build fact.
+    pub no_gpu_platform_note: Option<String>,
 }
 
 #[tauri::command]
@@ -421,6 +426,7 @@ fn app_info(state: State<'_, AppState>) -> Result<AppInfo, String> {
         reference_hardware: format!("{}, {}, {:.0} GB RAM, {}", r.cpu, r.gpu, r.ram_gb, r.os),
         paths: state.paths.clone(),
         prompt_versions: Vec::new(),
+        no_gpu_platform_note: hardware::no_gpu_platform_note(),
     })
 }
 
@@ -950,14 +956,33 @@ fn self_check() -> i32 {
     ok("self-test questions", self_test_questions().map(|q| format!("{} found", q.len())));
 
     // The three large resources. Tauri resolves these through its own resource
-    // directory, which is the executable's folder on Windows and on Linux; this
-    // derives the same place from the executable rather than from a build-time
-    // path, which is the whole point.
-    let beside = std::env::current_exe()
+    // directory, and this derives the same place from the executable rather
+    // than from a build-time path, which is the whole point.
+    //
+    // On Windows and on Linux that directory is the executable's own folder. On
+    // macOS it is not: the binary lives in `The Pastor Bible.app/Contents/MacOS`
+    // and the resources in `Contents/Resources`, so the folder beside the
+    // executable holds nothing and a check that only looked there would report
+    // every resource missing on a build where all three are present. Both
+    // places are tried, nearest first.
+    let exe_dir = std::env::current_exe()
         .ok()
         .and_then(|e| e.parent().map(|d| d.to_path_buf()));
+    let bases: Vec<std::path::PathBuf> = match &exe_dir {
+        None => Vec::new(),
+        Some(d) => {
+            let mut v = vec![d.clone()];
+            if let Some(contents) = d.parent() {
+                v.push(contents.join("Resources"));
+            }
+            v
+        }
+    };
     let mut resource_check = |label: &str, rel: &str| {
-        let found = beside.as_ref().map(|d| d.join("resources").join(rel)).filter(|p| p.exists());
+        let found = bases
+            .iter()
+            .map(|d| d.join("resources").join(rel))
+            .find(|p| p.exists());
         match found {
             Some(p) => out.push_str(&format!("ok    {:<22} {}\n", label, p.display())),
             None => {
@@ -1009,6 +1034,15 @@ fn self_check() -> i32 {
 fn self_check_report_path() -> Option<std::path::PathBuf> {
     let base = if cfg!(windows) {
         std::env::var("APPDATA").ok().map(std::path::PathBuf::from)
+    } else if cfg!(target_os = "macos") {
+        // The same directory Tauri's `app_data_dir()` answers with on macOS,
+        // derived here without Tauri so the check needs nothing built up first.
+        // Not the XDG path below: that would put the report somewhere the app's
+        // own user.db is not, and the whole value of this file is that it sits
+        // beside the reader's data where they can be asked to find it.
+        std::env::var("HOME")
+            .ok()
+            .map(|h| std::path::PathBuf::from(h).join("Library").join("Application Support"))
     } else {
         std::env::var("XDG_DATA_HOME")
             .ok()

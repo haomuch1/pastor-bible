@@ -29,7 +29,7 @@ Stance: scripture-first, strictly nondenominational. The app reports what the te
 - 2026-08-26 — Model server: llama.cpp (MIT), bundled as a Tauri sidecar. Not Ollama, which installs a separate always-on service with its own tray icon and updater.
 - 2026-08-26 — Models (chat, embedding, reranker): Apache-2.0 or MIT only. No Llama community license, no Gemma terms, no acceptable-use policy flowing to users.
 - 2026-08-26 — Shell: Tauri 2 (MIT/Apache). Real installer, icon, owns the model server's lifecycle, cross-platform by design.
-- 2026-08-26 — Targets: Windows and Linux. macOS dropped (notarization requires a paid Apple account). Mac users may build from source.
+- 2026-08-26 — Targets: Windows and Linux. macOS dropped (notarization requires a paid Apple account). Mac users may build from source. **REVERSED 2026-09-01 (P-MAC), by Jared:** macOS is a target, in two builds — Apple Silicon and Intel, one `.dmg` each, no universal binary. The reviewing pastors use MacBooks. Notarisation is still not done and never will be: the app is ad-hoc signed, Gatekeeper stops the reader once, and the instructions say so and say exactly what to do. Windows remains primary. See DECISIONS 2026-09-01.
 - 2026-08-26 — Signing: ship unsigned first (SignPath requires an existing release). Apply to SignPath Foundation after the first public release. README states up front that Windows will show a SmartScreen warning and shows exactly how to proceed.
 - 2026-08-26 — Upgrades are manual re-downloads, and the installer upgrades in place: it detects any previous version and replaces it. Never two versions on one machine. User data (history, settings, downloaded models) lives outside the install directory and survives every upgrade; only program and index are replaced.
 - 2026-08-26 — Model size: default = one size up from the smallest model that passes evaluation. Installer auto-selects the smaller passing model on machines below the RAM threshold.
@@ -47,7 +47,7 @@ Stance: scripture-first, strictly nondenominational. The app reports what the te
 - Any Bible version other than WEB Classic.
 - Commentary, devotionals, sermons, interpretive material.
 - 1 Enoch, Kybalion, any non-biblical text.
-- macOS builds and notarization.
+- ~~macOS builds and notarization.~~ **AMENDED 2026-09-01 (P-MAC):** macOS builds are in scope and ship from v1.0.3. Notarisation remains out of scope permanently — it costs money.
 - Auto-update (no internet after install; updates are a manual re-download).
 - Telemetry, analytics, crash reporting, accounts, sync, mobile.
 
@@ -447,3 +447,10 @@ After The Pastor Bible v1.0.0 is functional and public, a separately named app f
   the AppImage installs nothing, so there is nothing to ask; the reader's data
   is left alone by construction.
 - SignPath current requirements at time of application [P8]
+- ~~macOS: llama.cpp assets per chip, Tauri bundling per target, Gatekeeper behaviour for an ad-hoc-signed download, Intel runner availability, app data path~~ [P-MAC] — RESOLVED 2026-09-01, every item measured or sourced:
+  - Both `llama-b10639-bin-macos-arm64.tar.gz` and `-macos-x64.tar.gz` exist, downloaded and hashed here; contents, sizes and the `@rpath` load-command list are in docs/SIDECAR.md. **Metal ships on arm64 only** — the x64 archive has no Metal backend and its `llama-server` references none, so an Intel Mac has no graphics path at all.
+  - Both builds carry `LC_BUILD_VERSION minos 13.3.0`, so the floor is **macOS 13.3 on both chips**, and `minimumSystemVersion` says so rather than letting dyld deliver the news.
+  - Tauri 2 supports `bundle.macOS.signingIdentity` (`"-"` for ad-hoc), `minimumSystemVersion`, `hardenedRuntime` and a `dmg` block. The `.dmg` is built by `tools/make_dmg.sh` instead, because Tauri's bundler cannot put `READ-ME-FIRST.rtf` in the image.
+  - Gatekeeper: macOS 15+ requires System Settings > Privacy & Security > Open Anyway (Apple Developer News, 2024-08-06); macOS 13–14 also allow Control-click > Open (Apple Mac User Guide, Ventura edition). Both are documented, dated and **not yet walked through on a real Mac**.
+  - Intel runners still exist — `macos-15-intel`, `macos-26-intel` — so the Intel build is native, not cross-compiled, and no Rosetta is involved.
+  - App data lives at `~/Library/Application Support/io.github.haomuch1.pastorbible`, printed by the app’s own `--self-check` on the runner rather than taken from Tauri’s documentation.

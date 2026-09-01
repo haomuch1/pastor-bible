@@ -42,8 +42,30 @@ llama.cpp, the local model server
                sha256 3f928f12abc5aaec2b21e9c8116292910f9f5e76eb2605ae6a9578b0413de626
              llama-b10639-bin-ubuntu-vulkan-x64.tar.gz
                sha256 6168bd9affe15b5cdbf553d70d2f162df5268c50da038000dcd3f0dc537ec7ca
+             llama-b10639-bin-macos-arm64.tar.gz
+               sha256 9af0ea99b9221bd5db69c4341b442166d9697d35556708dba11ae44c85567a14
+             llama-b10639-bin-macos-x64.tar.gz
+               sha256 72c8b2fccc0f670733c0f51b6f7e40a93246d61a5ff4f4fae4f1d64897c9c5be
   Fetched by tools/fetch_llama.py, which refuses to unpack a mismatched
   checksum.
+
+  Added 2026-09-01, P-MAC. Both macOS archives were downloaded on the build
+  machine and hashed there; the two checksums above are that measurement and
+  match the digest GitHub publishes for each asset. Unlike every other archive
+  in this list, both of them do carry llama.cpp's own LICENSE, and it is
+  byte-identical to the copy vendored below -- same sha256, 1,078 bytes -- so
+  the vendored file is now confirmed against upstream rather than merely
+  believed. The .app ships that vendored copy, as the Windows and Linux
+  installers do.
+
+  There is no second macOS archive the way there is a Vulkan one: Metal is
+  inside the arm64 build. The x64 build contains no Metal backend at all and
+  its llama-server references none, so an Intel Mac has no graphics path in
+  this program whatever card it has. It also carries no libomp, so
+  LICENSE-LLVM-OpenMP is a Windows and Linux obligation and is not shipped in
+  the .app. The macOS sidecar is 12 files on Apple Silicon and 11 on Intel,
+  the licence included; docs/SIDECAR.md lists them and records how the list was
+  arrived at.
 
   Corrected 2026-08-27: this entry previously said the MIT licence text ships
   beside the binaries in the archive and is included in the installer. Neither
@@ -156,6 +178,11 @@ llama.cpp licence, shipped with the sidecar
              requires the notice to travel with any copy of the software. The
              installer is such a copy, so tools/fetch_llama.py puts this file
              in resources/llama/ beside the server it covers.
+             Amended 2026-09-01: "the binary release archives do not contain
+             it" is true of the Windows and Linux archives and not of the two
+             macOS ones, which do. The file is the same file -- sha256
+             94f29bbe...f0f1d010d in both -- so one vendored copy still ships
+             on all three platforms and nothing about what is shipped changes.
 
 LLVM OpenMP licence, shipped with the sidecar
   File:      src-tauri/licenses/LICENSE-LLVM-OpenMP.txt
@@ -168,7 +195,9 @@ LLVM OpenMP licence, shipped with the sidecar
   Note:      Copied out of the checksummed archive. It covers libomp.dll, which
              llama-server loads and which the installer therefore ships. Placed
              in resources/llama/ by tools/fetch_llama.py for the same reason as
-             the file above.
+             the file above. There is no libomp in either macOS archive, so this
+             notice does not travel in the .app; nothing it covers is shipped
+             there.
 
 Apache License, Version 2.0
   File:      LICENSE

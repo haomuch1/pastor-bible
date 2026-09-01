@@ -69,7 +69,18 @@ pub fn total_ram_gb() -> f64 {
         }
         0.0
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        // hw.memsize is the machine's physical memory in bytes, and on Apple
+        // Silicon it is also the memory the graphics side is drawing on.
+        if let Some(v) = crate::sidecar::macos::sysctl("hw.memsize") {
+            if let Ok(bytes) = v.parse::<f64>() {
+                return bytes / (1024.0 * 1024.0 * 1024.0);
+            }
+        }
+        return 0.0;
+    }
+    #[cfg(all(not(windows), not(target_os = "macos")))]
     {
         if let Ok(text) = std::fs::read_to_string("/proc/meminfo") {
             for line in text.lines() {
@@ -107,7 +118,27 @@ pub fn free_disk_gb(path: &str) -> f64 {
         }
         0.0
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        // statvfs, which POSIX has had for decades and `libc` exports for every
+        // unix. f_bavail is what a non-privileged process may actually have,
+        // which is the figure the reader cares about.
+        use std::ffi::CString;
+        let Ok(c) = CString::new(path) else { return 0.0 };
+        unsafe {
+            let mut st: libc::statvfs = std::mem::zeroed();
+            if libc::statvfs(c.as_ptr(), &mut st) == 0 {
+                let unit = if st.f_frsize > 0 { st.f_frsize } else { st.f_bsize };
+                return st.f_bavail as f64 * unit as f64 / (1024.0 * 1024.0 * 1024.0);
+            }
+        }
+        0.0
+    }
+    // Linux still answers 0.0, and `probe` therefore still shows no disk line
+    // there. One `#[cfg(unix)]` would have covered both, and would have been a
+    // behaviour change on a platform this project has never run a package on.
+    // DECISIONS records the choice; it is flagged rather than done quietly.
+    #[cfg(all(not(windows), not(target_os = "macos")))]
     {
         let _ = path;
         0.0
@@ -127,7 +158,15 @@ pub fn drive_of(path: &str) -> String {
         }
         String::new()
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        // "There is about 12.4 GB free on /" tells a Mac reader nothing they
+        // can act on. Everything the app writes is under their home folder, so
+        // the volume that matters is the one the Mac boots from.
+        let _ = path;
+        "this Mac's disk".to_string()
+    }
+    #[cfg(all(not(windows), not(target_os = "macos")))]
     {
         let _ = path;
         "/".to_string()
@@ -182,7 +221,15 @@ pub fn cpu_name() -> String {
         let key = r"HARDWARE\DESCRIPTION\System\CentralProcessor\0";
         registry_string(key, "ProcessorNameString").unwrap_or_else(|| "unknown".to_string())
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        // "Apple M2 Pro" on Apple Silicon; "Intel(R) Core(TM) i7-9750H CPU @
+        // 2.60GHz" on an Intel Mac. Either way it is the string the reader
+        // would see in About This Mac.
+        return crate::sidecar::macos::sysctl("machdep.cpu.brand_string")
+            .unwrap_or_else(|| "unknown".to_string());
+    }
+    #[cfg(all(not(windows), not(target_os = "macos")))]
     {
         if let Ok(text) = std::fs::read_to_string("/proc/cpuinfo") {
             for line in text.lines() {
@@ -229,8 +276,38 @@ pub fn os_name() -> String {
         "Windows".to_string()
     } else if cfg!(target_os = "linux") {
         "Linux".to_string()
+    } else if cfg!(target_os = "macos") {
+        // Not `std::env::consts::OS`, which says "macos". Apple writes it
+        // "macOS" and so does every Mac this will run on.
+        if cfg!(target_arch = "x86_64") {
+            "macOS (Intel)".to_string()
+        } else {
+            "macOS (Apple Silicon)".to_string()
+        }
     } else {
         std::env::consts::OS.to_string()
+    }
+}
+
+/// The one line an Intel Mac is told about its own speed, or None everywhere
+/// else.
+///
+/// This is not a probe result and must not be: llama.cpp's x64 macOS build
+/// contains no Metal backend at all and its `llama-server` references none, so
+/// on any Intel Mac, with any card, this program answers on the processor. It
+/// is a fact about the build, which is why it is a build-time `cfg` rather than
+/// something read off the machine — the graphics sentence P7-fix-2 had to
+/// rewrite was wrong precisely because it drew a conclusion from a probe that
+/// could not support it.
+pub fn no_gpu_platform_note() -> Option<String> {
+    if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
+        Some(
+            "This Mac has no graphics card The Pastor Bible can use; answers will take \
+             several minutes. The smaller model is faster."
+                .to_string(),
+        )
+    } else {
+        None
     }
 }
 
@@ -247,6 +324,35 @@ pub fn graphics_sentence(devices: &[crate::compute::GpuDevice], needs_mib: u64) 
             .to_string();
     }
     let mut parts = Vec::new();
+
+    // Apple Silicon: the "card" is the machine's own memory, shared with
+    // everything else running on it. Printing a total the way a discrete card's
+    // total is printed would tell the reader they have room they may not have,
+    // so the free figure is what is shown and what the rule is applied to. The
+    // rule itself is unchanged: the model's measured requirement plus a tenth,
+    // against free memory, which is what it has always compared.
+    if cfg!(target_os = "macos") {
+        for d in devices {
+            let free_gb = d.free_mib as f64 / 1024.0;
+            let needs_gb = needs_mib as f64 / 1024.0;
+            if d.free_mib >= needs_mib {
+                parts.push(format!(
+                    "{}, shared memory: {:.1} GB free right now, so the standard model \
+                     will run on it.",
+                    d.name, free_gb
+                ));
+            } else {
+                parts.push(format!(
+                    "{}, shared memory: {:.1} GB free right now and the standard model \
+                     needs {:.1} GB, so the processor will answer instead. The smaller \
+                     model in Settings needs less.",
+                    d.name, free_gb, needs_gb
+                ));
+            }
+        }
+        return parts.join(" ");
+    }
+
     for d in devices {
         let gb = d.total_mib as f64 / 1024.0;
         if d.free_mib >= needs_mib {

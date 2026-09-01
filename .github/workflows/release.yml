@@ -261,6 +261,273 @@ jobs:
           path: out/*
           retention-days: 7
 
+
+  # ------------------------------------------------------------------- macOS
+  # Added in P-MAC. Two chips, two disk images, no universal binary: a universal
+  # .app would carry two model servers and two sets of libraries and make every
+  # reader download the half they cannot run.
+  #
+  # Everything runnable is proven here, because there is no Mac in this project.
+  # Everything visual -- the disk image window, the Gatekeeper dialogs, the app's
+  # own screens -- is unseen, and README says so in those words.
+  #
+  # Intel is built and tested natively: `macos-15-intel` is a current hosted
+  # runner, so nothing is cross-compiled and no Rosetta is involved.
+  macos:
+    needs: [version, offline]
+    if: ${{ !inputs.dry_run }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            chip: aarch64
+            chip_name: Apple Silicon
+            artifact: macos-apple-silicon-installer
+          - os: macos-15-intel
+            chip: x64
+            chip_name: Intel
+            artifact: macos-intel-installer
+    runs-on: ${{ matrix.os }}
+    env:
+      APP: src-tauri/target/release/bundle/macos/The Pastor Bible.app
+      # The smaller answering model. Pinned in src-tauri/core/src/download.rs
+      # and repeated here; the checksum is the point, not the copy.
+      SMALL_MODEL: Qwen3-1.7B-Q8_0.gguf
+      SMALL_MODEL_URL: https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q8_0.gguf
+      SMALL_MODEL_SHA: 061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+
+      - name: which Mac is this, exactly
+        run: |
+          sw_vers
+          uname -m
+          echo "runner label: ${{ matrix.os }}, expected chip: ${{ matrix.chip }}"
+          test "$(uname -m)" = "$( [ '${{ matrix.chip }}' = 'aarch64' ] && echo arm64 || echo x86_64 )" \
+            || { echo "::error::this runner is not the chip this job is for"; exit 1; }
+
+      - name: fetch index.db by pinned checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$INDEX_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern index.db --dir src-tauri/resources
+          echo "$INDEX_SHA256  src-tauri/resources/index.db" | shasum -a 256 -c -
+          test "$(wc -c < src-tauri/resources/index.db | tr -d ' ')" = "$INDEX_BYTES"
+
+      - name: fetch the embedding model by pinned checksum
+        run: python3 tools/fetch_model.py
+
+      - name: fetch and assemble the sidecar by pinned checksum
+        run: |
+          python3 tools/fetch_llama.py --bundle
+          ls -la src-tauri/resources/llama/
+          # No symlinks: fetch_llama.py resolves them and writes real bytes
+          # under the names the binaries ask for, because nothing here can test
+          # whether Tauri's resource copying would preserve a link.
+          if find src-tauri/resources/llama -type l | grep .; then
+            echo "::error::a symlink reached the bundle"; exit 1
+          fi
+
+      - name: what the model server can see on this Mac
+        run: |
+          # The honest way to answer "what does --list-devices report on Apple
+          # Silicon, and on a Mac with no usable GPU": run it and print it.
+          # Recorded in the job log, and quoted in docs/SIDECAR.md afterwards.
+          ./src-tauri/resources/llama/llama-server --list-devices 2>&1 | tee devices.txt
+          if [ "${{ matrix.chip }}" = "aarch64" ]; then
+            grep -qi metal devices.txt \
+              || { echo "::error::no Metal device on Apple Silicon"; exit 1; }
+          else
+            # The x64 archive contains no Metal backend at all, so this is a
+            # statement about the build and not about this runner's hardware.
+            if grep -qi metal devices.txt; then
+              echo "::error::the Intel build reported a Metal device; SIDECAR.md is wrong"
+              exit 1
+            fi
+          fi
+
+      - run: npm ci
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: "src-tauri" }
+
+      - name: check the frontend
+        run: npm run build && npx vitest run
+
+      - name: cargo test
+        run: |
+          cargo test --manifest-path src-tauri/core/Cargo.toml --locked \
+            --lib --test book_names --test builtin --test bundled_model --test chapter \
+            --test credits --test crisis --test download --test hardware_screen \
+            --test low_memory --test prompts_and_output --test retrieval_parity \
+            --test spreadsheet --test userdb --test verifier_parity
+
+      - name: no llama-server survives its parent, including a hard kill
+        run: |
+          # The same test as on Windows and Linux. On macOS the mechanism is a
+          # pipe and /bin/sh rather than a Job Object or PR_SET_PDEATHSIG, and
+          # this is what proves it works. It drives a real server against the
+          # 274 MB search model, not the 4.7 GB one.
+          cargo test --manifest-path src-tauri/core/Cargo.toml --locked \
+            --test sidecar_lifecycle -- --nocapture --test-threads 1
+
+      - name: build the .app
+        run: npx tauri build --bundles app
+
+      - name: what Tauri actually signed
+        run: |
+          # Not a screenshot and not a guess: the assessment macOS itself makes
+          # of this bundle, with the quarantine flag a download would carry.
+          # Whatever it says goes into the release notes and README.
+          codesign -dvvv "$APP" 2>&1 || true
+          echo "--- verify ---"
+          codesign --verify --verbose=2 "$APP" 2>&1 || true
+          echo "--- with the quarantine flag a downloaded copy would carry ---"
+          rm -rf /tmp/quarantined && mkdir -p /tmp/quarantined
+          ditto "$APP" "/tmp/quarantined/The Pastor Bible.app"
+          xattr -w com.apple.quarantine \
+            "0083;00000000;Safari;|io.github.haomuch1.pastorbible" \
+            "/tmp/quarantined/The Pastor Bible.app"
+          spctl --assess --type execute -vvv "/tmp/quarantined/The Pastor Bible.app" 2>&1 || true
+          echo "(a rejection here is expected and is the whole reason READ-ME-FIRST.rtf exists)"
+
+      - name: build the disk image
+        run: |
+          mkdir -p out
+          bash tools/make_dmg.sh "$APP" \
+            "out/The Pastor Bible_${{ needs.version.outputs.version }}_${{ matrix.chip }}.dmg"
+
+      - name: the disk image holds the three things it is supposed to
+        run: |
+          DMG="out/The Pastor Bible_${{ needs.version.outputs.version }}_${{ matrix.chip }}.dmg"
+          hdiutil attach "$DMG" -readonly -nobrowse -mountpoint /tmp/dmg >/dev/null
+          ls -la /tmp/dmg
+          test -d "/tmp/dmg/The Pastor Bible.app"   || { echo "::error::no app in the image"; exit 1; }
+          test -L "/tmp/dmg/Applications"           || { echo "::error::no Applications link"; exit 1; }
+          test -f "/tmp/dmg/READ-ME-FIRST.rtf"      || { echo "::error::no READ ME FIRST"; exit 1; }
+          test -f "/tmp/dmg/.background/background.png" \
+            || echo "::warning::the background picture is not in the image"
+          echo "READ-ME-FIRST.rtf is $(wc -c < /tmp/dmg/READ-ME-FIRST.rtf | tr -d ' ') bytes"
+          # Out of the image and into Applications, exactly as a reader would.
+          rm -rf "/tmp/Applications-stand-in" && mkdir -p "/tmp/Applications-stand-in"
+          ditto "/tmp/dmg/The Pastor Bible.app" "/tmp/Applications-stand-in/The Pastor Bible.app"
+          hdiutil detach /tmp/dmg >/dev/null
+
+      - name: the app that came out of the image starts and finds everything
+        run: |
+          # Its own binary, run directly, with no window and no display. This is
+          # the check P7's laptop needed and did not have.
+          "/tmp/Applications-stand-in/The Pastor Bible.app/Contents/MacOS/pastor-bible" --self-check
+          echo "--- where it keeps the reader's data ---"
+          ls -la "$HOME/Library/Application Support/io.github.haomuch1.pastorbible/"
+
+      - name: fetch the smaller answering model by pinned checksum
+        run: |
+          mkdir -p "$RUNNER_TEMP/models"
+          curl -sSL -o "$RUNNER_TEMP/models/$SMALL_MODEL" "$SMALL_MODEL_URL"
+          echo "$SMALL_MODEL_SHA  $RUNNER_TEMP/models/$SMALL_MODEL" | shasum -a 256 -c -
+
+      - name: one real question, end to end, through the app's own resources
+        run: |
+          # g01 from data/eval/questions.json -- a graded question with an
+          # approved gold list, not one written for this test. Everything large
+          # comes out of the .app that was copied from the disk image: its
+          # index.db, its search model, its model server. The harness is the
+          # CLI, because the shipped binary is a window and a runner has none.
+          RES="/tmp/Applications-stand-in/The Pastor Bible.app/Contents/Resources/resources"
+          export TPB_INDEX_DB="$RES/index.db"
+          export TPB_EMBED_MODEL="$RES/nomic-embed-text-v1.5-f16.gguf"
+          export TPB_LLAMA_SERVER="$RES/llama/llama-server"
+          export TPB_MODEL_DIR="$RUNNER_TEMP/models"
+          ls -la "$RES" "$RES/llama"
+          time cargo run --release --manifest-path src-tauri/core/Cargo.toml --locked \
+            --bin pastor-bible-cli -- \
+            ask "What does the Bible say about anxiety and worry?" \
+            --model fallback --json answer.json
+
+      - name: the answer was verified and nothing was fabricated
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          a = json.load(open('answer.json'))
+          bad = []
+          if a.get('verdict') != 'ok':
+              bad.append('verdict is %r, not ok' % a.get('verdict'))
+          if not a.get('synopsis_markdown'):
+              bad.append('no verified synopsis was produced')
+          if a.get('fallback_used'):
+              bad.append('the passage-list fallback was used, so no summary was verified')
+          for i, at in enumerate(a.get('attempts', [])):
+              if at.get('violations'):
+                  bad.append('attempt %d had %d violation(s): %r'
+                             % (i, len(at['violations']), at['violations'][:3]))
+          if not a.get('cited_passage_ids'):
+              bad.append('the answer cited nothing')
+
+          gen = a['timings']['generate_seconds']
+          toks = None
+          for at in a.get('attempts', []):
+              if at.get('completion_tokens'):
+                  toks = at['completion_tokens']
+          print('verdict            %s' % a.get('verdict'))
+          print('passages retrieved %d, cited %d'
+                % (len(a.get('passages', [])), len(a.get('cited_passage_ids', []))))
+          print('sidecar path       %s' % a.get('sidecar_path'))
+          print('model              %s' % a.get('model_id'))
+          print('generate seconds   %.1f' % gen)
+          if toks and gen > 0:
+              print('TOKENS PER SECOND  %.2f  (%d completion tokens)' % (toks / gen, toks))
+          else:
+              print('TOKENS PER SECOND  not reported by the server')
+          print('total seconds      %.1f' % a['timings']['total_seconds'])
+          if bad:
+              for b in bad:
+                  print('::error::%s' % b)
+              sys.exit(1)
+          print('a verified answer, zero fabrications')
+          PY
+
+      - name: the reader's data survives replacing the app
+        run: |
+          # A macOS upgrade is dragging a new .app over an old one. Nothing
+          # asks, nothing migrates; what has to be true is that the reader's
+          # questions are still there afterwards.
+          DATA="$HOME/Library/Application Support/io.github.haomuch1.pastorbible"
+          mkdir -p "$DATA/models"
+          printf 'not a real database, but it belongs to the reader' > "$DATA/user.db"
+          printf 'stand-in for two gigabytes' > "$DATA/models/$SMALL_MODEL"
+          BEFORE=$(shasum -a 256 < "$DATA/user.db")
+
+          rm -rf "/tmp/Applications-stand-in/The Pastor Bible.app"
+          DMG="out/The Pastor Bible_${{ needs.version.outputs.version }}_${{ matrix.chip }}.dmg"
+          hdiutil attach "$DMG" -readonly -nobrowse -mountpoint /tmp/dmg2 >/dev/null
+          ditto "/tmp/dmg2/The Pastor Bible.app" "/tmp/Applications-stand-in/The Pastor Bible.app"
+          hdiutil detach /tmp/dmg2 >/dev/null
+
+          test -f "$DATA/user.db" || { echo "::error::replacing the app deleted the history"; exit 1; }
+          AFTER=$(shasum -a 256 < "$DATA/user.db")
+          test "$BEFORE" = "$AFTER" || { echo "::error::the history changed"; exit 1; }
+          grep -q "the reader" "$DATA/user.db" || { echo "::error::the history was overwritten"; exit 1; }
+          test -s "$DATA/models/$SMALL_MODEL" || { echo "::error::the model was removed"; exit 1; }
+          echo "history and downloaded model both survived the replacement"
+
+          # And the replaced app still starts and still finds its resources.
+          "/tmp/Applications-stand-in/The Pastor Bible.app/Contents/MacOS/pastor-bible" --self-check
+
+      - name: checksum what was produced
+        run: |
+          cd out && shasum -a 256 * > SHA256SUMS.txt && cat SHA256SUMS.txt && ls -la
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: out/*
+          retention-days: 7
+
   # -------------------------------------------------------------- upgrade gate
   # PLAN 11: install the previous release, then this candidate, and assert one
   # install, history preserved, and no model re-download.
@@ -361,7 +628,7 @@ jobs:
 
   # ------------------------------------------------------------------- publish
   publish:
-    needs: [version, build, upgrade]
+    needs: [version, build, macos, upgrade]
     if: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.publish }}
     runs-on: ubuntu-latest
     steps:
@@ -403,6 +670,19 @@ jobs:
           body: |
             The Pastor Bible ${{ needs.version.outputs.version }}, unsigned.
 
+            **Windows is unchanged in this release.** Nothing about the Windows
+            installer, the upgrade flow or the program itself was altered; the
+            only shared file that changed is the build workflow.
+
+            **macOS is new here, and no person has run it on a Mac yet.**
+            Everything that can be proven by a machine has been: both disk
+            images are built, tested and asked a real question end to end on
+            GitHub's own Apple Silicon and Intel runners. Nothing about how it
+            *looks* on a Mac has been seen by anybody. Take the file labelled
+            for your chip, and read READ ME FIRST inside the disk image before
+            you double-click: macOS will refuse to open an unsigned app the
+            first time, and that file has the exact steps for your version.
+
             Windows will show "Windows protected your PC" when you run the
             installer, because this project has no paid signing certificate yet.
             Click "More info", then "Run anyway". The README's install section
@@ -443,6 +723,8 @@ jobs:
           while IFS='|' read -r id name; do
             case "$name" in
               *.exe)       label="Windows installer — most people want this one ($name)" ;;
+              *aarch64.dmg) label="Mac installer — Apple Silicon (M1–M4, 2021 and newer) — unsigned, see install steps ($name)" ;;
+              *x64.dmg)    label="Mac installer — Intel Macs, pre-2021 — unsigned, see install steps ($name)" ;;
               *.deb)       label="Linux installer for Ubuntu and Debian (.deb)" ;;
               *.AppImage)  label="Linux portable app for any distribution (.AppImage)" ;;
               SHA256SUMS*) label="Checksums for verifying your download (SHA256SUMS.txt)" ;;

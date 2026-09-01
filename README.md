@@ -16,8 +16,9 @@ A free, offline, nondenominational Bible study tool with cited answers.
 
 ## Install
 
-Installers are published with each release. Download the one for your system
-from the [releases page](https://github.com/haomuch1/pastor-bible/releases).
+Installers are published with each release, for Windows, macOS (two, one per
+chip) and Linux. Download the one for your system from the
+[releases page](https://github.com/haomuch1/pastor-bible/releases).
 Each file there is labelled in plain words with what it is for; the labels are
 what the page shows, and the filenames underneath them are what `SHA256SUMS.txt`
 records.
@@ -57,6 +58,96 @@ installer fetches it from Microsoft and installs it without asking. That is the
 one thing the installer downloads, it is about 2 MB, and most Windows 10 and 11
 machines already have it.
 
+### macOS
+
+> **This macOS version has not yet been installed on a Mac by a person; you may
+> be the first. If anything on this page does not match what you see, please
+> tell us — that report is a gift.**
+
+**1. Find out which Mac you have.** Apple menu (top left) → **About This Mac**.
+It says either **Apple M1**, **M2**, **M3** or **M4** — those are Apple Silicon,
+2021 and newer — or it says **Intel**. You need macOS **13.3 (Ventura)** or
+newer either way; the same window says which version you are on.
+
+**2. Download the file for your chip.** On the releases page, take:
+
+    Mac installer — Apple Silicon (M1–M4, 2021 and newer)   The.Pastor.Bible_<version>_aarch64.dmg
+    Mac installer — Intel Macs, pre-2021                    The.Pastor.Bible_<version>_x64.dmg
+
+**3. Open it and drag.** Double-click the `.dmg`. A window opens with The Pastor
+Bible on the left, the Applications folder on the right, and a file called
+**READ-ME-FIRST.rtf**. Drag the app onto Applications. Open READ ME FIRST — it
+says everything below, and it is there for the moment when this page is not in
+front of you.
+
+**4. Your Mac will refuse to open it the first time.** This is expected and it
+is not a sign that anything is wrong.
+
+> The Pastor Bible is not signed. Signing an app so that macOS opens it without
+> complaint means paying Apple a yearly developer fee, and this project costs
+> nothing to run and always will. So macOS has no company name to show you and
+> stops you once. Nothing about the program is damaged. Every release publishes
+> the exact checksum of every file in `SHA256SUMS.txt`, which is how you check
+> that what you downloaded is what we published — a stronger check than the one
+> macOS is asking for.
+
+**If your Mac runs macOS 15 (Sequoia) or newer:**
+
+1. Double-click The Pastor Bible in Applications. A message appears saying it
+   cannot be opened.
+2. Click **Done**.
+3. Apple menu → **System Settings** → **Privacy & Security**.
+4. Scroll down. There is a line about The Pastor Bible with an **Open Anyway**
+   button. Click it.
+5. Confirm with your password or Touch ID, then click **Open**.
+
+**If your Mac runs macOS 13 (Ventura) or macOS 14 (Sonoma):**
+
+1. Find The Pastor Bible in your Applications folder. Do not use Launchpad.
+2. Hold **Control** and click it, then choose **Open**.
+3. Click **Open** in the box that appears.
+
+   Privacy & Security also has an **Open Anyway** button on these versions, for
+   about an hour after you first try.
+
+You do this once. After that it opens by double-clicking like anything else.
+
+These two sets of steps are Apple's own, taken from Apple's documentation on
+2026-09-01: the Sequoia change is
+[Apple Developer News, 6 August 2024](https://developer.apple.com/news/?id=saqachfa),
+and the Ventura steps are from
+[Apple's Mac User Guide](https://support.apple.com/guide/mac-help/mh40616/13.0/mac/13.0).
+**Nobody has walked through either of them on a real Mac with this app.** There
+are no macOS screenshots on this page for the same reason: this project does not
+show a picture it has not taken.
+
+**5. The first time you open it** it downloads the answering model, about
+4.7 GB, once. That is the only time it uses the internet. Then it offers to
+check itself, which takes a few minutes. Neither has hung.
+
+**On an Intel Mac, answers take several minutes.** Not because the Mac is old:
+the model server this app ships has no graphics support on Intel at all — the
+Intel build of llama.cpp contains no Metal backend — so the processor answers
+every question. The app says so on the download screen and in Settings, and the
+smaller model, also in Settings, is faster.
+
+**Where your things are kept.**
+
+    ~/Library/Application Support/io.github.haomuch1.pastorbible
+
+Your questions (`user.db`), your settings and the answering model you downloaded
+all live there. Nothing else on your Mac is touched.
+
+**Upgrading** is dragging the new app onto Applications and choosing Replace.
+Your questions and your downloaded model are in the folder above and are not
+part of the app, so nothing is lost.
+
+**Uninstalling** is dragging The Pastor Bible from Applications to the Trash.
+That removes the program. Your questions and the 4.7 GB model stay in the folder
+above until you delete that folder yourself — deliberately, so that reinstalling
+later finds your questions where you left them and does not download five
+gigabytes again.
+
 ### Linux
 
 Take the file labelled **Linux installer for Ubuntu and Debian** (the `.deb`)
@@ -67,7 +158,10 @@ or **Linux portable app for any distribution** (the `.AppImage`).
 or make the AppImage executable and run it. The `.deb` needs
 `libwebkit2gtk-4.1-0` and `libgtk-3-0`, which apt will pull in for you.
 
-### Upgrading
+### Upgrading, on Windows
+
+(On a Mac, upgrading is dragging the new app onto Applications and choosing
+Replace; see the macOS section above.)
 
 Download the new installer and run it. That is all. It replaces the program, the
 Bible index and the search model, and it leaves your questions and your
@@ -77,7 +171,10 @@ Add/Remove Programs, not two.
 An older installer run over a newer installation stops and says so, and changes
 nothing.
 
-### Uninstalling
+### Uninstalling, on Windows
+
+(On a Mac, drag the app to the Trash; see the macOS section above for what stays
+behind and where.)
 
 Uninstall from Add/Remove Programs, or run `uninstall.exe` in the install
 folder. It removes the program and asks one question in plain words: whether to
@@ -291,7 +388,12 @@ reporting, no account, and no sync.
 
 Your questions and the answers to them are stored on your own machine. You can
 search them, delete any of them, delete all of them, and export them to a text
-file. They are never transmitted anywhere.
+file. They are never transmitted anywhere. They are in
+
+    Windows   %APPDATA%\io.github.haomuch1.pastorbible
+    macOS     ~/Library/Application Support/io.github.haomuch1.pastorbible
+
+and nowhere else.
 
 A test in the project's automated build runs the app's full question suite with
 networking switched off and requires it to pass. A release that fails that test is
@@ -300,8 +402,7 @@ blocked.
 ## Building from source
 
 You do not need to build The Pastor Bible in order to use it. This section is
-here because the licence gives you the right to build it, because macOS has no
-installer and building is the only way to run it there, and because a program
+here because the licence gives you the right to build it, and because a program
 that asks to be trusted should be one anybody can rebuild for themselves.
 
 ### What you need
@@ -336,6 +437,7 @@ it.
     npm ci
     npx tauri build --bundles nsis           on Windows
     npx tauri build --bundles deb,appimage   on Linux
+    npx tauri build --bundles app            on macOS, then tools/make_dmg.sh
 
 The installers are written to `src-tauri/target/release/bundle/`. They are
 unsigned; see the Windows warning above.
@@ -351,10 +453,21 @@ skip when it is not there. Everything else runs without it.
 
 ### macOS
 
-There is no macOS installer. Notarising one requires a paid Apple developer
-account, and this project costs nothing to run and never will. The code is
-cross-platform and Tauri supports macOS, so building there is expected to work.
-Nobody has done it, and it is not tested.
+There are macOS installers from v1.0.3 — see the install section above. Building
+one yourself needs the same three fetched files and:
+
+    npx tauri build --bundles app
+    bash tools/make_dmg.sh "src-tauri/target/release/bundle/macos/The Pastor Bible.app" \
+      "out/The Pastor Bible_<version>_<aarch64|x64>.dmg"
+
+The disk image is built by that script rather than by Tauri, because Tauri's own
+dmg bundler cannot put `READ-ME-FIRST.rtf` in the window beside the app. The
+`.app` is not touched after Tauri signs it.
+
+Notarising is still not done and will not be: it requires a paid Apple developer
+account. The app is ad-hoc signed, which is a signature with nobody's name on
+it, and macOS stops the reader once — see the install section for what they
+see and what to do.
 
 ## Sources and credits
 

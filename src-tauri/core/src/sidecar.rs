@@ -107,6 +107,9 @@ pub struct Sidecar {
     pub free_ram_before_gb: f64,
     pub ready_seconds: f64,
     counted_down: bool,
+    /// Whatever keeps the child from outliving this process. Dropped, or
+    /// released explicitly, before the child is killed in an orderly stop.
+    watchdog: Option<watchdog::Handle>,
     agent: ureq::Agent,
 }
 
@@ -168,7 +171,11 @@ pub fn free_ram_gb() -> f64 {
         }
         0.0
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        return macos::free_ram_gb();
+    }
+    #[cfg(all(not(windows), not(target_os = "macos")))]
     {
         if let Ok(text) = std::fs::read_to_string("/proc/meminfo") {
             for line in text.lines() {
@@ -182,6 +189,74 @@ pub fn free_ram_gb() -> f64 {
             }
         }
         0.0
+    }
+}
+
+/// The Darwin readings, taken by running the tools macOS ships rather than
+/// through Mach.
+///
+/// This is the worse-looking choice and the right one here. No Mac exists in
+/// this project to compile against, so an FFI signature that the `libc` crate
+/// does not happen to export for Darwin is a build failure discovered on a
+/// runner, at the end of a queue, in a session that cannot reproduce it. These
+/// are read once per model load and once per first-run screen, not in a loop,
+/// so a subprocess costs nothing anybody can feel. DECISIONS records the trade.
+#[cfg(target_os = "macos")]
+pub(crate) mod macos {
+    use std::process::Command;
+
+    /// The output of one `sysctl -n <name>`, trimmed, or None.
+    pub fn sysctl(name: &str) -> Option<String> {
+        let out = Command::new("/usr/sbin/sysctl").arg("-n").arg(name).output().ok()?;
+        if !out.status.success() {
+            return None;
+        }
+        let v = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        if v.is_empty() {
+            None
+        } else {
+            Some(v)
+        }
+    }
+
+    /// Free physical memory in GB.
+    ///
+    /// Windows answers this with `ullAvailPhys`: physical memory a process
+    /// could take right now. The closest thing macOS reports is the sum of the
+    /// free, inactive, speculative and purgeable page counts -- pages that are
+    /// either unused or that the kernel will hand over without paging anything
+    /// out. Wired and active pages are not counted, and neither is the
+    /// compressor, because none of those can be had for the asking.
+    pub fn free_ram_gb() -> f64 {
+        let Ok(out) = Command::new("/usr/bin/vm_stat").output() else {
+            return 0.0;
+        };
+        let text = String::from_utf8_lossy(&out.stdout);
+
+        // "Mach Virtual Memory Statistics: (page size of 16384 bytes)"
+        let page = text
+            .lines()
+            .next()
+            .and_then(|l| l.split("page size of ").nth(1))
+            .and_then(|r| r.split_whitespace().next())
+            .and_then(|n| n.parse::<f64>().ok())
+            .unwrap_or(4096.0);
+
+        let mut pages = 0.0;
+        for line in text.lines() {
+            let Some((label, count)) = line.split_once(':') else { continue };
+            let label = label.trim();
+            if !matches!(
+                label,
+                "Pages free" | "Pages inactive" | "Pages speculative" | "Pages purgeable"
+            ) {
+                continue;
+            }
+            if let Ok(n) = count.trim().trim_end_matches('.').parse::<f64>() {
+                pages += n;
+            }
+        }
+        pages * page / (1024.0 * 1024.0 * 1024.0)
     }
 }
 
@@ -235,7 +310,20 @@ pub fn process_alive(pid: u32) -> bool {
             ok != 0 && code == STILL_ACTIVE as u32
         }
     }
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    {
+        // There is no /proc on Darwin. Signal 0 is delivered to nothing and
+        // reports whether the process exists and could be signalled; ESRCH is
+        // gone, EPERM is alive and someone else's, which cannot happen for a
+        // child of ours but is the right answer anyway.
+        if unsafe { libc::kill(pid as i32, 0) } == 0 {
+            return true;
+        }
+        // EPERM means it exists and belongs to somebody else, which cannot
+        // happen for a child of ours but is still "alive". ESRCH means gone.
+        std::io::Error::last_os_error().raw_os_error() == Some(libc::EPERM)
+    }
+    #[cfg(all(not(windows), not(target_os = "macos")))]
     {
         std::path::Path::new(&format!("/proc/{}", pid)).exists()
     }
@@ -267,6 +355,10 @@ pub fn peak_working_set_mb(pid: u32) -> Option<f64> {
             Some(c.PeakWorkingSetSize as f64 / (1024.0 * 1024.0))
         }
     }
+    // On macOS there is no /proc, `read_to_string` fails and this answers
+    // None -- which is what the field is for. Peak resident memory is a
+    // measurement for EVAL.md, taken on the reference machine, and no figure in
+    // this project comes from a Mac.
     #[cfg(not(windows))]
     {
         let path = format!("/proc/{}/status", pid);
@@ -301,7 +393,14 @@ mod watchdog {
 
     static mut JOB: HANDLE = std::ptr::null_mut();
 
-    pub fn adopt(child: &Child) -> Result<(), String> {
+    /// Nothing to hold: the job object outlives every sidecar and the kernel
+    /// enforces it. `release` exists so the three platforms have one shape.
+    pub struct Handle;
+    impl Handle {
+        pub fn release(&mut self) {}
+    }
+
+    pub fn adopt(child: &Child) -> Result<Handle, String> {
         unsafe {
             if JOB.is_null() {
                 let job = CreateJobObjectW(std::ptr::null(), std::ptr::null());
@@ -331,17 +430,102 @@ mod watchdog {
                 return Err("could not put the sidecar in the watchdog job".to_string());
             }
         }
-        Ok(())
+        Ok(Handle)
     }
 }
 
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_os = "macos")))]
 mod watchdog {
     use std::process::Child;
-    pub fn adopt(_child: &Child) -> Result<(), String> {
-        // On Linux the death signal is set in the child before exec; see
-        // `spawn`. Nothing to do once it is running.
-        Ok(())
+
+    /// Nothing to hold: on Linux the death signal is set in the child before
+    /// exec, and the kernel does the rest. See `spawn`.
+    pub struct Handle;
+    impl Handle {
+        pub fn release(&mut self) {}
+    }
+    pub fn adopt(_child: &Child) -> Result<Handle, String> {
+        Ok(Handle)
+    }
+}
+
+/// macOS has neither a Job Object nor `PR_SET_PDEATHSIG`, so the guarantee is
+/// built out of a pipe.
+///
+/// The parent makes one and keeps the write end, close-on-exec so that no child
+/// it ever spawns inherits it and holds it open. The read end becomes the
+/// standard input of `/bin/sh -c 'cat > /dev/null; kill -9 <pid>'`, which
+/// blocks forever on a pipe nothing writes to. When the parent dies -- cleanly,
+/// by panic, by Force Quit, by `kill -9`, by anything at all -- the write end
+/// closes with it, `cat` reads end-of-file, and the next thing that shell does
+/// is kill the model server. Nothing has to run in the dying process, which is
+/// the whole point: no user-space handler survives a hard kill.
+///
+/// On an orderly stop the reaper is killed first and the server second, so the
+/// `kill -9` is never issued at all and cannot land on a process id that has
+/// since been given to somebody else.
+#[cfg(target_os = "macos")]
+mod watchdog {
+    use std::os::unix::io::FromRawFd;
+    use std::process::{Child, Command, Stdio};
+
+    pub struct Handle {
+        reaper: Option<Child>,
+        write_fd: i32,
+    }
+
+    impl Handle {
+        /// Stand the watchdog down: the caller is about to stop the server
+        /// itself, in order.
+        pub fn release(&mut self) {
+            if let Some(mut r) = self.reaper.take() {
+                let _ = r.kill();
+                let _ = r.wait();
+            }
+            if self.write_fd >= 0 {
+                unsafe { libc::close(self.write_fd) };
+                self.write_fd = -1;
+            }
+        }
+    }
+
+    impl Drop for Handle {
+        fn drop(&mut self) {
+            self.release();
+        }
+    }
+
+    pub fn adopt(child: &Child) -> Result<Handle, String> {
+        let pid = child.id();
+        let mut fds = [0 as libc::c_int; 2];
+        if unsafe { libc::pipe(fds.as_mut_ptr()) } != 0 {
+            return Err("could not create the watchdog pipe".to_string());
+        }
+        let (read_fd, write_fd) = (fds[0], fds[1]);
+        // Both close-on-exec. The read end still reaches the shell, because
+        // Rust dup2s it onto descriptor 0 and dup2 clears the flag on the copy;
+        // what the flag prevents is some other spawn in this process inheriting
+        // either end and keeping the pipe alive after we are gone.
+        unsafe {
+            libc::fcntl(read_fd, libc::F_SETFD, libc::FD_CLOEXEC);
+            libc::fcntl(write_fd, libc::F_SETFD, libc::FD_CLOEXEC);
+        }
+
+        let stdin = unsafe { Stdio::from_raw_fd(read_fd) };
+        match Command::new("/bin/sh")
+            .arg("-c")
+            .arg(format!("cat > /dev/null; kill -9 {} 2>/dev/null", pid))
+            .stdin(stdin)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+        {
+            Ok(reaper) => Ok(Handle { reaper: Some(reaper), write_fd }),
+            Err(e) => {
+                unsafe { libc::close(write_fd) };
+                Err(format!("could not start the watchdog for the sidecar: {}", e))
+            }
+        }
     }
 }
 
@@ -445,7 +629,11 @@ impl Sidecar {
             use std::os::unix::process::CommandExt;
             unsafe {
                 cmd.pre_exec(|| {
-                    // Die with the parent, whatever kills it.
+                    // Die with the parent, whatever kills it. `prctl` and
+                    // PR_SET_PDEATHSIG are Linux and only Linux; Darwin has no
+                    // equivalent, and the pipe watchdog below carries the same
+                    // guarantee there.
+                    #[cfg(target_os = "linux")]
                     libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL);
                     // Below normal priority, so the machine stays usable.
                     libc::nice(10);
@@ -455,13 +643,16 @@ impl Sidecar {
         }
 
         let child = cmd.spawn().map_err(|e| format!("cannot start {}: {}", opts.server, e))?;
-        if let Err(e) = watchdog::adopt(&child) {
-            // A sidecar we cannot guarantee to kill is worse than no sidecar.
-            let mut child = child;
-            let _ = child.kill();
-            let _ = child.wait();
-            return Err(e);
-        }
+        let watchdog = match watchdog::adopt(&child) {
+            Ok(w) => w,
+            Err(e) => {
+                // A sidecar we cannot guarantee to kill is worse than no sidecar.
+                let mut child = child;
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(e);
+            }
+        };
 
         let mut s = Sidecar {
             child: Some(child),
@@ -472,6 +663,7 @@ impl Sidecar {
             free_ram_before_gb: free,
             ready_seconds: 0.0,
             counted_down: false,
+            watchdog: Some(watchdog),
             agent: ureq::AgentBuilder::new()
                 .timeout_connect(Duration::from_secs(5))
                 .timeout(Duration::from_secs(3600))
@@ -715,6 +907,13 @@ impl Sidecar {
         // Only the first call counts down; finish() runs from wait_ready's
         // failure path, from stop(), and from Drop.
         let had_child = self.child.is_some();
+        // Before the child, not after: on macOS the watchdog is a process
+        // holding a `kill -9` for this pid, and standing it down first means
+        // that kill is never issued and so can never land on a process id the
+        // kernel has since handed to somebody else.
+        if let Some(mut w) = self.watchdog.take() {
+            w.release();
+        }
         if let Some(mut child) = self.child.take() {
             let _ = child.kill();
             let _ = child.wait();

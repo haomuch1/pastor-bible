@@ -3,9 +3,7 @@
 Thank you for looking at this. It is a free program that answers a question
 about scripture by finding the passages that bear on it and writing a short
 summary of them. Everything happens on your own computer and nothing you type
-leaves it.
-
-You do not need to know anything about computers to do this. What is wanted is
+leaves it. You do not need to know anything about computers: what is wanted is
 your judgement about the answers, not about the program.
 
 ## Putting it on your computer
@@ -14,33 +12,63 @@ your judgement about the answers, not about the program.
    https://github.com/haomuch1/pastor-bible/releases
 
 2. Take the newest entry on that page — the one at the top. Under it is a
-   short list of files, each with a line saying what it is for. Click the one
-   labelled **Windows installer — most people want this one**. It is a large
-   file and will take a few minutes to come down.
+   short list of files, each with a line saying what it is for.
 
-3. Open the file you downloaded.
+Then follow whichever of the two below matches your computer.
+
+### On a Windows PC
+
+3. Click the file labelled **Windows installer — most people want this one**.
+   It is a large file and will take a few minutes to come down. Open it.
 
 4. **Windows will stop you with a purple screen across the whole window** that
    says "Windows protected your PC". Nothing is wrong. It says that because
    nobody has paid Microsoft a fee to vouch for who made this. Click **More
    info**, and the same screen grows a **Run anyway** button. Click that.
 
-   The README on the releases page has pictures of both of those screens if you
-   would like to see them before you start.
+   The README on the releases page has pictures of both of those screens.
 
-5. The installer does the rest. It does not ask for a password and it does not
-   touch anything else on your computer.
+5. The installer does the rest. It asks for no password and touches nothing
+   else on your computer.
+
+### On a Mac
+
+3. First, which Mac is it? Apple menu (top left) → **About This Mac**. It says
+   either **Apple M1, M2, M3 or M4**, or it says **Intel**. Then click the file
+   labelled for that — **Mac installer — Apple Silicon** or **Mac installer —
+   Intel Macs**. It is large and will take a few minutes.
+
+4. Open the file you downloaded. A window appears with The Pastor Bible on the
+   left and the Applications folder on the right. **Drag the app onto
+   Applications.** The same window has a file called **READ ME FIRST** with
+   these steps in it, for when this page is not in front of you.
+
+5. Open your Applications folder and double-click The Pastor Bible.
+   **Your Mac will refuse to open it.** Nothing is wrong: nobody has paid Apple
+   a yearly fee to vouch for who made this, so macOS has no name to show you and
+   stops you once. What to do depends on your version, and About This Mac tells
+   you which you have:
+
+   - **macOS 15 (Sequoia) or newer** — click **Done** on the message. Then
+     Apple menu → **System Settings** → **Privacy & Security**, scroll down to
+     the line about The Pastor Bible, click **Open Anyway**, confirm with your
+     password or Touch ID, and click **Open**.
+   - **macOS 13 (Ventura) or 14 (Sonoma)** — in the Applications folder, hold
+     **Control** and click The Pastor Bible, choose **Open**, then click
+     **Open** again in the box that appears.
+
+   You do this once. After that it opens by double-clicking like anything else.
+   **You may be the first person ever to do this on a Mac** — nobody has yet.
+   If step 5 does not match what you see, please write down what it did say.
+   That is the most useful thing you could send back.
 
 ## The first time you open it
 
-The first time only, it fetches the part that writes the answers. It is about
-4.7 GB, which is a large download — perhaps ten or twenty minutes on a decent
-connection. It shows you the size before it begins, and if it is interrupted it
-picks up where it left off.
-
-After that it offers to check itself by answering three questions from start to
-finish while you watch. On most laptops that takes a few minutes. It has not
-frozen; it is working. You only ever do this once.
+The first time only, it fetches the part that writes the answers: about 4.7 GB,
+perhaps ten or twenty minutes on a decent connection. It shows you the size
+first and picks up where it left off if it is interrupted. Then it offers to
+check itself by answering three questions while you watch, which takes a few
+minutes on most laptops. It has not frozen; it is working. Both happen once.
 
 ## Asking it something
 
@@ -48,13 +76,12 @@ Type a question the way you would say it out loud — "What does the Bible say
 about anger?" — and press **Ask**. There is nothing to learn and no special
 words to use.
 
-The passages appear almost straight away and you can begin reading them at once.
-The written summary comes a while later, seconds or minutes depending on the
-computer. Click any passage to read it, or to open the whole chapter around it.
-**Stop** abandons a question you have grown tired of waiting for.
-
-Ask it whatever you would actually ask. Hard questions are more useful to us
-than easy ones.
+The passages appear almost straight away and you can begin reading at once. The
+written summary comes a while later — seconds or minutes, depending on the
+computer, and several minutes on an Intel Mac. Click any passage to read it or
+to open the whole chapter around it. **Stop** abandons a question you have grown
+tired of waiting for. Ask whatever you would actually ask; hard questions are
+more useful to us than easy ones.
 
 ## What we are asking you
 

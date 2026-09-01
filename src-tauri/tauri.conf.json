@@ -47,6 +47,11 @@
         "silent": true
       }
     },
+    "macOS": {
+      "minimumSystemVersion": "13.3",
+      "signingIdentity": "-",
+      "hardenedRuntime": false
+    },
     "linux": {
       "deb": {
         "depends": [

@@ -11,6 +11,7 @@ the process that reads the model and answers on the user's machine.
       installer ships into src-tauri/resources/llama/.
 
   python tools/fetch_llama.py win-cpu-x64          -> tools/llama/
+  python tools/fetch_llama.py macos-arm64          -> tools/llama-macos-arm64/
   python tools/fetch_llama.py win-vulkan-x64       -> tools/llama-vulkan/
   python tools/fetch_llama.py win-cpu-x64 --check  verify what is already here
 
@@ -41,6 +42,15 @@ llama-perplexity, llama-quantize and their implementation libraries. This app
 runs one of them. Only llama-server and the libraries it loads are bundled,
 which was established by removing files until it stopped starting: dropping
 mtmd (multimodal) makes it exit 0xC0000135, DLL not found, so mtmd stays.
+
+## macOS
+
+One archive per chip and no second archive: Metal is inside the arm64 build and
+absent from the x64 one, so there is no Vulkan-style "one extra file" trick to
+play. `--bundle` on a Mac picks the archive for the chip it is running on. The
+file list was read out of the binaries' own @rpath load commands rather than
+found by deletion, because no Mac exists in this project to delete things on;
+see MAC_KEEP below and docs/SIDECAR.md.
 
 Run by hand, and by the release workflow. The app never calls it.
 """
@@ -88,6 +98,25 @@ ASSETS = {
         'size': 16306861,
         'dest': 'llama-linux',
         'triple': 'x86_64-unknown-linux-gnu',
+        'exe': 'llama-server',
+    },
+    # macOS, added in P-MAC. Both were downloaded and hashed on the build
+    # machine; docs/SIDECAR.md records the contents and what was read out of
+    # them. The arm64 archive is the only one of the two with a Metal backend.
+    'macos-arm64': {
+        'file': 'llama-b10639-bin-macos-arm64.tar.gz',
+        'sha256': '9af0ea99b9221bd5db69c4341b442166d9697d35556708dba11ae44c85567a14',
+        'size': 10974544,
+        'dest': 'llama-macos-arm64',
+        'triple': 'aarch64-apple-darwin',
+        'exe': 'llama-server',
+    },
+    'macos-x64': {
+        'file': 'llama-b10639-bin-macos-x64.tar.gz',
+        'sha256': '72c8b2fccc0f670733c0f51b6f7e40a93246d61a5ff4f4fae4f1d64897c9c5be',
+        'size': 11043415,
+        'dest': 'llama-macos-x64',
+        'triple': 'x86_64-apple-darwin',
         'exe': 'llama-server',
     },
 }
@@ -169,7 +198,17 @@ def main():
     else:
         import tarfile
         with tarfile.open(archive) as t:
-            t.extractall(tmp)
+            # The macOS archives are mostly symlinks -- every library carries
+            # three names and only one of them is a real file. Python 3.12
+            # extracts with the 'data' filter by default, which is fine here,
+            # but 'fully_trusted' is what the older releases did and what these
+            # archives were read with, so ask for it where it exists rather
+            # than let the default drift under us. A Windows host cannot make
+            # symlinks at all; only bundle() cares, and it runs on macOS.
+            try:
+                t.extractall(tmp, filter='fully_trusted')
+            except TypeError:
+                t.extractall(tmp)
     # Some archives put everything under a single top-level directory.
     entries = os.listdir(tmp)
     if len(entries) == 1 and os.path.isdir(os.path.join(tmp, entries[0])):
@@ -228,6 +267,41 @@ DENY = {
     'libllama-quantize-impl.so',
 }
 
+# ------------------------------------------------------------------- macOS
+#
+# The Windows list was found by deleting files until llama-server stopped
+# starting. There is no Mac in this project to do that on, so this list was
+# read out of the binaries instead: every Mach-O in the archive was scanned for
+# its @rpath load-command strings, and the union of what llama-server and
+# everything it loads asks for is exactly the names below. @rpath resolves to
+# @loader_path and nothing else, so all of it lands in one directory beside the
+# server. docs/SIDECAR.md records the scan.
+#
+# Every name here is the middle ".0" name, which in the archive is a symlink to
+# a real "libfoo.0.22.0.dylib". The bundle stores real bytes under the name the
+# binaries actually ask for and ships no links at all: whether Tauri's resource
+# copying preserves a symlink is not something this project can test, and a
+# link that arrives as an empty file fails on the reader's Mac and on no
+# machine here. Nothing is duplicated -- the names nobody references are simply
+# not shipped.
+MAC_KEEP = [
+    'llama-server',
+    'libllama-server-impl.dylib',
+    'libllama.0.dylib',
+    'libllama-common.0.dylib',
+    'libmtmd.0.dylib',
+    'libggml.0.dylib',
+    'libggml-base.0.dylib',
+    'libggml-cpu.0.dylib',
+    'libggml-blas.0.dylib',
+    'libggml-rpc.0.dylib',
+]
+
+# Apple Silicon only. The x64 archive has no Metal backend in it and its
+# llama-server references none, so an Intel Mac answers on the processor
+# whatever card it has.
+MAC_KEEP_ARM64 = ['libggml-metal.0.dylib']
+
 PLATFORMS = {
     'win32': {
         'cpu': 'win-cpu-x64',
@@ -261,6 +335,13 @@ BUNDLE_DIR = os.path.join(ROOT, 'src-tauri', 'resources', 'llama')
 LICENSE_DIR = os.path.join(ROOT, 'src-tauri', 'licenses')
 LICENSES = ('llama.cpp-LICENSE.txt', 'LICENSE-LLVM-OpenMP.txt')
 
+# There is no libomp in either macOS archive, so the LLVM notice is a Windows
+# and Linux obligation and does not travel in the .app. llama.cpp's own MIT
+# text does, and the macOS archives carry a copy of it: it is byte-identical to
+# the vendored one, sha256 94f29bbe...f0f1d010d, checked on 2026-09-01. The
+# vendored copy is still what ships, so all three platforms carry one file.
+MAC_LICENSES = ('llama.cpp-LICENSE.txt',)
+
 
 def ensure(key):
     """Fetch and unpack one asset, returning the directory it is in."""
@@ -273,8 +354,72 @@ def ensure(key):
     return dest, spec
 
 
+def bundle_macos():
+    """Assemble the payload the .dmg ships, for this Mac's own chip.
+
+    One archive, not two: there is no separate Metal build the way there is a
+    separate Vulkan build on Windows and Linux. Metal is in the arm64 archive
+    and is absent from the x64 one.
+    """
+    import platform
+    machine = platform.machine()
+    if machine == 'arm64':
+        key, keep = 'macos-arm64', MAC_KEEP + MAC_KEEP_ARM64
+    elif machine == 'x86_64':
+        key, keep = 'macos-x64', list(MAC_KEEP)
+    else:
+        raise SystemExit('no macOS sidecar layout recorded for %s' % machine)
+
+    src, _ = ensure(key)
+
+    if os.path.isdir(BUNDLE_DIR):
+        shutil.rmtree(BUNDLE_DIR)
+    os.makedirs(BUNDLE_DIR)
+
+    kept, total = 0, 0
+    for name in keep:
+        link = os.path.join(src, name)
+        if not os.path.exists(link):
+            raise SystemExit(
+                '%s is not in %s. The bundle list was read out of the '
+                'binaries\' own @rpath load commands; a name missing from the '
+                'archive means the pinned build changed and the list has to be '
+                're-read, not patched.' % (name, src))
+        # realpath, because in the archive this is a symlink to the one real
+        # file. What is written out is that file's bytes under this name.
+        real = os.path.realpath(link)
+        out = os.path.join(BUNDLE_DIR, name)
+        shutil.copy2(real, out)
+        if name == 'llama-server':
+            os.chmod(out, 0o755)
+        kept += 1
+        total += os.path.getsize(out)
+
+    for name in MAC_LICENSES:
+        lic = os.path.join(LICENSE_DIR, name)
+        if not os.path.isfile(lic):
+            raise SystemExit(
+                '%s is missing from src-tauri/licenses/. llama.cpp is MIT and '
+                'the licence has to travel with the binaries, so the bundle '
+                'cannot be assembled without it.' % name)
+        shutil.copy2(lic, os.path.join(BUNDLE_DIR, name))
+        kept += 1
+        total += os.path.getsize(lic)
+
+    print('assembled %d files, %.1f MB, in %s' % (kept, total / float(1 << 20), BUNDLE_DIR))
+    print('  chip     %s (%s)' % (machine, key))
+    print('  server   llama-server')
+    print('  metal    %s' % ('yes, libggml-metal.0.dylib'
+                             if 'libggml-metal.0.dylib' in keep
+                             else 'no -- this archive has no Metal backend'))
+    print('  licences %s' % ', '.join(MAC_LICENSES))
+    return 0
+
+
 def bundle():
     """Assemble the payload the installer ships, for the host platform."""
+    if sys.platform == 'darwin':
+        return bundle_macos()
     key = 'win32' if sys.platform.startswith('win') else 'linux'
     if key == 'linux' and not sys.platform.startswith('linux'):
         raise SystemExit('no sidecar layout recorded for %s' % sys.platform)

@@ -261,6 +261,10 @@ export interface AppInfo {
   reference_hardware: string;
   paths: AppPaths;
   prompt_versions: [string, string][];
+  // One line shown before the reader chooses a model, on a build whose model
+  // server has no graphics path. Set only on an Intel Mac; null everywhere
+  // else, and the screens render nothing for null.
+  no_gpu_platform_note: string | null;
 }
 
 export interface HistoryRow {

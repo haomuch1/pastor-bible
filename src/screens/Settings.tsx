@@ -185,6 +185,12 @@ export function SettingsScreen({
           <div className="faint" style={{ marginTop: 6 }}>
             {chatModels.find((m) => m.id === settings.model)?.note}
           </div>
+          {/* Intel Mac only; see AppInfo.no_gpu_platform_note. */}
+          {info.no_gpu_platform_note && (
+            <div className="faint" style={{ marginTop: 6 }}>
+              {info.no_gpu_platform_note}
+            </div>
+          )}
           {busy && <Progress p={progress} />}
         </div>
 

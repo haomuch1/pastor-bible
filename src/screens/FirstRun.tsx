@@ -235,6 +235,14 @@ function DownloadStep({
         it carries on from where it stopped.
       </p>
 
+      {/* On an Intel Mac the model server has no graphics path at all -- the
+          x64 llama.cpp build carries no Metal backend -- so the reader is told
+          what that means for them before they commit to a 4.7 GB download,
+          not after. Null on every other build. */}
+      {info.no_gpu_platform_note && (
+        <div className="notice">{info.no_gpu_platform_note}</div>
+      )}
+
       {done && (
         <div className="notice good">
           The answering model is here and its checksum matches. Nothing needs downloading.
