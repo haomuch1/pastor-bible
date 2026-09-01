@@ -78,11 +78,12 @@ claim as well as the app.
     Mac installer — Apple Silicon (M1–M4, 2021 and newer)   The.Pastor.Bible_<version>_aarch64.dmg
     Mac installer — Intel Macs, pre-2021                    The.Pastor.Bible_<version>_x64.dmg
 
-**3. Open it and drag.** Double-click the `.dmg`. A window opens with The Pastor
-Bible on the left, the Applications folder on the right, and a file called
-**READ-ME-FIRST.rtf**. Drag the app onto Applications. Open READ ME FIRST — it
-says everything below, and it is there for the moment when this page is not in
-front of you.
+**3. Open it and drag.** Double-click the `.dmg`. A window opens holding three
+things: The Pastor Bible, a shortcut to your Applications folder, and a file
+called **READ-ME-FIRST.rtf**. Drag the app onto Applications. Open READ ME FIRST
+— it says everything below, and it is there for the moment when this page is not
+in front of you. (What that window *looks* like is one of the things nobody has
+seen yet; what is in it is checked by a machine on every release.)
 
 **4. Your Mac will refuse to open it the first time.** This is expected and it
 is not a sign that anything is wrong.

@@ -1,306 +1,235 @@
 # HANDOFF
 
-Session: P7-close-prep, release-note edits, asset labels and the reviewer guide
-Date: 2026-08-28
-Status: v1.0.2 is published as a pre-release. The repository is public. **The
-next thing to happen is the pastor's review, on a fresh install, using
-`docs/REVIEW-GUIDE.md`.** The laptop is still on 1.0.1 and stays there, so
-1.0.2 can be installed over it by hand; laptop steps 5 to 11 below are
-unchanged and still unrun.
+Session: P-MAC, macOS support on Apple Silicon and Intel
+Date: 2026-09-01
+Status: **v1.0.3 is published as a pre-release, and it is the first release
+with macOS installers.** Windows is unchanged from 1.0.2 in every respect that
+a reader can see. **No person has run the macOS build on a Mac.** Everything a
+machine can prove about it is proven on GitHub's own Apple Silicon and Intel
+runners; everything visual is unseen and is labelled as such wherever it
+appears.
+
+The laptop is still on 1.0.1. Its steps below are unchanged, now aimed at
+1.0.3.
+
+## The reversal
+
+Jared reverses the locked decision "macOS dropped (notarization requires a paid
+Apple account)". The pastors who are about to review this use MacBooks, some
+possibly Intel, and a reviewer who cannot install the program cannot review it.
+
+The premise of the original decision is untouched: notarisation does require a
+paid Apple Developer account, and this project will never have one. What
+changed is the conclusion. Notarisation is not required to *run* an app on
+macOS; it is required to run one without the reader being stopped once. So the
+app ships **ad-hoc signed** — a signature with nobody's name on it — the reader
+is stopped once, and the instructions say so plainly and say exactly what to do
+about it. Jared explicitly approves that trade. It is the same trade Windows
+already makes with SmartScreen, on a platform that makes it harder.
+
+## What macOS turned out to need
+
+Four things, none of which could have been found by reading code on this
+machine.
+
+**1. llama.cpp b10639 does not start on Apple Silicon.** The first CI run of
+this phase printed:
+
+    dyld: Library not loaded: /usr/lib/librdma.dylib
+      Referenced from: .../src-tauri/resources/llama/libggml-rpc.0.dylib
+
+`libggml-rpc` is a hard `LC_LOAD_DYLIB` of `llama-server`, so it cannot be left
+out the way the Windows bundle leaves it out — on Windows ggml opens it at run
+time, on macOS dyld demands it at launch — and in b10639 it hard-links a system
+library that does not exist before macOS 26. The binary's own
+`LC_BUILD_VERSION` says it supports 13.3.
+
+The load commands of every release between b10639 and b10700 were read. Hard
+through **b10693**; `LC_LOAD_WEAK_DYLIB`, which dyld tolerates when the file is
+absent, from **b10694**. The x64 build references `librdma` at neither tag,
+which is why the Intel job passed the step the Apple Silicon job failed.
+
+**macOS is pinned to b10694. Windows and Linux stay on b10639** — their
+installers are published and their behaviour measured. `tools/fetch_llama.py`
+carries a per-asset tag and prints which release each checksum matched, so the
+two cannot be confused. **This is a thing to remember at the next llama.cpp
+bump: there are two pins now, not one.**
+
+**2. The orphan guarantee had no macOS half.** `PR_SET_PDEATHSIG` is Linux and
+only Linux, and the code called it under `cfg(unix)`, which would not have
+compiled. It is now a pipe: the parent holds the write end close-on-exec, a
+`/bin/sh -c 'cat > /dev/null; kill -9 <pid>'` holds the read end as its stdin,
+and the instant the parent dies for any reason — Force Quit included — that
+shell kills the model server. On an orderly stop the reaper is killed first and
+the server second, so the `kill -9` is never issued at all. The existing
+hard-kill test in `sidecar_lifecycle` is the same test on all three platforms
+and **passes on both macOS runners**.
+
+**3. There is no `/proc` on Darwin.** Free memory, total memory, the
+processor's name and free disk all fell through to Linux code that reads
+`/proc` and would have reported zero — which would have made the free-memory
+check refuse every model load with "0.0 GB free". They now read `vm_stat`,
+`sysctl` and `statvfs`. `vm_stat` and `sysctl` are run as subprocesses rather
+than called through Mach: no Mac exists here to compile against, and an FFI
+signature `libc` does not export for Darwin is a build failure discovered at
+the end of a runner queue. They are read once per model load, not in a loop.
+
+**4. Resources are not beside the executable in a `.app`.** `--self-check`
+derived the resource directory from the binary's own folder, which is right on
+Windows and Linux and is `Contents/MacOS` on a Mac, where nothing lives. It
+would have reported index.db, the search model and the model server all missing
+inside a bundle that had all three. It now tries `Contents/Resources` as well.
 
 ## The release
 
-    https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.2
+    https://github.com/haomuch1/pastor-bible/releases/tag/v1.0.3
 
-Public, marked **Pre-release**, from tag `v1.0.2`, commit `f07e534`.
+Public, marked **Pre-release**, from tag `v1.0.3`.
 
-    The.Pastor.Bible_1.0.2_x64-setup.exe     467,259,322 bytes
-    The.Pastor.Bible_1.0.2_amd64.deb         515,159,954 bytes
-    The.Pastor.Bible_1.0.2_amd64.AppImage    574,913,016 bytes
-    SHA256SUMS.txt                                   306 bytes
+Assets, labels and checksums are in the section "The v1.0.3 assets" below.
 
-**The Windows installer's sha256:**
+## What is proven, and by what
 
-    bba7a7f30dccef747dcbfe75b7dff054374c4c5380b4746bed8b21834cba4656
+Both macOS jobs are `macos-15` and `macos-15-intel`, native, no
+cross-compilation and no Rosetta. GitHub still offers Intel runners, so the
+STEP 0 branch about cross-compiling never had to be taken.
 
-Downloaded from a shell with no credentials at all and hashed there, and
-`sha256sum -c SHA256SUMS.txt` verifies it, which it could not for v1.0.0.
+Each job, in order: fetch index.db, the search model and the sidecar by pinned
+checksum; refuse if a symlink reached the bundle; run `llama-server
+--list-devices` and print what it says; `npm run build` and `vitest`; the Rust
+suites; the hard-kill orphan test; `tauri build --bundles app`; record what
+`codesign` and `spctl` say about the bundle with a downloaded copy's quarantine
+flag on it; build the `.dmg`; assert the image holds the app, the Applications
+link and READ-ME-FIRST.rtf; copy the app out as a reader would and run its own
+binary with `--self-check`; fetch the smaller answering model by pinned
+checksum; ask one graded eval question end to end **through the app's own
+index.db, search model and model server**; require a verified answer with zero
+fabrications; then replace the app from the image and prove the reader's
+questions and downloaded model survived it.
 
-## This session, P7-close-prep
+## What is not proven, and cannot be here
 
-Metadata only. No installer was built, modified or renamed. In order: the
-superseding line added to the v1.0.0 and v1.0.1 notes, plain-words labels on
-every asset of all three releases and in the workflow that makes the next one,
-the stray 1.0.3 test installer deleted, and `docs/REVIEW-GUIDE.md` written.
-Details are under "Next: the pastor's review" below.
+- **Everything visual on macOS.** The disk image window, the Gatekeeper
+  dialogs, the app's own screens on a Mac. There are no macOS screenshots and
+  none is invented.
+- **The two Gatekeeper flows.** Written down from Apple's own documentation,
+  dated, and marked "not yet walked through on a real Mac" in README, in the
+  reviewer guide and in READ-ME-FIRST.rtf itself.
+- **macOS 13.3 and 14.** Both runners are macOS 15. 13.3 is what the binaries
+  declare, and b10639 is proof that a declaration is not a fact. README says
+  which is which.
+- **Whether a Metal device appears on real Apple Silicon.** The runner is a
+  virtual machine; what Metal does inside one says nothing about a MacBook. The
+  job records what `--list-devices` said rather than asserting it.
+- **The Linux packages, still.** Built in CI, checksums recorded, never run.
 
-Then three wrong sentences, all of them in front of the pastor who is about to
-read them: README's pre-release box named v1.0.0 when the pre-release is
-v1.0.2; README's `apt` line named a file that has never existed; and the
-release-notes template still promised the install screenshots as future work
-after P7-fix-2 embedded them. All three are corrected.
+## The laptop, next — now to 1.0.3
 
-## What the laptop found, in P7-fix-2
+Unchanged from the P7-close-prep list except the version. The laptop is on
+1.0.1 and stays there; install 1.0.3 over it **by hand, without uninstalling
+first**.
 
-The install of 1.0.1 over 1.0.0 worked and the app started. **The startup
-defect P7-fix-1 shipped for is fixed on a machine that never built this
-program**, which is the thing v1.0.1 existed to prove. Along the way it also
-confirmed, for the first time on a machine that could confirm it:
+1. Download `The.Pastor.Bible_1.0.3_x64-setup.exe` and run it. Expect
+   SmartScreen; it is a new file.
+2. **Write down every screen, in order.** Expected: "Updating from version
+   1.0.1 to version 1.0.3. Your saved questions and your downloaded model are
+   kept", a progress bar, then Installation Complete. Nothing should ask about
+   deleting anything.
+3. Add/Remove Programs: one entry, 1.0.1 gone, 1.0.3 there.
+4. Open it. The three questions from the 1.0.1 session must still be listed.
 
-    SmartScreen appeared, and matched what README describes
-    no WebView2 install was needed
-    the model downloaded at about 10 MB/s
-    the quick check passed in three to four minutes on the processor
-    a real question was answered in under two minutes
-
-Then a person clicking found three defects. No script here could have found
-any of them.
-
-### 1. The upgrade was five screens and two questions about deleting data
-
-Going from 1.0.0 to 1.0.1 the reader saw: "Already Installed" with two radio
-buttons defaulting to *uninstall first*, a licence page, the **old version's
-uninstaller** with a "Delete the application data" checkbox, the custom Yes/No
-from `installer.nsh`, "The Pastor Bible is running! Click OK to kill it",
-"Choose Install Location", and Finish.
-
-P6's upgrade test ran with `/S`. A silent installer shows no pages at all, so
-that test never saw a single one of them. A test that cannot see the thing it
-is testing is not a test of it.
-
-**What was measured first, because it decided the fix:** the already-published
-1.0.0 and 1.0.1 uninstallers run perfectly under `/S` -- exit 0 at once,
-nothing shown, install directory and Add/Remove entry gone, `user.db` and the
-4.7 GB model untouched. They never needed avoiding, only invoking properly.
-Tauri's template simply never passes `/S`.
-
-**The mechanism, and its cost.** Every screen above is decided before the
-install section starts, and all four of Tauri's installer hooks run inside it,
-so no hook could reach them. `bundle.windows.nsis.template` is the only
-supported extension point that can. `src-tauri/nsis-installer.nsi` is Tauri
-2.11.4's own template, pulled out of the CLI binary by
-`tools/extract_nsis_template.py` and verified before anything was changed:
-built from the unmodified extraction, the generated `installer.nsi` differed
-from Tauri's own by two `CreateDirectory` lines in a non-deterministic order
-and nothing else. Our changes are 135 lines, each bracketed by
-`; >>> PASTOR BIBLE` and `; <<<`.
-
-The cost is real and is the thing to remember: **a Tauri upgrade now needs
-those blocks re-applied and the screen-by-screen test re-run.**
-
-    python tools/extract_nsis_template.py --diff    ours against a fresh stock
-
-An upgrade now shows no reinstall, welcome, licence or location page, closes
-the running app quietly instead of offering to kill it, and runs the previous
-uninstaller with `/S`. A downgrade shows no page either and runs nothing --
-which closed a hazard nobody had noticed, because the stock page would have
-uninstalled the newer version *first* and only then been refused.
-
-The uninstaller asks **once**: the stock checkbox is gone, the worded question
-that names the folder and defaults to keeping stays.
-
-**Recorded, screen by screen, with the app running and nothing silent.**
-`tools/record-installer.ps1` reads the installer's own windows, because "the
-upgrade test passed" with no screen list is exactly what let this through.
-
-    1.0.1 -> 1.0.2    "Updating The Pastor Bible / Updating from version 1.0.1
-                       to version 1.0.2. Your saved questions and your
-                       downloaded model are kept."
-                      then "Installation Complete".
-                      Two pages, no dialog boxes. One Add/Remove entry at
-                      1.0.2, 29 files, user.db unchanged at 118,784 bytes,
-                      model untouched, running app closed without a word.
-    1.0.2 -> 1.0.2    the same, reading "Reinstalling version 1.0.2".
-    1.0.2 over 1.0.3  one message, "A newer version of The Pastor Bible is
-                      already on this computer", nothing changed.
-
-### 2. The memory message sent the reader looking for disk space
-
-The quick check failed with "needs 6.7 GB free, only 4.3 GB available". The
-reader took it for disk, uninstalled programs looking for room, and finally
-rebooted -- which fixed it, because it was memory all along.
-
-It now reads: *"The Pastor Bible needs about 6.7 GB of free memory to load the
-answering model, and this computer has 4.3 GB free right now. Close other
-programs or restart the computer, then try again."* It says memory twice, names
-what it was loading, says what to do, and never says space or disk. A test
-asserts all of that, including that the word "space" does not appear.
-
-Pressing the button again **did** retry -- the check re-measures on every
-attempt. What it did not do was look like it: it failed under identical
-conditions with identical words, which is indistinguishable from nothing
-happening. `TPB_FAKE_FREE_RAM_GB` now makes the path testable, the way
-`TPB_NO_GPU` does for graphics, and a test proves two attempts report two
-different readings. A failed attempt also drops the session, so the search
-model it loaded is not still holding a quarter of a gigabyte of the memory the
-message just called short.
-
-The disk figure disagreed with the installer's because they measure different
-things. This screen already measured the drive holding the app data directory,
-where the model goes; it just never said which drive. It names it now.
-
-### 3. "This computer" was wrong about graphics, twice in one sentence
-
-It said "No separate graphics card was found. The Pastor Bible does not use one
-yet" -- on a machine with an RTX 3050, from an app that has used graphics cards
-since P6. It was asking the OS for one display adapter and knew nothing about
-whether a model would fit on it.
-
-It now uses `llama-server --list-devices`, the same probe Settings > Compute
-uses, lists every device with its memory, and says what will happen: *"NVIDIA
-GeForce RTX 3050 Laptop GPU, 4.0 GB: too small for the standard model, which
-will run on the processor instead. The smaller model in Settings can use it."*
-Verified both ways on this machine: the real RTX 3080 reads "big enough", and
-`TPB_NO_GPU=1` reads "No graphics card was found that The Pastor Bible can use,
-so the processor will answer."
-
-## Also in P7-fix-2
-
-- **README 9.4 said the SmartScreen page is blue. It is purple.** Jared's
-  screenshots show it. README and PLAN 9.4 now say "a full-screen warning",
-  changed together as P1 did the last time that paragraph moved. Both
-  screenshots are embedded in README and the note promising them later is gone.
-- README's first-run section now says the quick check takes a few minutes on a
-  laptop processor, so a reader does not think it has hung.
-- DECISIONS corrects P6's in-place-upgrade claim. Its numbers were all true and
-  all measured with `/S`; what was verified was that a *silent* upgrade
-  preserves data, not what an upgrade *looks like*.
-
-## The laptop, next
-
-The laptop is on 1.0.1 and stays there. Install 1.0.2 over it **by hand,
-without uninstalling first** -- that is the whole point, and it is the first
-time this flow will be seen on a machine that did not build it.
-
-1. Download `The.Pastor.Bible_1.0.2_x64-setup.exe` from the release page and
-   run it. Expect SmartScreen again; it is a new file.
-2. **Write down every screen you see, in order.** Expected: one window that
-   says "Updating from version 1.0.1 to version 1.0.2. Your saved questions and
-   your downloaded model are kept", a progress bar, then Installation Complete.
-   Nothing should ask about deleting anything. Nothing should mention killing.
-3. Add/Remove Programs: one entry, 1.0.1 gone, 1.0.2 there.
-4. Open it. Your three questions from the 1.0.1 session must still be listed.
-
-Then the things the laptop has still never done:
-
-5. **Settings > Compute**: record the device name and which path it chose.
-   Expected: the 3050 named, and the processor chosen, because 4 GB is below
-   the 6,325 MiB the standard model needs.
-6. **Switch to the smaller model** in Settings, let it download, ask one
-   question. Expected: the graphics card, this time. It is close to the line --
-   the smaller model needs 2,994 MiB free of about 4,096 total -- so if it
-   chooses the processor and names a figure below that, the rule is working.
-7. **Turn on the Deuterocanon**, ask "What does Tobit say about giving to the
-   poor?", confirm the Deuterocanon tag appears.
-8. **Click a citation**, open Read chapter, delete one history entry, export as
-   a spreadsheet and open it.
-9. **Close the app**, then Task Manager: no `llama-server` and no
-   `pastor-bible` left behind.
-10. **Reboot**, reopen from the desktop icon, confirm the history is there.
-11. **Uninstall**, choose Keep. There should be exactly **one** question about
-    your saved questions, in words, defaulting to keeping them. Reinstall and
-    confirm the history came back.
+Then the things the laptop has still never done, unchanged: **5.** Settings >
+Compute, record the device and the path chosen. **6.** Switch to the smaller
+model, download, ask one question. **7.** Turn on the Deuterocanon, ask about
+Tobit, confirm the tag. **8.** Click a citation, Read chapter, delete a history
+entry, export a spreadsheet. **9.** Close, then Task Manager: no `llama-server`
+and no `pastor-bible`. **10.** Reboot, reopen, confirm history. **11.**
+Uninstall, choose Keep; exactly one worded question, defaulting to keeping.
 
 If it will not start:
 
     "%LOCALAPPDATA%\The Pastor Bible\pastor-bible.exe" --self-check
 
-writes `%APPDATA%\io.github.haomuch1.pastorbible\self-check.txt` listing
-everything the program needs before it can show anything.
+## The first Mac install — a guided script, for a phone call
 
-## Next: the pastor's review
+This is the piece of work that matters most now, and it needs a person with a
+Mac. **Do it on the phone with the pastor, or with anyone who has a Mac.** The
+point is not to confirm it works; the point is to find out what it actually
+looks like, because nobody knows.
 
-A fresh install of 1.0.2 on a machine that has never had it, given to someone
-who reads scripture for a living. The gold lists were never reviewed by a
-pastor -- docs/EVAL.md says so in those words -- and that is the largest
-unexamined claim this project makes.
+Before sending anyone a link: **ask which Mac they have.** Apple menu → About
+This Mac. "Apple M1/M2/M3/M4" means the Apple Silicon file; "Intel" means the
+Intel one. Send the link and the name of the file, not just the link.
 
-**What to hand them: `docs/REVIEW-GUIDE.md`.** One page, no jargon, no version
-numbers: the releases page, the file labelled "Windows installer", the purple
-warning and Run anyway, the 4.7 GB first-run download and the few-minute
-self-check, how to ask a question, and the three questions their judgement is
-wanted on --
+On the call, in order:
+
+1. Ask them to read out what About This Mac says — the chip **and the macOS
+   version**. Write both down. Everything below depends on the version.
+2. Watch them download and open the `.dmg`. **Ask them to describe the window
+   before they touch anything**, and to take a screenshot of it (Shift-Cmd-4,
+   then space, then click the window). This is the first time anybody will have
+   seen the disk image. Ask specifically: is there a background picture with
+   words on it, or a plain window? Are the three items where they should be?
+3. Have them read READ-ME-FIRST.rtf **aloud**. Anything that makes them pause
+   is a defect in the writing.
+4. Drag to Applications, then double-click. **Screenshot every dialog**,
+   including Gatekeeper's, and write down its exact wording — the title, the
+   body, and the buttons. Compare it against what README says. If it does not
+   match, README is wrong and the words the Mac used are the ones to keep.
+5. Walk the Open Anyway or Control-click path for their version. Screenshot
+   System Settings > Privacy & Security if they get there. Note whether the
+   button was where README says it is.
+6. First run: note the download time and, more importantly, **the answer time
+   for their first real question**, and whether Settings > Compute names a
+   device. On an Intel Mac, check that the "no graphics card" line actually
+   appears on the download screen and in Settings.
+7. Ask them to close the app and, if they can, check Activity Monitor for a
+   stray `llama-server`.
+
+Then README gets real Mac pictures, and the "not yet installed by a person"
+sentence comes out of it — and not before.
+
+## The pastor's review
+
+Unchanged and still the next thing. `docs/REVIEW-GUIDE.md` is what they are
+handed; it now carries both install paths, and a reader follows only the one
+for their computer. The three judgement questions are untouched:
 
     Does any answer say something the cited passages don't say?
     Is any passage you'd expect for a question missing?
     Does any wording in the app feel wrong for someone in your position?
 
-It closes by telling them to send problems to Jared directly or file an issue.
-It replaces "no instructions beyond the README" as the plan for this review: the
-README is written for someone installing a program, and the first two questions
-above are the point of the exercise.
-
-The release page now names each file in plain words. Every asset on v1.0.0,
-v1.0.1 and v1.0.2 carries a label -- "Windows installer -- most people want
-this one (The.Pastor.Bible_1.0.2_x64-setup.exe)", the two Linux ones, and
-"Checksums for verifying your download" -- set through the assets API, so no
-filename, byte or checksum changed and `SHA256SUMS.txt` still matches what a
-reader downloads. Verified anonymously on all three pages, and v1.0.2's three
-installers were downloaded with no credentials and passed `sha256sum -c`.
-`.github/workflows/release.yml` sets the same labels on every future release,
-in a step after the publish step, so this is not a thing to remember. GitHub's
-own two "Source code" entries cannot be removed or labelled.
-
-v1.0.0 and v1.0.1 now open with one line: "Superseded by v1.0.2. Do not run
-this older installer if a newer version is installed -- it will remove the
-newer version before refusing. Your saved questions and downloaded model are
-not affected." It says the "NOT FIXABLE" hazard recorded in DECISIONS where
-the person who would walk into it is standing -- on the page they would have
-to be on to do it. Notes only; assets and tags untouched.
-
 ## The two paths
 
-**Pass** -- take the pre-release mark off 1.0.2 and finish it:
+**Pass** — take the pre-release mark off 1.0.3:
 
-    gh release edit v1.0.2 --repo haomuch1/pastor-bible \
-      --prerelease=false --title "The Pastor Bible 1.0.2"
+    gh release edit v1.0.3 --repo haomuch1/pastor-bible \
+      --prerelease=false --title "The Pastor Bible 1.0.3"
 
-Then drop the pre-release note from README's install section. Leave v1.0.0 and
-v1.0.1 marked pre-release permanently: 1.0.0 does not start on a clean machine,
-and 1.0.1's upgrade asks the two questions this release removed. SignPath is
-P8's, in its own session.
+Then drop the pre-release note from README's install section. Leave v1.0.0,
+v1.0.1 and v1.0.2 marked pre-release permanently. SignPath is P8's.
 
-**Fail** -- fix and ship **v1.0.3**. No published version is ever recreated.
+**Fail** — fix and ship **v1.0.4**. No published version is ever recreated.
 
-## Still not verified
+## Building here
 
-- **Everything in steps 5 to 11 above.** The laptop has never seen the Compute
-  readout, the smaller model, the Deuterocanon tag, the export, or the orphan
-  check after closing.
-- **The Linux packages have never been run.** Built in CI, checksums recorded,
-  no Linux machine here.
-- **A deliberate downgrade from the published 1.0.1 installer.** Someone who
-  has 1.0.2 and then runs the published 1.0.1 gets the old flow, which
-  uninstalls 1.0.2 before refusing the downgrade, leaving no program installed
-  -- their questions and model survive, and reinstalling fixes it. The 1.0.1
-  installer is published and cannot be changed; the v1.0.0 and v1.0.1 release
-  notes now warn about it in their first line, which is the only place the
-  warning can reach that person.
-- **The uninstaller's single question, clicked through.** The stock checkbox is
-  observed gone; the worded question's presence and its keep-by-default are
-  proven by the `/S` run, in which the data survived, and by screenshot 31 from
-  P6. Nobody has re-recorded the click-through since the checkbox was removed.
-- **Everything visual is still Jared's.**
-
-## Housekeeping
-
-`docs/pastor-bible-history.txt` was Jared's own exported history, untracked and
-never in any commit. It was deleted on 2026-08-28. The line in
-`.git/info/exclude` stays, so that a future export dropped in the same place
-still cannot be committed by accident.
-
-`src-tauri/target/release/bundle/nsis/` held a stray `1.0.3` installer built
-only to test the downgrade refusal. It was deleted on 2026-08-28. The 0.9.0,
-0.9.1, 1.0.1 and 1.0.2 installers are still in that directory; they are build
-output, ignored by git, and about 1.8 GB between them.
-
-## Running and building here
+Unchanged on Windows:
 
     src-tauri\target\release\pastor-bible.exe          the built app
     npx tauri build --bundles nsis                     the installer
     tools\clean-machine-check.ps1                      the installed app, honestly
     tools\record-installer.ps1                         every screen an installer shows
     tools\extract_nsis_template.py --diff              what we changed in Tauri's template
+
+On a Mac:
+
+    python3 tools/fetch_llama.py --bundle              picks the archive for this chip
+    npx tauri build --bundles app
+    bash tools/make_dmg.sh "src-tauri/target/release/bundle/macos/The Pastor Bible.app" \
+      "out/The Pastor Bible_<version>_<aarch64|x64>.dmg"
+
+`tools/mac_dmg_background.py` redraws `src-tauri/dmg/background.png`; the icon
+positions in it and in `make_dmg.sh` must agree.
 
 From a fresh clone, three things must be fetched before a build; none is
 committed, and each is checksummed:
@@ -310,8 +239,6 @@ committed, and each is checksummed:
     gh release download index-0.2.0 --pattern index.db --dir src-tauri/resources
 
 `npm test` runs the frontend tests; `cargo test --manifest-path
-src-tauri/core/Cargo.toml` runs the rest. `tools/click.ps1` drives the window --
-WebView2 drops a zero-duration synthetic press, which is why `shot.ps1`'s own
-click cannot be trusted for anything but screenshots.
+src-tauri/core/Cargo.toml` runs the rest.
 
 Read PLAN.md, DECISIONS.md, API.md, SIDECAR.md and this file before starting.
