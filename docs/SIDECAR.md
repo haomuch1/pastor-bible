@@ -222,6 +222,23 @@ worst possible place to learn it.
 Neither is signed by anybody. This project adds no Developer ID either; see
 DECISIONS for the ad-hoc decision and README for what the reader sees.
 
+What macOS says about the bundle Tauri produces, read off a macOS 15 runner on
+2026-09-01 rather than described:
+
+    codesign -dvvv     Signature=adhoc, flags=0x2(adhoc), TeamIdentifier=not set
+                       Sealed Resources version=2 rules=13 files=14
+    codesign --verify  valid on disk; satisfies its Designated Requirement
+    spctl --assess     rejected
+                       (on a copy carrying a downloaded file's quarantine flag)
+
+`rejected` is the expected answer and the wanted one. A bundle whose signature
+had been broken — by editing it after signing — assesses differently and
+produces the "is damaged and can't be opened" dialog instead of the
+unidentified-developer one, which is why `tools/make_dmg.sh` copies the `.app`
+in and does nothing else to it. None of this is evidence about the *wording* of
+the dialog a reader sees; that is Apple's documentation, cited in README, and
+nobody here has seen it.
+
 ### Binary name and flags
 
 `llama-server`, the same name as Linux, and the same flags — nothing in the

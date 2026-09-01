@@ -51,9 +51,32 @@ for f in "$APP" "$BACKGROUND" "$README"; do
 done
 
 STAGE="$(mktemp -d)"
-MNT="$(mktemp -d)"
 RW="$(mktemp -u).dmg"
-trap 'hdiutil detach "$MNT" -force >/dev/null 2>&1 || true; rm -rf "$STAGE" "$MNT" "$RW"' EXIT
+MNT=""
+trap '[ -n "$MNT" ] && hdiutil detach "$MNT" -force >/dev/null 2>&1; rm -rf "$STAGE" "$RW"; true' EXIT
+
+# Mount the image and print where it landed.
+#
+# Deliberately NOT -mountpoint into a temp directory, which is what the first
+# version of this script did. Finder only knows about volumes under /Volumes,
+# so scripting it against an image mounted anywhere else fails with
+#
+#     Finder got an error: Can't get disk "The Pastor Bible". (-1728)
+#
+# and the whole layout is silently lost. That is what a macOS 15 runner
+# reported on 2026-09-01. Letting hdiutil choose puts it under /Volumes, and
+# the name it actually used is read back rather than assumed -- if something
+# else is already mounted under this name, macOS appends a number, and the
+# AppleScript has to address the disk by the name it really has.
+mount_rw() {
+  # The braces keep a grep that matches nothing from killing the script under
+  # pipefail: "it did not mount" is a message this script wants to print, not a
+  # silent death inside a command substitution.
+  MNT="$(hdiutil attach "$RW" -readwrite -noverify -noautoopen |
+         { grep -o '/Volumes/.*' || true; } | tail -1)"
+  [ -n "$MNT" ] || { echo "::error::the image did not mount under /Volumes"; exit 1; }
+  VOL_MOUNTED="$(basename "$MNT")"
+}
 
 echo "staging $APP_NAME"
 ditto "$APP" "$STAGE/$APP_NAME"
@@ -70,14 +93,14 @@ echo "creating a $SIZE_MB MB read-write image"
 hdiutil create -volname "$VOL" -srcfolder "$STAGE" -fs HFS+ \
   -format UDRW -size "${SIZE_MB}m" -ov "$RW" >/dev/null
 
-hdiutil attach "$RW" -readwrite -noverify -noautoopen -mountpoint "$MNT" >/dev/null
-echo "mounted at $MNT:"
+mount_rw
+echo "mounted at $MNT (volume \"$VOL_MOUNTED\"):"
 ls -la "$MNT"
 
 LAYOUT=unknown
 if osascript <<APPLESCRIPT
 tell application "Finder"
-  tell disk "$VOL"
+  tell disk "$VOL_MOUNTED"
     open
     set current view of container window to icon view
     set toolbar visible of container window to false
@@ -110,11 +133,12 @@ fi
 
 sync || true
 hdiutil detach "$MNT" >/dev/null
+MNT=""
 
 # A .DS_Store is the only evidence, short of a person looking, that the layout
 # was written at all. It is checked after the unmount because that is when
 # Finder has finished flushing it.
-hdiutil attach "$RW" -readonly -noverify -noautoopen -mountpoint "$MNT" >/dev/null
+mount_rw
 # `[ -f x ] && VAR=y` is an and-list, and under `set -e` a false test aborts
 # the script -- which would turn "the layout did not happen" into "the build
 # failed", the opposite of what this reporting is for.
@@ -123,13 +147,14 @@ if [ -f "$MNT/.DS_Store" ]; then DS="present, $(stat -f%z "$MNT/.DS_Store") byte
 BG=absent
 if [ -f "$MNT/.background/background.png" ]; then BG=present; fi
 hdiutil detach "$MNT" >/dev/null
+MNT=""
 
 rm -f "$OUT"
 hdiutil convert "$RW" -format UDZO -imagekey zlib-level=9 -o "$OUT" >/dev/null
 
 echo
 echo "wrote $OUT ($(stat -f%z "$OUT") bytes)"
-echo "  volume name       $VOL"
+echo "  volume name       $VOL (mounted as $VOL_MOUNTED)"
 echo "  window            ${WIN_W}x${WIN_H}, icons 128"
 echo "  contents          $APP_NAME, Applications, $README_NAME"
 echo "  background file   $BG"
