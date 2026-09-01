@@ -471,6 +471,16 @@ jobs:
           echo "--- where it keeps the reader's data ---"
           ls -la "$HOME/Library/Application Support/io.github.haomuch1.pastorbible/"
 
+      - name: build the question harness, before anything is measured
+        run: |
+          # Not inside the end-to-end step. `cargo run --release` compiled the
+          # core crate there, which took 57 seconds and filled the memory that
+          # `purge` had just freed: the step measured 4.81 GB, compiled, and
+          # then loaded the model with 3.4 GB. Compiling first means the
+          # measurement and the load are next to each other.
+          cargo build --release --manifest-path src-tauri/core/Cargo.toml \
+            --locked --bin pastor-bible-cli
+
       - name: fetch the smaller answering model by pinned checksum
         run: |
           mkdir -p "$RUNNER_TEMP/models"
@@ -514,7 +524,12 @@ jobs:
           echo "the app would read $FREE GB free"
           echo "free_gb=$FREE" >> "$GITHUB_OUTPUT"
 
-          # The smaller model is 1.71 GB and the rule adds 2.0 GB of headroom.
+          # The smaller model is 1.71 GB and the rule adds 2.0 GB of headroom,
+          # so 3.7 GB has to be free *when the chat model loads* -- not now.
+          # Between here and there the pipeline opens the 384 MB index and runs
+          # the embedding server, and on 2026-09-01 that cost about a gigabyte:
+          # 4.81 GB free here became 3.4 GB there, and the guard refused. So the
+          # threshold is 5.0 and not 3.8.
           # If purge did not get us there, the guard is overridden **for this
           # step only**, loudly, and the override is reported in the job log and
           # in docs/SIDECAR.md. What is being worked around is a build machine
@@ -524,13 +539,14 @@ jobs:
           # about proving the pipeline answers a real question on Apple Silicon;
           # it is not a test of the memory check, and a memory check that
           # stopped it would prove nothing about either.
-          if python3 -c "import sys; sys.exit(0 if float('$FREE') < 3.8 else 1)"; then
+          if python3 -c "import sys; sys.exit(0 if float('$FREE') < 5.0 else 1)"; then
             echo "TPB_FAKE_FREE_RAM_GB=4.0" >> "$GITHUB_ENV"
             echo "overridden=yes" >> "$GITHUB_OUTPUT"
-            echo "::warning::Only $FREE GB free after purge, and the smaller model \
-            needs 3.7. The free-memory guard is overridden for the end-to-end step on this \
-            runner, which has 7 GB -- less than any Mac Apple sells. The guard itself is \
-            unchanged and was observed refusing on this machine."
+            echo "::warning::Only $FREE GB free after purge, and about a gigabyte of \
+            that goes on the index and the embedding pass before the chat model loads. The \
+            free-memory guard is overridden for the end-to-end step on this runner, which \
+            has 7 GB -- less than any Mac Apple sells. The guard itself is unchanged and \
+            was observed refusing on this machine, twice."
           else
             echo "overridden=no" >> "$GITHUB_OUTPUT"
             echo "$FREE GB free is enough; the guard runs as it would on a reader's Mac"
@@ -549,8 +565,7 @@ jobs:
           export TPB_LLAMA_SERVER="$RES/llama/llama-server"
           export TPB_MODEL_DIR="$RUNNER_TEMP/models"
           ls -la "$RES" "$RES/llama"
-          time cargo run --release --manifest-path src-tauri/core/Cargo.toml --locked \
-            --bin pastor-bible-cli -- \
+          time ./src-tauri/target/release/pastor-bible-cli \
             ask "What does the Bible say about anxiety and worry?" \
             --model fallback --json answer.json
 

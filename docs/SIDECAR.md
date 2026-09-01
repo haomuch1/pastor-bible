@@ -280,7 +280,17 @@ The workflow empties the file cache with `purge` before the end-to-end test: the
 which is a build machine's problem and not a reader's. It then reads what the app
 itself would read, by the same rule, and prints it. **If that is still short it
 overrides the guard for that one step, and says so in the job log and in the
-end-of-run report.** What is being worked around is a machine smaller than
+end-of-run report.**
+
+Two things were learned about doing that, both by getting it wrong first. The
+harness is compiled *before* the memory is measured, not inside the step that
+loads the model: `cargo run --release` spent 57 seconds compiling in between,
+and gave back the memory `purge` had just freed. And the figure that has to
+clear 3.7 GB is what is free **when the chat model loads**, not when the step
+starts — the pipeline opens the 384 MB index and runs the embedding server
+first, which on 2026-09-01 cost about a gigabyte: 4.81 GB free at the top of the
+step was 3.4 GB by the time the model was asked for, and the guard refused. The
+threshold is therefore 5.0 GB and not 3.8. What is being worked around is a machine smaller than
 anything this ships to — the Apple Silicon runner has 7 GB and the smallest
 Apple Silicon MacBook Apple sells has 8 — and not the rule itself, which is
 unchanged, which the `low_memory` suite tests, and which was watched doing its
