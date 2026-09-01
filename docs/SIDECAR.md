@@ -82,25 +82,65 @@ build machine, by downloading them and reading their bytes. Nothing here was
 recalled and nothing was taken from GitHub's own digest field without checking
 it.
 
-    asset       llama-b10639-bin-macos-arm64.tar.gz
-    sha256      9af0ea99b9221bd5db69c4341b442166d9697d35556708dba11ae44c85567a14
-    size        10,974,544 bytes
-    asset       llama-b10639-bin-macos-x64.tar.gz
-    sha256      72c8b2fccc0f670733c0f51b6f7e40a93246d61a5ff4f4fae4f1d64897c9c5be
-    size        11,043,415 bytes
+    release tag b10694
+    commit      2bf04151520843e9ea5694e655e7d4a537973b54
+    asset       llama-b10694-bin-macos-arm64.tar.gz
+    sha256      e5423012dfb20fefe586906a24ade087632b89660abfdab810b2612557f2e081
+    size        11,032,471 bytes
+    asset       llama-b10694-bin-macos-x64.tar.gz
+    sha256      b52b861baf8540d23b7b0aecf2a36994749256796d3d119a002fd522bd02cabb
+    size        11,094,939 bytes
 
-Both unpack to a single directory `llama-b10639/`: 60 entries on arm64, 56 on
-x64, of which 18 and 16 respectively are symlinks between the three names each
-library carries. Each archive contains llama.cpp's own `LICENSE`, 1,078 bytes,
-sha256 `94f29bbe...f0f1d010d` — **byte-identical to the copy already vendored in
-`src-tauri/licenses/llama.cpp-LICENSE.txt`**, which the Windows and Linux
-bundles ship because the Windows archive carries no licence text at all. The
-same file therefore ships on all three platforms and is now confirmed against
-upstream rather than merely believed.
+### Why macOS is on a later release than Windows and Linux
+
+**b10639's Apple Silicon build cannot start on any macOS before 26.** This was
+not deduced; a runner said so, in the first CI run of this phase:
+
+    dyld[3471]: Library not loaded: /usr/lib/librdma.dylib
+      Referenced from: .../src-tauri/resources/llama/libggml-rpc.0.dylib
+      Reason: tried: '/usr/lib/librdma.dylib' (no such file), ...
+
+That is macOS 15 refusing a binary whose own `LC_BUILD_VERSION` claims macOS
+13.3. `libggml-rpc` is a hard `LC_LOAD_DYLIB` of `llama-server`, of
+`libllama-server-impl` and of `libggml`, so it cannot simply be left out — the
+Windows bundle drops the RPC backend, but on Windows it is loaded at run time
+and on macOS it is linked at launch. And in b10639 `libggml-rpc` itself carries
+a hard `LC_LOAD_DYLIB` on `/usr/lib/librdma.dylib`, a system library that
+llama.cpp's own Apple Silicon builder has (it runs macOS 26, SDK 26.5) and that
+no earlier macOS does.
+
+The load commands of every release between b10639 and b10700 were read. The link
+is hard through **b10693** and weak — `LC_LOAD_WEAK_DYLIB`, which dyld tolerates
+when the file is absent — from **b10694** onward. The x64 build does not
+reference `librdma` at either tag, which is why the Intel job passed the same
+step that the Apple Silicon job failed, and why this was invisible until an arm64
+machine ran the binary.
+
+So the macOS assets are pinned to b10694 and Windows and Linux stay on b10639.
+Their installers are published, their behaviour is measured, and nothing about
+this defect touches them. `tools/fetch_llama.py` carries a per-asset tag for
+exactly this, and prints which release each checksum matched.
+
+Everything else about b10694 was checked against b10639 before pinning it: same
+file names, same `.0.dylib` reference names, `LC_BUILD_VERSION minos 13.3.0` on
+both chips, and llama.cpp's `LICENSE` still byte-identical to the vendored copy.
+The only external libraries either build needs beyond `libSystem` and `libc++`
+are `CoreFoundation`, `Security`, `Accelerate`, `libobjc`, and — on arm64 only —
+`Foundation`, `Metal` and `MetalKit`. All of those have existed since long
+before 13.3.
+
+Both archives unpack to a single directory `llama-b10694/`: 60 entries on arm64,
+56 on x64, of which 18 and 16 respectively are symlinks between the three names
+each library carries. Each archive contains llama.cpp's own `LICENSE`, 1,078
+bytes, sha256 `94f29bbe...f0f1d010d` — **byte-identical to the copy already
+vendored in `src-tauri/licenses/llama.cpp-LICENSE.txt`**, which the Windows and
+Linux bundles ship because the Windows archive carries no licence text at all.
+The same file therefore ships on all three platforms and is now confirmed
+against upstream rather than merely believed.
 
 ### Metal is on Apple Silicon and nowhere else
 
-The arm64 archive carries `libggml-metal.0.22.0.dylib` (2,062,024 bytes) and
+The arm64 archive carries `libggml-metal.0.22.0.dylib` (2,078,712 bytes) and
 `ggml-metal-tuning`. **The x64 archive carries no Metal backend of any kind**,
 and its `llama-server` does not reference one. This is not an inference from
 hardware: it is the file list, and it is the load commands.
@@ -143,8 +183,13 @@ llama.cpp's own CLI tools need — `libllama-cli-impl`, `libllama-bench-impl`,
 `libllama-perplexity-impl` and the rest — is shipped, because the tools are not
 shipped either.
 
-    arm64   llama-server + 10 libraries + LICENSE   12 files, 24,859,070 bytes
-    x64     llama-server +  9 libraries + LICENSE   11 files, 24,283,670 bytes
+    arm64   llama-server + 10 libraries + LICENSE   12 files, 24,983,694 bytes
+    x64     llama-server +  9 libraries + LICENSE   11 files, 24,406,374 bytes
+
+`libggml-rpc` is in that list and is not wanted: this app never uses the RPC
+backend and the Windows bundle drops it. On macOS it cannot be dropped, because
+it is a hard load command of the server rather than something ggml opens at run
+time. It is the reason for the tag above.
 
 `libomp` does not exist in either archive, so `LICENSE-LLVM-OpenMP.txt` is a
 Windows and Linux obligation only and is not shipped in the .app.
@@ -155,6 +200,12 @@ Read from `LC_BUILD_VERSION` in the shipped binaries:
 
     arm64  minos 13.3.0   sdk 26.5.0
     x64    minos 13.3.0   sdk 15.5.0
+
+That declared floor is what the binary claims, and b10639 proved a claim is not
+a fact: it declared 13.3 and would not start on 15. The floor this project
+states is the one it has evidence for — a CI job that builds, runs and asks a
+real question on a macOS 15 machine of each chip. **13.3 and 14 are unverified
+by anybody**, and README does not pretend otherwise.
 
 llama.cpp builds its Intel release against the same 13.3 deployment target as
 its Apple Silicon one, so the Intel build buys no older-macOS support. That is

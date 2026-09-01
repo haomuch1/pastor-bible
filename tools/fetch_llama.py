@@ -45,6 +45,10 @@ mtmd (multimodal) makes it exit 0xC0000135, DLL not found, so mtmd stays.
 
 ## macOS
 
+Pinned to a *later* llama.cpp release than Windows and Linux -- see MAC_TAG
+below, which carries the reason: b10639's Apple Silicon build cannot start on
+any macOS before 26.
+
 One archive per chip and no second archive: Metal is inside the arm64 build and
 absent from the x64 one, so there is no Vulkan-style "one extra file" trick to
 play. `--bundle` on a Mac picks the archive for the chip it is running on. The
@@ -69,7 +73,32 @@ ROOT = os.path.dirname(HERE)
 
 TAG = 'b10639'
 COMMIT = '5e6a37cb115dc1074e274ac004373f5661909695'
-BASE = 'https://github.com/ggml-org/llama.cpp/releases/download/%s/' % TAG
+
+# macOS is pinned to a later release than Windows and Linux, and this is not
+# tidiness that got away from somebody. In b10639 the Apple Silicon build of
+# libggml-rpc carries a *hard* LC_LOAD_DYLIB on /usr/lib/librdma.dylib, a system
+# library that does not exist before macOS 26, and libggml-rpc is a hard
+# dependency of llama-server, so the server cannot start at all:
+#
+#   dyld: Library not loaded: /usr/lib/librdma.dylib
+#     Referenced from: .../libggml-rpc.0.dylib
+#
+# That is what a macOS 15 runner printed on 2026-09-01, in the first CI run of
+# this phase, on a build whose own LC_BUILD_VERSION claims macOS 13.3. b10694 is
+# the first release in which that link is LC_LOAD_WEAK_DYLIB, which dyld
+# tolerates when the file is absent; b10693 still hard-links it. Found by
+# reading the load commands of every release between the two. The x64 build does
+# not reference librdma at either tag.
+#
+# Windows and Linux stay on b10639: their installers are published, their
+# behaviour is measured, and nothing about this defect touches them.
+MAC_TAG = 'b10694'
+MAC_COMMIT = '2bf04151520843e9ea5694e655e7d4a537973b54'
+
+
+def base_for(spec):
+    return ('https://github.com/ggml-org/llama.cpp/releases/download/%s/'
+            % spec.get('tag', TAG))
 
 ASSETS = {
     'win-cpu-x64': {
@@ -100,21 +129,24 @@ ASSETS = {
         'triple': 'x86_64-unknown-linux-gnu',
         'exe': 'llama-server',
     },
-    # macOS, added in P-MAC. Both were downloaded and hashed on the build
-    # machine; docs/SIDECAR.md records the contents and what was read out of
-    # them. The arm64 archive is the only one of the two with a Metal backend.
+    # macOS, added in P-MAC, on MAC_TAG rather than TAG; see above for why.
+    # Both were downloaded and hashed on the build machine; docs/SIDECAR.md
+    # records the contents and what was read out of them. The arm64 archive is
+    # the only one of the two with a Metal backend.
     'macos-arm64': {
-        'file': 'llama-b10639-bin-macos-arm64.tar.gz',
-        'sha256': '9af0ea99b9221bd5db69c4341b442166d9697d35556708dba11ae44c85567a14',
-        'size': 10974544,
+        'tag': MAC_TAG,
+        'file': 'llama-b10694-bin-macos-arm64.tar.gz',
+        'sha256': 'e5423012dfb20fefe586906a24ade087632b89660abfdab810b2612557f2e081',
+        'size': 11032471,
         'dest': 'llama-macos-arm64',
         'triple': 'aarch64-apple-darwin',
         'exe': 'llama-server',
     },
     'macos-x64': {
-        'file': 'llama-b10639-bin-macos-x64.tar.gz',
-        'sha256': '72c8b2fccc0f670733c0f51b6f7e40a93246d61a5ff4f4fae4f1d64897c9c5be',
-        'size': 11043415,
+        'tag': MAC_TAG,
+        'file': 'llama-b10694-bin-macos-x64.tar.gz',
+        'sha256': 'b52b861baf8540d23b7b0aecf2a36994749256796d3d119a002fd522bd02cabb',
+        'size': 11094939,
         'dest': 'llama-macos-x64',
         'triple': 'x86_64-apple-darwin',
         'exe': 'llama-server',
@@ -169,7 +201,7 @@ def main():
             print('not here: %s' % spec['file'])
             return 1
         else:
-            download(BASE + spec['file'], archive)
+            download(base_for(spec) + spec['file'], archive)
 
     got = sha256(archive)
     size = os.path.getsize(archive)
@@ -178,7 +210,9 @@ def main():
         print('CHECKSUM MISMATCH; expected %s' % spec['sha256'])
         print('Nothing was unpacked.')
         return 2
-    print('  checksum matches the pinned release %s (%s)' % (TAG, COMMIT[:9]))
+    tag = spec.get('tag', TAG)
+    commit = MAC_COMMIT if tag == MAC_TAG else COMMIT
+    print('  checksum matches the pinned release %s (%s)' % (tag, commit[:9]))
     if args.check:
         return 0
 
@@ -407,6 +441,7 @@ def bundle_macos():
         total += os.path.getsize(lic)
 
     print('assembled %d files, %.1f MB, in %s' % (kept, total / float(1 << 20), BUNDLE_DIR))
+    print('  release  %s (%s)' % (MAC_TAG, MAC_COMMIT[:9]))
     print('  chip     %s (%s)' % (machine, key))
     print('  server   llama-server')
     print('  metal    %s' % ('yes, libggml-metal.0.dylib'

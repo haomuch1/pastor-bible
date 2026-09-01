@@ -66,8 +66,12 @@ machines already have it.
 
 **1. Find out which Mac you have.** Apple menu (top left) → **About This Mac**.
 It says either **Apple M1**, **M2**, **M3** or **M4** — those are Apple Silicon,
-2021 and newer — or it says **Intel**. You need macOS **13.3 (Ventura)** or
-newer either way; the same window says which version you are on.
+2021 and newer — or it says **Intel**. The same window says which version of
+macOS you are on. You need **13.3 (Ventura)** or newer either way, and one thing
+should be said plainly: the build machines this was tested on run **macOS 15**.
+13.3 and 14 are what the program's own components declare they support, and
+nobody has run it on either. If you are on one of those, you are testing that
+claim as well as the app.
 
 **2. Download the file for your chip.** On the releases page, take:
 

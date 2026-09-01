@@ -42,16 +42,22 @@ llama.cpp, the local model server
                sha256 3f928f12abc5aaec2b21e9c8116292910f9f5e76eb2605ae6a9578b0413de626
              llama-b10639-bin-ubuntu-vulkan-x64.tar.gz
                sha256 6168bd9affe15b5cdbf553d70d2f162df5268c50da038000dcd3f0dc537ec7ca
-             llama-b10639-bin-macos-arm64.tar.gz
-               sha256 9af0ea99b9221bd5db69c4341b442166d9697d35556708dba11ae44c85567a14
-             llama-b10639-bin-macos-x64.tar.gz
-               sha256 72c8b2fccc0f670733c0f51b6f7e40a93246d61a5ff4f4fae4f1d64897c9c5be
+  macOS, release b10694, commit 2bf04151520843e9ea5694e655e7d4a537973b54:
+             llama-b10694-bin-macos-arm64.tar.gz
+               sha256 e5423012dfb20fefe586906a24ade087632b89660abfdab810b2612557f2e081
+             llama-b10694-bin-macos-x64.tar.gz
+               sha256 b52b861baf8540d23b7b0aecf2a36994749256796d3d119a002fd522bd02cabb
   Fetched by tools/fetch_llama.py, which refuses to unpack a mismatched
   checksum.
 
   Added 2026-09-01, P-MAC. Both macOS archives were downloaded on the build
   machine and hashed there; the two checksums above are that measurement and
-  match the digest GitHub publishes for each asset. Unlike every other archive
+  match the digest GitHub publishes for each asset. They come from a later
+  release than the Windows and Linux archives: b10639's Apple Silicon binary
+  hard-links /usr/lib/librdma.dylib, which does not exist before macOS 26, and
+  will not start on anything older. b10694 is the first release in which that
+  link is weak. docs/SIDECAR.md carries the dyld message and how the tag was
+  found. Windows and Linux are unchanged and still on b10639. Unlike every other archive
   in this list, both of them do carry llama.cpp's own LICENSE, and it is
   byte-identical to the copy vendored below -- same sha256, 1,078 bytes -- so
   the vendored file is now confirmed against upstream rather than merely

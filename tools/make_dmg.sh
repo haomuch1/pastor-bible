@@ -115,10 +115,13 @@ hdiutil detach "$MNT" >/dev/null
 # was written at all. It is checked after the unmount because that is when
 # Finder has finished flushing it.
 hdiutil attach "$RW" -readonly -noverify -noautoopen -mountpoint "$MNT" >/dev/null
+# `[ -f x ] && VAR=y` is an and-list, and under `set -e` a false test aborts
+# the script -- which would turn "the layout did not happen" into "the build
+# failed", the opposite of what this reporting is for.
 DS=absent
-[ -f "$MNT/.DS_Store" ] && DS="present, $(stat -f%z "$MNT/.DS_Store") bytes"
+if [ -f "$MNT/.DS_Store" ]; then DS="present, $(stat -f%z "$MNT/.DS_Store") bytes"; fi
 BG=absent
-[ -f "$MNT/.background/background.png" ] && BG=present
+if [ -f "$MNT/.background/background.png" ]; then BG=present; fi
 hdiutil detach "$MNT" >/dev/null
 
 rm -f "$OUT"

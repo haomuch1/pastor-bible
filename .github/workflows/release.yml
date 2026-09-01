@@ -333,22 +333,49 @@ jobs:
             echo "::error::a symlink reached the bundle"; exit 1
           fi
 
-      - name: what the model server can see on this Mac
+      - name: the model server starts, and what it can see on this Mac
         run: |
-          # The honest way to answer "what does --list-devices report on Apple
-          # Silicon, and on a Mac with no usable GPU": run it and print it.
-          # Recorded in the job log, and quoted in docs/SIDECAR.md afterwards.
-          ./src-tauri/resources/llama/llama-server --list-devices 2>&1 | tee devices.txt
+          # Two separate questions, kept apart because the first CI run of this
+          # phase ran them together and reported "no Metal device" for a server
+          # that had not started at all.
+          #
+          # First: does it run? On 2026-09-01 b10639's Apple Silicon build did
+          # not. dyld refused it over a hard link on /usr/lib/librdma.dylib,
+          # which does not exist before macOS 26, and that is why the macOS
+          # assets are pinned to b10694. A non-zero exit here is that class of
+          # failure and must stop the build.
+          set +e
+          ./src-tauri/resources/llama/llama-server --list-devices > devices.txt 2>&1
+          rc=$?
+          set -e
+          cat devices.txt
+          if [ $rc -ne 0 ]; then
+            echo "::error::llama-server exited $rc. It did not start; the lines above say why."
+            exit 1
+          fi
+
+          # Second: what did it report? On Intel this is an assertion, because
+          # the x64 archive contains no Metal backend at all and a Metal device
+          # appearing would mean docs/SIDECAR.md is wrong about what shipped.
+          #
+          # On Apple Silicon it is recorded and not asserted. This runner is a
+          # virtual machine, and whether a Metal device appears inside one says
+          # nothing about whether one appears on a pastor's MacBook. What the
+          # app does when no device is reported is what it does on a Windows
+          # laptop without a card, which is tested; what it says when one is
+          # reported has unit tests over the parsed output.
           if [ "${{ matrix.chip }}" = "aarch64" ]; then
-            grep -qi metal devices.txt \
-              || { echo "::error::no Metal device on Apple Silicon"; exit 1; }
-          else
-            # The x64 archive contains no Metal backend at all, so this is a
-            # statement about the build and not about this runner's hardware.
             if grep -qi metal devices.txt; then
-              echo "::error::the Intel build reported a Metal device; SIDECAR.md is wrong"
+              echo "this Apple Silicon runner reports a Metal device, printed above"
+            else
+              echo "::warning::no Metal device on this Apple Silicon runner, which is a virtual machine. Recorded, not asserted; the answer for real hardware is unverified."
+            fi
+          else
+            if grep -qi metal devices.txt; then
+              echo "::error::the Intel build reported a Metal device; docs/SIDECAR.md is wrong"
               exit 1
             fi
+            echo "no Metal device, which is what the x64 archive's own contents require"
           fi
 
       - run: npm ci
